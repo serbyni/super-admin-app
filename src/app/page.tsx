@@ -5,6 +5,7 @@ const routes = [
   { href: "/login", label: "Login" },
   { href: "/register", label: "Register" },
   { href: "/forgot-password", label: "Forgot password" },
+  { href: "/reset-password/success", label: "Password updated (success)" },
   { href: "/about", label: "About us" },
   { href: "/contact", label: "Contact" },
   { href: "/admin", label: "Super admin" },

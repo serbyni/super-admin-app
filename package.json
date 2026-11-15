@@ -6,10 +6,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
+    "lint": "eslint && npm run lint:tokens",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "typecheck": "next typegen && tsc --noEmit"
+    "typecheck": "next typegen && tsc --noEmit",
+    "tokens:palettes": "tsx scripts/generate-palettes.mjs",
+    "lint:tokens": "node scripts/check-arbitrary-values.mjs"
   },
   "dependencies": {
     "next": "16.4.6",
@@ -17,6 +19,7 @@
     "react-dom": "19.3.0"
   },
   "devDependencies": {
+    "@material/material-color-utilities": "^0.4.0",
     "@tailwindcss/turbopack": "4.3.3",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -27,6 +30,7 @@
     "prettier": "^3.10.1",
     "prettier-plugin-tailwindcss": "^0.8.1",
     "tailwindcss": "4.3.3",
+    "tsx": "^4.23.15",
     "typescript": "^5"
   },
   "engines": {

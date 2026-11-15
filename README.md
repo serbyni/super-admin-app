@@ -7,16 +7,18 @@ Stack: **Next.js 16** (App Router, `cacheComponents`), React 19, TypeScript, Tai
 
 ## Routes
 
-| Route              | Page                                                                                         | Status      |
-| ------------------ | -------------------------------------------------------------------------------------------- | ----------- |
-| `/`                | Platform home (temporary route map)                                                          | placeholder |
-| `/login`           | Login (café owners, platform)                                                                | placeholder |
-| `/register`        | Café-owner registration → email verification → approval                                      | placeholder |
-| `/forgot-password` | Password reset request                                                                       | placeholder |
-| `/about`           | About us                                                                                     | placeholder |
-| `/contact`         | Contact                                                                                      | placeholder |
-| `/admin`           | Super-admin console (applications, café directory, plans, aggregated stats)                  | placeholder |
-| `/[tenant]/admin`  | Platform-side management of one café (status, plan, owner); **no café business data** (GDPR) | placeholder |
+| Route                     | Page                                                                                         | Status                  |
+| ------------------------- | -------------------------------------------------------------------------------------------- | ----------------------- |
+| `/`                       | Platform home (temporary route map)                                                          | placeholder             |
+| `/login`                  | Login (café owners, platform)                                                                | **UI done** (not wired) |
+| `/register`               | Café-owner registration → email verification → approval                                      | **UI done** (not wired) |
+| `/forgot-password`        | Password reset request                                                                       | **UI done** (not wired) |
+| `/reset-password/success` | Password updated confirmation                                                                | **UI done**             |
+| `/privacy`, `/terms`      | Legal pages                                                                                  | placeholder             |
+| `/about`                  | About us                                                                                     | placeholder             |
+| `/contact`                | Contact                                                                                      | placeholder             |
+| `/admin`                  | Super-admin console (applications, café directory, plans, aggregated stats)                  | placeholder             |
+| `/[tenant]/admin`         | Platform-side management of one café (status, plan, owner); **no café business data** (GDPR) | placeholder             |
 
 Route files live in `src/app`:
 
@@ -36,6 +38,27 @@ src/app/
 
 Static routes always win over `[tenant]`, so `/login`, `/admin` etc. are never read as a café slug. Every top-level static route name must stay in the **reserved slug list** (`admin, login, register, forgot-password, about, contact, www, app, api, q, …`), so no café can register that name.
 
+## Design system
+
+Tokens follow the Stitch **"Artisanal Brew"** design system (project `17774407037339389188`). They live in `src/app/globals.css`, with palettes in `src/styles/palettes.css`.
+
+| Layer                              | Where                                                                    | Use                                                                                                                                                                                                                 |
+| ---------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Semantic colors (Material 3 roles) | `--sb-*` CSS variables in `globals.css`, exposed through `@theme inline` | `bg-primary`, `text-on-surface-variant`, `bg-surface-container-low`, `ring-primary-container`… These are the same names Stitch exports, so its markup ports as-is. Variables can be overridden at runtime per café. |
+| Fixed accents                      | `--sb-cta`, `--sb-success`, `--sb-info`                                  | `bg-cta` (order buttons), `text-success`, `bg-info-container`                                                                                                                                                       |
+| Tonal palettes 50–950              | `src/styles/palettes.css` (generated)                                    | `coffee-*` (primary), `latte-*` (secondary), `slate-*` (tertiary), `sand-*` (neutral), `orange-*` (CTA), `sage-*` (success), `sky-*` (info), `red-*` (error). Regenerate with `npm run tokens:palettes`.            |
+| Typography                         | `--text-*`                                                               | `text-display-lg`, `text-headline-md`, `text-body-lg`, `text-body-md`, `text-label-sm` (Plus Jakarta Sans via `next/font`)                                                                                          |
+| Spacing                            | `--spacing-*`                                                            | `p-md`, `gap-lg`, `px-gutter`, `px-container-margin-desktop` (8px rhythm)                                                                                                                                           |
+| Icons                              | Material Symbols Outlined                                                | `<Icon name="mail" />`, `filled`, `flipRtl` for arrows                                                                                                                                                              |
+
+**No hard-coded values:** arbitrary Tailwind values (`text-[14px]`, `max-w-[36rem]`, `bg-[#fff]`, `shadow-[…]`) are **not allowed**. Add a token to `@theme` in `globals.css` and use the named utility. `npm run lint` (and CI) runs `lint:tokens`, which fails on any arbitrary value.
+
+Extra tokens: icon sizes `text-icon-xs…3xl`, small text `text-caption` / `text-body-xs` / `text-body-sm`, card widths `max-w-card-sm` / `max-w-card-md`, shadows `shadow-header` / `shadow-card-warm` / `shadow-button-warm`, `bg-cover-glow`, `fill-facebook`. Use scale percentages like `hover:scale-101` and `active:scale-99`.
+
+⚠ Tailwind 4 also uses the spacing names for sizing: `max-w-xl` = 48px here, not a container width. Use `max-w-card-*` or `max-w-2xl` and larger.
+
+Auth UI building blocks are in `src/components/auth/`: `AuthShell`, `TextField`, `SelectField`, `PasswordField`, `SocialButtons`, `OrDivider`, and `StaticForm` (blocks submit until auth is implemented).
+
 ## Development
 
 ```bash
@@ -44,12 +67,12 @@ npm ci
 npm run dev        # http://localhost:3000
 ```
 
-| Script                            | Does                                                            |
-| --------------------------------- | --------------------------------------------------------------- |
-| `npm run lint`                    | ESLint (Next core-web-vitals + TypeScript, Prettier-compatible) |
-| `npm run format` / `format:check` | Prettier write / check (with Tailwind class sorting)            |
-| `npm run typecheck`               | `next typegen` + `tsc --noEmit`                                 |
-| `npm run build`                   | Production build                                                |
+| Script                            | Does                                                                                                           |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `npm run lint`                    | ESLint (Next core-web-vitals + TypeScript, Prettier-compatible) + `lint:tokens` (no arbitrary Tailwind values) |
+| `npm run format` / `format:check` | Prettier write / check (with Tailwind class sorting)                                                           |
+| `npm run typecheck`               | `next typegen` + `tsc --noEmit`                                                                                |
+| `npm run build`                   | Production build                                                                                               |
 
 ## Branches & environments
 
