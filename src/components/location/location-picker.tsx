@@ -11,11 +11,14 @@ type Errors = Partial<
   Record<"location" | "street" | "postal_code" | "city" | "country_code", string>
 >;
 
+/** What the server tells the browser about maps — never a key. */
+export type MapsClientConfig = { enabled: boolean; attribution?: string };
+
 type Props = {
   initial?: Partial<BusinessLocation>;
   errors?: Errors;
-  /** True when the server has a Google Maps key (all Google calls go through our /api routes). */
-  mapsEnabled: boolean;
+  /** All provider calls go through our /api routes with a server-only key. */
+  maps: MapsClientConfig;
 };
 
 /** Logical size of /api/maps/static images (must match STATIC_MAP on the server). */
@@ -44,7 +47,8 @@ async function getJson<T>(url: string, init?: RequestInit): Promise<T | null> {
  * coordinates. No Google key reaches the browser — everything goes through our /api proxies.
  * Submits `location` (JSON) plus editable `street`, `postal_code`, `city`.
  */
-export function LocationPicker({ initial, errors = {}, mapsEnabled }: Props) {
+export function LocationPicker({ initial, errors = {}, maps }: Props) {
+  const mapsEnabled = maps.enabled;
   const [loc, setLoc] = useState<Partial<BusinessLocation>>(initial ?? {});
   const update = useCallback(
     (next: Partial<BusinessLocation>) => setLoc((prev) => ({ ...prev, ...next })),
@@ -55,7 +59,19 @@ export function LocationPicker({ initial, errors = {}, mapsEnabled }: Props) {
   const locate = useCallback(
     async (lat: number, lng: number, source: BusinessLocation["source"]) => {
       const point = { lat: roundCoord(lat), lng: roundCoord(lng) };
-      update({ ...point, source, place_id: undefined, formatted_address: undefined });
+      // New position: drop the previous address so nothing stale is kept, then fill it again.
+      update({
+        ...point,
+        source,
+        place_id: undefined,
+        formatted_address: undefined,
+        street: undefined,
+        postal_code: undefined,
+        city: undefined,
+        region: undefined,
+        country: undefined,
+        country_code: undefined,
+      });
       if (!mapsEnabled) return;
       const data = await getJson<{ address: Address | null }>(
         `/api/geocode/reverse?lat=${point.lat}&lng=${point.lng}`,
@@ -84,7 +100,11 @@ export function LocationPicker({ initial, errors = {}, mapsEnabled }: Props) {
       {mapsEnabled ? (
         <>
           <PlaceSearch onPlace={update} error={errors.location} />
-          <StaticMapPicker loc={loc} onPick={(lat, lng) => void locate(lat, lng, "map_pin")} />
+          <StaticMapPicker
+            loc={loc}
+            attribution={maps.attribution}
+            onPick={(lat, lng) => void locate(lat, lng, "map_pin")}
+          />
           <ManualCoordinates
             loc={loc}
             errors={errors}
@@ -102,7 +122,13 @@ export function LocationPicker({ initial, errors = {}, mapsEnabled }: Props) {
 
 /* ── Search (Places API (New) via /api/places/*) ──────────────────────────── */
 
-type Suggestion = { placeId: string; main: string; secondary?: string };
+type Suggestion = {
+  placeId: string;
+  main: string;
+  secondary?: string;
+  /** Provided directly by some providers (no details call needed). */
+  place?: BusinessLocation;
+};
 
 function PlaceSearch({
   onPlace,
@@ -117,11 +143,12 @@ function PlaceSearch({
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [busy, setBusy] = useState(false);
   const token = useRef<string | null>(null);
+  const chosenLabel = useRef<string | null>(null);
   const visible = query.trim().length >= 3 ? suggestions : [];
 
   useEffect(() => {
     const input = query.trim();
-    if (input.length < 3) return;
+    if (input.length < 3 || query === chosenLabel.current) return;
     token.current ??= crypto.randomUUID(); // one billing session per selection
     const sessionToken = token.current;
     const handle = setTimeout(async () => {
@@ -138,7 +165,15 @@ function PlaceSearch({
 
   async function choose(s: Suggestion) {
     setOpen(false);
-    setQuery(s.secondary ? `${s.main}, ${s.secondary}` : s.main);
+    const label = s.secondary ? `${s.main}, ${s.secondary}` : s.main;
+    chosenLabel.current = label;
+    setSuggestions([]);
+    setQuery(label);
+    if (s.place) {
+      token.current = null;
+      onPlace(s.place);
+      return;
+    }
     if (!token.current) return;
     setBusy(true);
     const data = await getJson<{ place: BusinessLocation }>(
@@ -152,7 +187,7 @@ function PlaceSearch({
   return (
     <div className="relative">
       <FieldLabel htmlFor="placeSearch" required>
-        Find your business on Google Maps
+        Find your business on the map
       </FieldLabel>
       <div className="relative flex items-center">
         <Icon
@@ -214,9 +249,11 @@ function PlaceSearch({
 
 function StaticMapPicker({
   loc,
+  attribution,
   onPick,
 }: {
   loc: Partial<BusinessLocation>;
+  attribution?: string;
   onPick: (lat: number, lng: number) => void;
 }) {
   const hasPin = typeof loc.lat === "number" && typeof loc.lng === "number";
@@ -297,6 +334,9 @@ function StaticMapPicker({
           </div>
         ) : null}
       </div>
+      {attribution ? (
+        <p className="text-end text-caption text-on-surface-variant">Map {attribution}</p>
+      ) : null}
       <p className="flex items-start gap-xs text-caption text-on-surface-variant">
         <Icon name="touch_app" className="text-icon-sm" />
         Pin in the wrong place? Click the exact spot on the map — it re-centres on your pin. Use + /
@@ -396,7 +436,7 @@ function ManualCoordinates({
   return onSet ? (
     <details className="rounded-lg bg-surface-container-lowest p-sm">
       <summary className="cursor-pointer text-body-sm font-semibold text-primary">
-        Not on Google Maps? Enter coordinates
+        Not on the map? Enter coordinates
       </summary>
       <div className="pt-sm">{body}</div>
     </details>

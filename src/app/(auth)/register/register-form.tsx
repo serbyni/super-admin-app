@@ -7,17 +7,17 @@ import { PasswordField } from "@/components/auth/password-field";
 import { PasswordStrengthMeter } from "@/components/auth/password-strength-meter";
 import { SubmitButton } from "@/components/auth/submit-button";
 import { TermsCheckbox } from "@/components/auth/terms-checkbox";
-import { LocationPicker } from "@/components/location/location-picker";
+import { LocationPicker, type MapsClientConfig } from "@/components/location/location-picker";
 import { initialLocation } from "@/lib/location/initial";
 import type { BusinessType } from "@/lib/business-types/schema";
 import { registerOwner, type FormState } from "./actions";
 
 export function RegisterForm({
   businessTypes,
-  mapsEnabled,
+  maps,
 }: {
   businessTypes: BusinessType[];
-  mapsEnabled: boolean;
+  maps: MapsClientConfig;
 }) {
   const [state, action] = useActionState<FormState, FormData>(registerOwner, {});
   const [password, setPassword] = useState("");
@@ -33,7 +33,7 @@ export function RegisterForm({
         withEmail
       />
       <LocationPicker
-        mapsEnabled={mapsEnabled}
+        maps={maps}
         key={state.values?.location ?? ""}
         initial={initialLocation(state.values)}
         errors={errors}

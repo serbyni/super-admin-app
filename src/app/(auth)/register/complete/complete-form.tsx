@@ -5,7 +5,7 @@ import { BusinessFields } from "@/components/auth/business-fields";
 import { FormAlert } from "@/components/auth/form-alert";
 import { SubmitButton } from "@/components/auth/submit-button";
 import { TermsCheckbox } from "@/components/auth/terms-checkbox";
-import { LocationPicker } from "@/components/location/location-picker";
+import { LocationPicker, type MapsClientConfig } from "@/components/location/location-picker";
 import { initialLocation } from "@/lib/location/initial";
 import type { BusinessType } from "@/lib/business-types/schema";
 import { completeOwnerProfile, type FormState } from "../actions";
@@ -13,11 +13,11 @@ import { completeOwnerProfile, type FormState } from "../actions";
 export function CompleteProfileForm({
   defaults,
   businessTypes,
-  mapsEnabled,
+  maps,
 }: {
   defaults: Record<string, string>;
   businessTypes: BusinessType[];
-  mapsEnabled: boolean;
+  maps: MapsClientConfig;
 }) {
   const [state, action] = useActionState<FormState, FormData>(completeOwnerProfile, {});
   const errors = state.errors ?? {};
@@ -30,7 +30,7 @@ export function CompleteProfileForm({
         values={state.values ?? defaults}
       />
       <LocationPicker
-        mapsEnabled={mapsEnabled}
+        maps={maps}
         key={state.values?.location ?? ""}
         initial={initialLocation(state.values)}
         errors={errors}

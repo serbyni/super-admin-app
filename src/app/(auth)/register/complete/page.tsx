@@ -6,7 +6,7 @@ import { Icon } from "@/components/ui/icon";
 import { pathForStatus } from "@/lib/auth/owner-status";
 import { getOwnerSession } from "@/lib/auth/session";
 import { getActiveBusinessTypes } from "@/lib/business-types/data";
-import { mapsConfigured } from "@/lib/maps/server";
+import { mapsClientConfig } from "@/lib/maps/server";
 import { CompleteProfileForm } from "./complete-form";
 
 export const metadata: Metadata = { title: "Complete your profile" };
@@ -31,7 +31,7 @@ async function Form() {
       <CompleteProfileForm
         defaults={{ fullName: name }}
         businessTypes={await getActiveBusinessTypes()}
-        mapsEnabled={mapsConfigured()}
+        maps={mapsClientConfig()}
       />
     </>
   );

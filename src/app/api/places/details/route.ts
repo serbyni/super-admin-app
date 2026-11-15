@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
-import { guard, placeDetails } from "@/lib/maps/server";
+import { guard } from "@/lib/maps/server";
 
 const query = z.object({
   placeId: z.string().regex(/^[A-Za-z0-9_-]{10,300}$/),
@@ -10,13 +10,13 @@ const query = z.object({
 
 /** GET /api/places/details — location + address for a chosen suggestion (ends the session). */
 export async function GET(request: NextRequest) {
-  const blocked = guard(request, "details", 20);
-  if (blocked) return blocked;
+  const g = guard(request, "details", 20);
+  if ("response" in g) return g.response;
   const parsed = query.safeParse(Object.fromEntries(request.nextUrl.searchParams));
   if (!parsed.success) return NextResponse.json({ error: "invalid_request" }, { status: 400 });
   try {
     const { placeId, sessionToken, language } = parsed.data;
-    const place = await placeDetails(placeId, sessionToken, language);
+    const place = await g.provider.details(placeId, sessionToken, language);
     return place
       ? NextResponse.json({ place })
       : NextResponse.json({ error: "not_found" }, { status: 404 });

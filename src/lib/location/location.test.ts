@@ -67,7 +67,7 @@ describe("locationFromForm", () => {
   it("merges the map JSON with edited street/zip/city", () => {
     const r = locationFromForm(
       form(
-        { source: "google_place", city: "Tunis", country_code: "tn", lat: 36.8, lng: 10.18 },
+        { source: "place_search", city: "Tunis", country_code: "tn", lat: 36.8, lng: 10.18 },
         { street: "12 Rue X", postal_code: "1001", city: "Tunis Centre" },
       ),
     );

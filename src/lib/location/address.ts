@@ -1,6 +1,6 @@
 /** Normalised business location, collected on the register form. */
 export type BusinessLocation = {
-  source: "google_place" | "map_pin" | "coordinates";
+  source: "place_search" | "map_pin" | "coordinates";
   place_id?: string;
   formatted_address?: string;
   street?: string;

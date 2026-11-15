@@ -10,7 +10,7 @@ const opt = (max: number) =>
 
 /** Location sent by the register form (hidden JSON field + editable street/zip/city). */
 export const locationSchema = z.object({
-  source: z.enum(["google_place", "map_pin", "coordinates"], { error: "Choose your location" }),
+  source: z.enum(["place_search", "map_pin", "coordinates"], { error: "Choose your location" }),
   place_id: opt(300),
   formatted_address: opt(300),
   street: opt(120),

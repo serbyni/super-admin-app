@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
-import { guard, STATIC_MAP, staticMap } from "@/lib/maps/server";
+import { guard, STATIC_MAP } from "@/lib/maps/server";
 
 const query = z.object({
   // Rounded so repeated views hit the cache.
@@ -20,12 +20,12 @@ const query = z.object({
 
 /** GET /api/maps/static — Google Static Map image proxied with the server key. */
 export async function GET(request: NextRequest) {
-  const blocked = guard(request, "static", 90);
-  if (blocked) return blocked;
+  const g = guard(request, "static", 90);
+  if ("response" in g) return g.response;
   const parsed = query.safeParse(Object.fromEntries(request.nextUrl.searchParams));
   if (!parsed.success) return NextResponse.json({ error: "invalid_request" }, { status: 400 });
   const { lat, lng, zoom, marker } = parsed.data;
-  const upstream = await staticMap(lat, lng, zoom, marker === "1").catch(() => null);
+  const upstream = await g.provider.staticMap(lat, lng, zoom, marker === "1").catch(() => null);
   if (!upstream?.ok || !upstream.body) {
     return NextResponse.json({ error: "upstream_error" }, { status: 502 });
   }

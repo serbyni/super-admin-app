@@ -78,18 +78,25 @@ Copy `.env.example` to `.env.local` for local development.
 
 ### Business location (register)
 
-The register and complete-profile forms collect the business location with Google Maps. **No Google key is ever sent to the browser.** All Google calls go through our server routes, which use the server-only `GOOGLE_MAPS_SERVER_KEY`:
+The register and complete-profile forms collect the business location. **No maps key is ever sent to the browser.** The browser only calls our server routes, which use **server-only** keys:
 
-| Browser calls                   | Server calls Google                                    |
-| ------------------------------- | ------------------------------------------------------ |
-| `POST /api/places/autocomplete` | Places API (New) autocomplete (session tokens)         |
-| `GET /api/places/details`       | Places API (New) place details                         |
-| `GET /api/geocode/reverse`      | Geocoding API (address for a pin or typed coordinates) |
-| `GET /api/maps/static`          | Maps Static API (map image, cached 1 day)              |
+| Browser calls                   | Server calls the provider                                                  |
+| ------------------------------- | -------------------------------------------------------------------------- |
+| `POST /api/places/autocomplete` | place / address search                                                     |
+| `GET /api/places/details`       | place details (Google only; Geoapify returns full results in autocomplete) |
+| `GET /api/geocode/reverse`      | address for a pin or typed coordinates                                     |
+| `GET /api/maps/static`          | map image (cached 1 day)                                                   |
 
-Every route checks that the request comes from the same site, validates its input (zod), and is rate-limited per IP (in memory; move to a shared store when running several instances). The map is a static image: **click to move the pin**, use + / − to zoom; the coordinates come from Web-Mercator math (`src/lib/location/mercator.ts`). Owners can also type latitude/longitude. Street, postal code and city are editable.
+**Providers** (`src/lib/maps/providers/`):
 
-Stored on `platform.owner_accounts`: `latitude`, `longitude`, `place_id`, `formatted_address`, `street`, `postal_code`, `city`, `region`, `country`, `country_code`, `location_source` (`google_place` | `map_pin` | `coordinates`). Without the server key the form shows manual coordinates and address fields.
+- **Geoapify** (default): OpenStreetMap data, free plan without a credit card. Env `GEOAPIFY_API_KEY`.
+- **Google** (optional, needs billing): Places API (New), Geocoding, Maps Static. Env `GOOGLE_MAPS_SERVER_KEY`.
+
+Set `MAPS_PROVIDER=geoapify|google` to force one; otherwise Geoapify is used when its key is set. Geoapify renders 512px tiles, so its zoom is shifted by −1 to keep the click math identical.
+
+Every route checks the request comes from the same site, validates input (zod), and is rate-limited per IP (in memory; use a shared store when running several instances). The map is a static image: **click to move the pin**, + / − to zoom (Web-Mercator math in `src/lib/location/mercator.ts`). Owners can also type latitude/longitude. Moving the pin clears and re-fills the address, and street, postal code and city stay editable. The required map attribution is shown under the map.
+
+Stored on `platform.owner_accounts`: `latitude`, `longitude`, `place_id`, `formatted_address`, `street`, `postal_code`, `city`, `region`, `country`, `country_code`, `location_source` (`place_search` | `map_pin` | `coordinates`). Without any maps key the form shows manual coordinates and address fields.
 
 ### Super admins
 
