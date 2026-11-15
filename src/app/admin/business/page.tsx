@@ -3,9 +3,8 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { AdminShell, PageHeader } from "@/components/admin/admin-shell";
 import { Icon } from "@/components/ui/icon";
-import { localizedName } from "@/lib/business-types/schema";
 import { listBusinessTypesForAdmin } from "./data";
-import { DeleteBusinessTypeButton } from "./delete-button";
+import { SortableBusinessTypes } from "./sortable-table";
 
 export const metadata: Metadata = { title: "Business types" };
 
@@ -37,69 +36,9 @@ async function Table() {
       </p>
     );
   }
+  // key: remount with fresh server data after create/edit/delete redirects.
   return (
-    <div className="overflow-x-auto rounded-xl bg-surface-container-lowest shadow-sm">
-      <table className="w-full min-w-max text-start text-body-sm">
-        <thead className="bg-surface-container-low font-label-sm text-label-sm tracking-wider text-on-surface-variant uppercase">
-          <tr>
-            <th className="px-md py-sm text-start">Type</th>
-            <th className="px-md py-sm text-start">Code</th>
-            <th className="px-md py-sm text-start">FR / AR</th>
-            <th className="px-md py-sm text-end">Order</th>
-            <th className="px-md py-sm text-end">Owners</th>
-            <th className="px-md py-sm text-start">Status</th>
-            <th className="px-md py-sm text-end">Actions</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-surface-container-high">
-          {types.map((t) => (
-            <tr key={t.id} className="hover:bg-surface-container-low/60">
-              <td className="px-md py-sm">
-                <span className="flex items-center gap-sm font-semibold text-on-surface">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-secondary-container text-primary">
-                    <Icon name={t.icon} className="text-icon-md" />
-                  </span>
-                  {localizedName(t.name)}
-                </span>
-              </td>
-              <td className="px-md py-sm font-mono text-on-surface-variant">{t.slug}</td>
-              <td className="px-md py-sm text-on-surface-variant">
-                {t.name.fr ?? "—"} · <span dir="rtl">{t.name.ar ?? "—"}</span>
-              </td>
-              <td className="px-md py-sm text-end tabular-nums">{t.sort_order}</td>
-              <td className="px-md py-sm text-end tabular-nums">{t.owners_count}</td>
-              <td className="px-md py-sm">
-                <span
-                  className={`rounded-full px-sm py-xs font-label-sm text-label-sm uppercase ${
-                    t.is_active
-                      ? "bg-success-container text-success"
-                      : "bg-surface-container-high text-on-surface-variant"
-                  }`}
-                >
-                  {t.is_active ? "Active" : "Inactive"}
-                </span>
-              </td>
-              <td className="px-md py-sm">
-                <div className="flex items-start justify-end gap-xs">
-                  <Link
-                    href={`/admin/business/${t.id}`}
-                    className="inline-flex items-center gap-xs rounded-lg px-sm py-xs text-body-sm font-semibold text-info transition-colors hover:bg-info-container"
-                  >
-                    <Icon name="edit" className="text-icon-md" />
-                    Edit
-                  </Link>
-                  <DeleteBusinessTypeButton
-                    id={t.id}
-                    name={localizedName(t.name)}
-                    inUse={t.owners_count > 0}
-                  />
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <SortableBusinessTypes key={types.map((t) => t.id + t.updated_at).join()} initial={types} />
   );
 }
 
@@ -108,7 +47,7 @@ export default function BusinessTypesPage({ searchParams }: PageProps<"/admin/bu
     <AdminShell active="/admin/business">
       <PageHeader
         title="Business types"
-        description="Categories café owners choose when they register. Types in use can be deactivated but not deleted."
+        description="Categories café owners choose when they register, in this order. Types in use can be deactivated but not deleted."
         actions={
           <Link
             href="/admin/business/new"

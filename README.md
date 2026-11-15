@@ -90,7 +90,7 @@ Then sign in at `/login`, and you are sent to `/admin`. Every admin page and RPC
 
 ### Business types
 
-Managed at `/admin/business` and stored in `platform.business_types` (slug, names in EN/FR/AR, icon, order, active). Icons are chosen with a searchable picker (click the icon preview) from the curated list in `src/config/business-icons.ts`. The server only accepts icons from that list; add new ones there. The register form shows only **active** types, cached with the tag `business-types` and refreshed instantly on every admin save. Types used by café owners cannot be deleted, only deactivated.
+Managed at `/admin/business` and stored in `platform.business_types` (slug, names in EN/FR/AR, icon, order, active). Icons are chosen with a searchable picker (click the icon preview) from the curated list in `src/config/business-icons.ts`. The server only accepts icons from that list; add new ones there. The **order** is set by dragging rows by their handle in the list (keyboard: focus the handle, Space, arrow keys, Space). It saves instantly through `admin_reorder_business_types`; new types are added at the end. The register form shows only **active** types, cached with the tag `business-types` and refreshed instantly on every admin save. Types used by café owners cannot be deleted, only deactivated.
 
 ## Development
 

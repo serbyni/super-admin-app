@@ -4,6 +4,7 @@ import { updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth/admin";
 import { BUSINESS_TYPES_TAG } from "@/lib/business-types/data";
+import { z } from "zod";
 import { businessTypeFormSchema } from "@/lib/business-types/schema";
 
 export type BusinessTypeFormState = {
@@ -36,7 +37,6 @@ export async function saveBusinessType(
       ...(d.name_ar && { ar: d.name_ar }),
     },
     p_icon: d.icon,
-    p_sort_order: d.sort_order,
     p_is_active: d.is_active,
   });
   if (error) {
@@ -70,4 +70,24 @@ export async function deleteBusinessType(
   }
   updateTag(BUSINESS_TYPES_TAG);
   redirect("/admin/business?deleted=1");
+}
+
+export type ReorderResult = { ok: true } | { ok: false; error: string };
+
+/** Persist the full drag-and-drop order (every id, top to bottom). */
+export async function reorderBusinessTypes(ids: string[]): Promise<ReorderResult> {
+  const { supabase } = await requireAdmin();
+  const parsed = z.array(z.uuid()).min(1).max(500).safeParse(ids);
+  if (!parsed.success) return { ok: false, error: "Invalid order." };
+  const { error } = await supabase.rpc("admin_reorder_business_types", { p_ids: parsed.data });
+  if (error) {
+    return {
+      ok: false,
+      error: error.message.includes("stale_list")
+        ? "The list changed in the meantime. Reload the page and try again."
+        : "Could not save the new order. Please try again.",
+    };
+  }
+  updateTag(BUSINESS_TYPES_TAG);
+  return { ok: true };
 }

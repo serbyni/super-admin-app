@@ -8,7 +8,6 @@ const base = {
   name_fr: "",
   name_ar: "شاحنة طعام",
   icon: "local_shipping",
-  sort_order: "50",
   is_active: "on",
 };
 
@@ -20,7 +19,6 @@ describe("businessTypeFormSchema", () => {
       slug: "food_truck",
       name_fr: undefined,
       name_ar: "شاحنة طعام",
-      sort_order: 50,
       is_active: true,
     });
   });

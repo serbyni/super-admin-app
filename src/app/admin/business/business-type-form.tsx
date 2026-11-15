@@ -99,30 +99,17 @@ export function BusinessTypeForm({ type }: { type?: AdminBusinessType }) {
           error={e.name_ar}
         />
       </div>
-      <div className="grid grid-cols-1 items-end gap-md sm:grid-cols-2">
-        <Field
-          id="sort_order"
-          label="Order"
-          type="number"
-          min={0}
-          step={1}
-          required
-          defaultValue={val("sort_order", type?.sort_order ?? 50)}
-          hint="Lower numbers appear first."
-          error={e.sort_order}
+      <label className="flex cursor-pointer items-center gap-sm rounded-lg bg-surface-container-low p-sm">
+        <input
+          type="checkbox"
+          name="is_active"
+          defaultChecked={activeDefault}
+          className="h-5 w-5 cursor-pointer accent-primary"
         />
-        <label className="flex cursor-pointer items-center gap-sm rounded-lg bg-surface-container-low p-sm">
-          <input
-            type="checkbox"
-            name="is_active"
-            defaultChecked={activeDefault}
-            className="h-5 w-5 cursor-pointer accent-primary"
-          />
-          <span className="text-body-sm text-on-surface">
-            Active — shown to café owners at registration
-          </span>
-        </label>
-      </div>
+        <span className="text-body-sm text-on-surface">
+          Active — shown to café owners at registration
+        </span>
+      </label>
       <div className="flex flex-col-reverse gap-sm sm:flex-row sm:items-center sm:justify-between">
         <Link
           href="/admin/business"

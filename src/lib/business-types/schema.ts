@@ -48,7 +48,6 @@ export const businessTypeFormSchema = z.object({
       (v) => (BUSINESS_ICONS as readonly string[]).includes(v),
       "Choose an icon from the list",
     ),
-  sort_order: z.coerce.number().int("Whole number").min(0).max(10000),
   is_active: z.preprocess((v) => v === "on" || v === "true", z.boolean()),
 });
 
