@@ -51,7 +51,11 @@ Tokens follow the Stitch **"Artisanal Brew"** design system (project `1777440703
 | Spacing                            | `--spacing-*`                                                            | `p-md`, `gap-lg`, `px-gutter`, `px-container-margin-desktop` (8px rhythm)                                                                                                                                           |
 | Icons                              | Material Symbols Outlined                                                | `<Icon name="mail" />`, `filled`, `flipRtl` for arrows                                                                                                                                                              |
 
-⚠ Tailwind 4 also uses the spacing names for sizing: `max-w-xl` = 48px here, not a container width. Use `max-w-[36rem]` or `max-w-2xl` and larger for layout widths.
+**No hard-coded values:** arbitrary Tailwind values (`text-[14px]`, `max-w-[36rem]`, `bg-[#fff]`, `shadow-[…]`) are **not allowed**. Add a token to `@theme` in `globals.css` and use the named utility. `npm run lint` (and CI) runs `lint:tokens`, which fails on any arbitrary value.
+
+Extra tokens: icon sizes `text-icon-xs…3xl`, small text `text-caption` / `text-body-xs` / `text-body-sm`, card widths `max-w-card-sm` / `max-w-card-md`, shadows `shadow-header` / `shadow-card-warm` / `shadow-button-warm`, `bg-cover-glow`, `fill-facebook`. Use scale percentages like `hover:scale-101` and `active:scale-99`.
+
+⚠ Tailwind 4 also uses the spacing names for sizing: `max-w-xl` = 48px here, not a container width. Use `max-w-card-*` or `max-w-2xl` and larger.
 
 Auth UI building blocks are in `src/components/auth/`: `AuthShell`, `TextField`, `SelectField`, `PasswordField`, `SocialButtons`, `OrDivider`, and `StaticForm` (blocks submit until auth is implemented).
 
@@ -63,12 +67,12 @@ npm ci
 npm run dev        # http://localhost:3000
 ```
 
-| Script                            | Does                                                            |
-| --------------------------------- | --------------------------------------------------------------- |
-| `npm run lint`                    | ESLint (Next core-web-vitals + TypeScript, Prettier-compatible) |
-| `npm run format` / `format:check` | Prettier write / check (with Tailwind class sorting)            |
-| `npm run typecheck`               | `next typegen` + `tsc --noEmit`                                 |
-| `npm run build`                   | Production build                                                |
+| Script                            | Does                                                                                                           |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `npm run lint`                    | ESLint (Next core-web-vitals + TypeScript, Prettier-compatible) + `lint:tokens` (no arbitrary Tailwind values) |
+| `npm run format` / `format:check` | Prettier write / check (with Tailwind class sorting)                                                           |
+| `npm run typecheck`               | `next typegen` + `tsc --noEmit`                                                                                |
+| `npm run build`                   | Production build                                                                                               |
 
 ## Branches & environments
 

@@ -12,13 +12,13 @@ export const metadata: Metadata = { title: "Login" };
 export default function LoginPage() {
   return (
     <AuthShell>
-      <div className="mx-auto w-full max-w-[36rem]">
+      <div className="mx-auto w-full max-w-card-md">
         <div className="relative overflow-hidden rounded-xl bg-surface-container-lowest/90 shadow-xl shadow-surface-container-highest/60 backdrop-blur-xl">
           <div className="relative h-32 w-full overflow-hidden bg-primary-container sm:h-36">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,var(--color-primary-fixed-dim)_0,transparent_45%),radial-gradient(circle_at_85%_30%,var(--color-tertiary-fixed-dim)_0,transparent_40%)] opacity-60" />
+            <div className="absolute inset-0 bg-cover-glow opacity-60" />
             <div className="absolute inset-0 bg-gradient-to-t from-surface-container-lowest via-surface-container-lowest/20 to-transparent" />
             <div className="absolute end-6 top-4 flex items-center gap-xs rounded-full bg-surface/80 px-sm py-xs text-secondary backdrop-blur-md">
-              <Icon name="translate" className="text-[16px]" />
+              <Icon name="translate" className="text-icon-sm" />
               <span className="font-label-sm text-label-sm tracking-wider uppercase">EN</span>
             </div>
           </div>
@@ -76,15 +76,15 @@ export default function LoginPage() {
               </div>
               <button
                 type="submit"
-                className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3.5 font-semibold tracking-wide text-on-primary shadow-md transition-all duration-200 hover:scale-[1.01] hover:bg-primary-container hover:shadow-lg active:scale-[0.99]"
+                className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3.5 font-semibold tracking-wide text-on-primary shadow-md transition-all duration-200 hover:scale-101 hover:bg-primary-container hover:shadow-lg active:scale-99"
               >
                 <span>Sign in</span>
-                <Icon name="arrow_forward" className="text-[18px]" flipRtl />
+                <Icon name="arrow_forward" className="text-icon-md" flipRtl />
               </button>
             </StaticForm>
 
             <div className="mt-6 flex items-start gap-3 rounded-lg bg-surface-container-low p-3">
-              <Icon name="shield" filled className="mt-0.5 shrink-0 text-[20px] text-tertiary" />
+              <Icon name="shield" filled className="mt-0.5 shrink-0 text-icon-lg text-tertiary" />
               <p className="font-label-sm text-label-sm leading-relaxed font-normal text-on-surface-variant">
                 <strong className="font-semibold text-on-surface">Restricted access:</strong> café
                 owners approved by Serbi and members of the Serbi team. Platform administrators use

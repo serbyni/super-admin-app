@@ -169,9 +169,45 @@
   --text-label-sm--letter-spacing: 0.05em;
   --text-label-sm--font-weight: 600;
 
+  /* Small text sizes */
+  --text-caption: 11px;
+  --text-caption--line-height: 1.4;
+  --text-body-xs: 13px;
+  --text-body-xs--line-height: 1.5;
+  --text-body-sm: 14px;
+  --text-body-sm--line-height: 1.5;
+
+  /* Icon sizes (Material Symbols render at font-size) — text-icon-sm, text-icon-lg … */
+  --text-icon-xs: 14px;
+  --text-icon-xs--line-height: 1;
+  --text-icon-sm: 16px;
+  --text-icon-sm--line-height: 1;
+  --text-icon-md: 18px;
+  --text-icon-md--line-height: 1;
+  --text-icon-lg: 20px;
+  --text-icon-lg--line-height: 1;
+  --text-icon-xl: 30px;
+  --text-icon-xl--line-height: 1;
+  --text-icon-2xl: 32px;
+  --text-icon-2xl--line-height: 1;
+  --text-icon-3xl: 48px;
+  --text-icon-3xl--line-height: 1;
+
+  /* Layout widths — max-w-card-sm, max-w-card-md (use these instead of max-w-lg / max-w-xl) */
+  --container-card-sm: 32rem;
+  --container-card-md: 36rem;
+
+  /* Shadows */
+  --shadow-header: 0 1px 8px rgb(0 0 0 / 0.04);
+  --shadow-card-warm: 0 12px 40px rgb(85 55 34 / 0.08);
+  --shadow-button-warm: 0 4px 16px rgb(85 55 34 / 0.2);
+
+  /* Third-party brand colors */
+  --color-facebook: #1877f2;
+
   /* Named spacing (8px rhythm) — p-md, gap-lg, px-gutter, px-container-margin-desktop …
      ⚠ In Tailwind 4 these names also feed sizing utilities: max-w-xl / max-w-lg / w-md … resolve to
-     THESE values (e.g. 48px), not to container sizes. Use max-w-[36rem] or max-w-2xl+ for widths. */
+     THESE values (e.g. 48px), not to container sizes. Use max-w-card-sm / max-w-card-md (or max-w-2xl+) for widths. */
   --spacing-unit: 8px;
   --spacing-xs: 4px;
   --spacing-sm: 8px;
@@ -193,6 +229,13 @@
   ::selection {
     @apply bg-secondary-container text-on-secondary-container;
   }
+}
+
+/* Decorative cover glow used on auth cards (theme-aware). */
+@utility bg-cover-glow {
+  background-image:
+    radial-gradient(circle at 20% 20%, var(--color-primary-fixed-dim) 0, transparent 45%),
+    radial-gradient(circle at 85% 30%, var(--color-tertiary-fixed-dim) 0, transparent 40%);
 }
 
 /* Material Symbols icon font (loaded in layout.tsx) */

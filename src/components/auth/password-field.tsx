@@ -25,7 +25,7 @@ export function PasswordField({ icon = "lock", ...props }: PasswordFieldProps) {
           aria-label={visible ? "Hide password" : "Show password"}
           className="absolute end-3 flex items-center justify-center rounded p-1 text-on-surface-variant transition-colors hover:text-on-surface"
         >
-          <Icon name={visible ? "visibility_off" : "visibility"} className="text-[20px]" />
+          <Icon name={visible ? "visibility_off" : "visibility"} className="text-icon-lg" />
         </button>
       }
     />

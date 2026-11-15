@@ -40,7 +40,7 @@ export function TextField({ id, label, icon, trailing, required, ...rest }: Text
       <div className="relative flex items-center">
         <Icon
           name={icon}
-          className="pointer-events-none absolute start-3.5 text-[20px] text-on-surface-variant"
+          className="pointer-events-none absolute start-3.5 text-icon-lg text-on-surface-variant"
         />
         <input id={id} name={id} required={required} className={inputClass} {...rest} />
         {trailing}
@@ -74,7 +74,7 @@ export function SelectField({
       <div className="relative flex items-center">
         <Icon
           name={icon}
-          className="pointer-events-none absolute start-3.5 text-[20px] text-on-surface-variant"
+          className="pointer-events-none absolute start-3.5 text-icon-lg text-on-surface-variant"
         />
         <select
           id={id}
@@ -95,7 +95,7 @@ export function SelectField({
         </select>
         <Icon
           name="expand_more"
-          className="pointer-events-none absolute end-3 text-[20px] text-on-surface-variant"
+          className="pointer-events-none absolute end-3 text-icon-lg text-on-surface-variant"
         />
       </div>
     </div>

@@ -9,11 +9,11 @@ const YEAR = new Date().getFullYear();
 export function AuthShell({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col justify-between">
-      <header className="z-50 w-full bg-surface/70 shadow-[0_1px_8px_rgba(0,0,0,0.04)] backdrop-blur-xl">
+      <header className="z-50 w-full bg-surface/70 shadow-header backdrop-blur-xl">
         <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-gutter lg:px-container-margin-desktop">
           <Link href="/" className="group flex items-center gap-sm">
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-container text-on-primary-container transition-transform group-hover:scale-105">
-              <Icon name="coffee" className="text-[20px]" />
+              <Icon name="coffee" className="text-icon-lg" />
             </span>
             <span className="font-headline-md text-headline-md tracking-tight text-primary">
               Serbi
@@ -24,14 +24,14 @@ export function AuthShell({ children }: { children: ReactNode }) {
               href="/"
               className="flex items-center gap-xs font-label-sm text-label-sm tracking-wider text-on-surface-variant uppercase transition-colors hover:text-on-surface"
             >
-              <Icon name="arrow_back" className="text-[16px]" flipRtl />
+              <Icon name="arrow_back" className="text-icon-sm" flipRtl />
               <span className="hidden sm:inline">Public site</span>
             </Link>
             <Link
               href="/contact"
               className="flex items-center gap-xs font-label-sm text-label-sm tracking-wider text-on-surface-variant uppercase transition-colors hover:text-on-surface"
             >
-              <Icon name="help_outline" className="text-[16px]" />
+              <Icon name="help_outline" className="text-icon-sm" />
               <span className="hidden sm:inline">Help</span>
             </Link>
           </nav>

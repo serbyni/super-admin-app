@@ -41,7 +41,7 @@ export default function RegisterPage() {
           </div>
 
           <div className="relative z-10 my-lg rounded-xl bg-primary-container p-lg text-on-primary-container shadow-md">
-            <Icon name="qr_code_2" className="text-[48px]" />
+            <Icon name="qr_code_2" className="text-icon-3xl" />
             <p className="mt-sm font-label-sm text-label-sm tracking-wider text-primary-fixed-dim uppercase">
               artisan-brew.serbi.me
             </p>
@@ -52,8 +52,8 @@ export default function RegisterPage() {
 
           <ol className="relative z-10 flex flex-col gap-sm rounded-lg bg-surface-container-lowest/60 p-md backdrop-blur-sm">
             {steps.map((s, i) => (
-              <li key={s} className="flex items-center gap-sm text-[13px] text-on-surface-variant">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-[12px] font-bold text-on-primary">
+              <li key={s} className="flex items-center gap-sm text-body-xs text-on-surface-variant">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-label-sm font-bold text-on-primary">
                   {i + 1}
                 </span>
                 {s}
@@ -66,7 +66,7 @@ export default function RegisterPage() {
         <div className="relative rounded-xl bg-surface-container-lowest p-lg shadow-md sm:p-xl lg:col-span-7">
           <div className="mb-lg">
             <span className="mb-sm inline-flex items-center gap-xs rounded-full bg-secondary-fixed px-sm py-xs font-label-sm text-label-sm tracking-wider text-on-secondary-fixed uppercase">
-              <Icon name="storefront" className="text-[14px]" />
+              <Icon name="storefront" className="text-icon-xs" />
               New café
             </span>
             <h1 className="text-headline-md tracking-tight text-on-surface sm:font-display-lg sm:text-display-lg">
@@ -167,17 +167,17 @@ export default function RegisterPage() {
             {/* Password strength (visual only) */}
             <div className="flex flex-col gap-xs rounded-lg bg-surface-container-low p-sm">
               <div className="flex items-center justify-between">
-                <span className="font-label-sm text-[11px] tracking-wider text-on-surface-variant uppercase">
+                <span className="font-label-sm text-caption tracking-wider text-on-surface-variant uppercase">
                   Password strength
                 </span>
-                <span className="font-label-sm text-[11px] text-secondary">Awaiting input</span>
+                <span className="font-label-sm text-caption text-secondary">Awaiting input</span>
               </div>
               <div className="grid h-1.5 w-full grid-cols-4 gap-xs">
                 {[0, 1, 2, 3].map((i) => (
                   <div key={i} className="h-full rounded-full bg-surface-container-highest" />
                 ))}
               </div>
-              <p className="font-label-sm text-[11px] font-normal text-outline">
+              <p className="font-label-sm text-caption font-normal text-outline">
                 Use 10+ characters with upper case, a digit and a symbol.
               </p>
             </div>
@@ -189,7 +189,7 @@ export default function RegisterPage() {
                 required
                 className="mt-1 h-4 w-4 cursor-pointer rounded accent-primary"
               />
-              <span className="text-[13px] leading-relaxed text-on-surface-variant select-none">
+              <span className="text-body-xs leading-relaxed text-on-surface-variant select-none">
                 I agree to the{" "}
                 <Link href="/terms" className="font-semibold text-primary hover:underline">
                   Terms of Service
@@ -204,21 +204,21 @@ export default function RegisterPage() {
 
             <button
               type="submit"
-              className="mt-sm flex w-full cursor-pointer items-center justify-center gap-sm rounded-xl bg-primary py-md text-[16px] font-bold text-on-primary shadow-md transition-all duration-200 hover:scale-[1.01] hover:bg-primary/90 active:scale-[0.99]"
+              className="mt-sm flex w-full cursor-pointer items-center justify-center gap-sm rounded-xl bg-primary py-md text-body-md font-bold text-on-primary shadow-md transition-all duration-200 hover:scale-101 hover:bg-primary/90 active:scale-99"
             >
-              <Icon name="how_to_reg" className="text-[20px]" />
+              <Icon name="how_to_reg" className="text-icon-lg" />
               <span>Create account</span>
             </button>
           </StaticForm>
 
           <div className="mt-lg flex items-center justify-center gap-xs rounded-lg bg-surface-container-low/50 p-sm text-center">
-            <span className="text-[14px] text-on-surface-variant">Already have an account?</span>
+            <span className="text-body-sm text-on-surface-variant">Already have an account?</span>
             <Link
               href="/login"
-              className="flex items-center gap-xs text-[14px] font-bold text-primary transition-colors hover:text-primary-container"
+              className="flex items-center gap-xs text-body-sm font-bold text-primary transition-colors hover:text-primary-container"
             >
               <span>Sign in</span>
-              <Icon name="arrow_forward" className="text-[16px]" flipRtl />
+              <Icon name="arrow_forward" className="text-icon-sm" flipRtl />
             </Link>
           </div>
         </div>
