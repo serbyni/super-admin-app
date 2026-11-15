@@ -1,20 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AuthShell } from "@/components/auth/auth-shell";
-import { SelectField, TextField } from "@/components/auth/fields";
-import { PasswordField } from "@/components/auth/password-field";
 import { OrDivider, SocialButtons } from "@/components/auth/social-buttons";
-import { StaticForm } from "@/components/auth/static-form";
+import { RegisterForm } from "./register-form";
 import { Icon } from "@/components/ui/icon";
 
 export const metadata: Metadata = { title: "Register" };
-
-const businessTypes = [
-  { value: "cafe", label: "Café / coffee shop" },
-  { value: "restaurant", label: "Restaurant" },
-  { value: "bakery", label: "Bakery" },
-  { value: "other", label: "Other" },
-];
 
 const steps = [
   "Create your account and verify your email",
@@ -81,135 +72,7 @@ export default function RegisterPage() {
           <SocialButtons verb="Sign up" layout="grid" />
           <OrDivider label="or register with email" />
 
-          <StaticForm className="flex flex-col gap-md">
-            <div className="grid grid-cols-1 gap-md sm:grid-cols-2">
-              <TextField
-                id="fullName"
-                label="Full name"
-                icon="person"
-                autoComplete="name"
-                placeholder="e.g. Amira Ben Salah"
-                required
-              />
-              <TextField
-                id="phone"
-                label="Phone"
-                icon="call"
-                type="tel"
-                autoComplete="tel"
-                placeholder="+216 20 000 000"
-                required
-              />
-            </div>
-            <TextField
-              id="email"
-              label="Email address"
-              icon="mail"
-              type="email"
-              autoComplete="email"
-              placeholder="owner@yourcafe.com"
-              required
-            />
-            <div className="grid grid-cols-1 gap-md sm:grid-cols-2">
-              <TextField
-                id="businessName"
-                label="Business name"
-                icon="storefront"
-                autoComplete="organization"
-                placeholder="e.g. Artisan Brew"
-                required
-              />
-              <SelectField
-                id="businessType"
-                label="Business type"
-                icon="restaurant"
-                placeholder="Select type"
-                options={businessTypes}
-                required
-              />
-            </div>
-            <div className="grid grid-cols-1 gap-md sm:grid-cols-2">
-              <TextField
-                id="country"
-                label="Country"
-                icon="public"
-                autoComplete="country-name"
-                placeholder="Tunisia"
-                required
-              />
-              <TextField
-                id="city"
-                label="City"
-                icon="location_on"
-                autoComplete="address-level2"
-                placeholder="Tunis"
-                required
-              />
-            </div>
-            <div className="grid grid-cols-1 gap-md sm:grid-cols-2">
-              <PasswordField
-                id="password"
-                label="Password"
-                autoComplete="new-password"
-                placeholder="Min. 10 characters"
-                required
-              />
-              <PasswordField
-                id="confirmPassword"
-                label="Confirm password"
-                icon="lock_clock"
-                autoComplete="new-password"
-                placeholder="Re-enter password"
-                required
-              />
-            </div>
-
-            {/* Password strength (visual only) */}
-            <div className="flex flex-col gap-xs rounded-lg bg-surface-container-low p-sm">
-              <div className="flex items-center justify-between">
-                <span className="font-label-sm text-caption tracking-wider text-on-surface-variant uppercase">
-                  Password strength
-                </span>
-                <span className="font-label-sm text-caption text-secondary">Awaiting input</span>
-              </div>
-              <div className="grid h-1.5 w-full grid-cols-4 gap-xs">
-                {[0, 1, 2, 3].map((i) => (
-                  <div key={i} className="h-full rounded-full bg-surface-container-highest" />
-                ))}
-              </div>
-              <p className="font-label-sm text-caption font-normal text-outline">
-                Use 10+ characters with upper case, a digit and a symbol.
-              </p>
-            </div>
-
-            <label className="mt-xs flex cursor-pointer items-start gap-sm">
-              <input
-                type="checkbox"
-                name="terms"
-                required
-                className="mt-1 h-4 w-4 cursor-pointer rounded accent-primary"
-              />
-              <span className="text-body-xs leading-relaxed text-on-surface-variant select-none">
-                I agree to the{" "}
-                <Link href="/terms" className="font-semibold text-primary hover:underline">
-                  Terms of Service
-                </Link>{" "}
-                and the{" "}
-                <Link href="/privacy" className="font-semibold text-primary hover:underline">
-                  Privacy Policy
-                </Link>
-                .
-              </span>
-            </label>
-
-            <button
-              type="submit"
-              className="mt-sm flex w-full cursor-pointer items-center justify-center gap-sm rounded-xl bg-primary py-md text-body-md font-bold text-on-primary shadow-md transition-all duration-200 hover:scale-101 hover:bg-primary/90 active:scale-99"
-            >
-              <Icon name="how_to_reg" className="text-icon-lg" />
-              <span>Create account</span>
-            </button>
-          </StaticForm>
+          <RegisterForm />
 
           <div className="mt-lg flex items-center justify-center gap-xs rounded-lg bg-surface-container-low/50 p-sm text-center">
             <span className="text-body-sm text-on-surface-variant">Already have an account?</span>

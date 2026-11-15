@@ -24,14 +24,24 @@ export function FieldLabel({
   );
 }
 
+export function FieldError({ id, message }: { id: string; message?: string }) {
+  if (!message) return null;
+  return (
+    <p id={`${id}-error`} role="alert" className="mt-1 text-body-xs text-error">
+      {message}
+    </p>
+  );
+}
+
 type TextFieldProps = InputHTMLAttributes<HTMLInputElement> & {
   id: string;
   label: string;
   icon: string;
   trailing?: ReactNode;
+  error?: string;
 };
 
-export function TextField({ id, label, icon, trailing, required, ...rest }: TextFieldProps) {
+export function TextField({ id, label, icon, trailing, required, error, ...rest }: TextFieldProps) {
   return (
     <div>
       <FieldLabel htmlFor={id} required={required}>
@@ -42,9 +52,18 @@ export function TextField({ id, label, icon, trailing, required, ...rest }: Text
           name={icon}
           className="pointer-events-none absolute start-3.5 text-icon-lg text-on-surface-variant"
         />
-        <input id={id} name={id} required={required} className={inputClass} {...rest} />
+        <input
+          id={id}
+          name={id}
+          required={required}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? `${id}-error` : undefined}
+          className={`${inputClass} ${error ? "ring-2 ring-error" : ""}`}
+          {...rest}
+        />
         {trailing}
       </div>
+      <FieldError id={id} message={error} />
     </div>
   );
 }
@@ -55,6 +74,7 @@ type SelectFieldProps = SelectHTMLAttributes<HTMLSelectElement> & {
   icon: string;
   placeholder: string;
   options: { value: string; label: string }[];
+  error?: string;
 };
 
 export function SelectField({
@@ -64,6 +84,8 @@ export function SelectField({
   placeholder,
   options,
   required,
+  error,
+  defaultValue,
   ...rest
 }: SelectFieldProps) {
   return (
@@ -80,8 +102,10 @@ export function SelectField({
           id={id}
           name={id}
           required={required}
-          defaultValue=""
-          className={`${inputClass} cursor-pointer appearance-none pe-10`}
+          defaultValue={defaultValue ?? ""}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? `${id}-error` : undefined}
+          className={`${inputClass} cursor-pointer appearance-none pe-10 ${error ? "ring-2 ring-error" : ""}`}
           {...rest}
         >
           <option value="" disabled>
@@ -98,6 +122,7 @@ export function SelectField({
           className="pointer-events-none absolute end-3 text-icon-lg text-on-surface-variant"
         />
       </div>
+      <FieldError id={id} message={error} />
     </div>
   );
 }

@@ -1,3 +1,10 @@
+"use client";
+
+import { useState } from "react";
+import type { Provider } from "@supabase/supabase-js";
+import { siteUrl } from "@/lib/env";
+import { createClient } from "@/lib/supabase/client";
+
 function GoogleLogo() {
   return (
     <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
@@ -30,9 +37,9 @@ function FacebookLogo() {
 }
 
 const buttonClass =
-  "group flex w-full items-center justify-center gap-3 rounded-lg bg-surface-container-low px-4 py-3 text-on-surface shadow-sm transition-all duration-200 hover:scale-101 hover:bg-surface-container active:scale-99";
+  "group flex w-full items-center justify-center gap-3 rounded-lg bg-surface-container-low px-4 py-3 text-on-surface shadow-sm transition-all duration-200 hover:scale-101 hover:bg-surface-container active:scale-99 disabled:cursor-wait disabled:opacity-60";
 
-/** Google / Facebook buttons (visual only — social sign-in is not implemented yet). */
+/** Google / Facebook sign-in through Supabase OAuth. New users continue to /register/complete. */
 export function SocialButtons({
   verb = "Continue",
   layout = "stack",
@@ -40,16 +47,49 @@ export function SocialButtons({
   verb?: string;
   layout?: "stack" | "grid";
 }) {
+  const [pending, setPending] = useState<Provider | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function signIn(provider: Provider) {
+    setPending(provider);
+    setError(null);
+    const { error } = await createClient().auth.signInWithOAuth({
+      provider,
+      options: { redirectTo: siteUrl("/auth/callback") },
+    });
+    if (error) {
+      setPending(null);
+      setError("Could not start sign-in with this provider. Please try again or use email.");
+    }
+  }
+
   return (
-    <div className={layout === "grid" ? "grid grid-cols-1 gap-sm sm:grid-cols-2" : "space-y-3"}>
-      <button type="button" className={buttonClass}>
-        <GoogleLogo />
-        <span className="font-semibold">{verb} with Google</span>
-      </button>
-      <button type="button" className={buttonClass}>
-        <FacebookLogo />
-        <span className="font-semibold">{verb} with Facebook</span>
-      </button>
+    <div>
+      <div className={layout === "grid" ? "grid grid-cols-1 gap-sm sm:grid-cols-2" : "space-y-3"}>
+        <button
+          type="button"
+          className={buttonClass}
+          disabled={pending !== null}
+          onClick={() => signIn("google")}
+        >
+          <GoogleLogo />
+          <span className="font-semibold">{verb} with Google</span>
+        </button>
+        <button
+          type="button"
+          className={buttonClass}
+          disabled={pending !== null}
+          onClick={() => signIn("facebook")}
+        >
+          <FacebookLogo />
+          <span className="font-semibold">{verb} with Facebook</span>
+        </button>
+      </div>
+      {error ? (
+        <p role="alert" className="mt-sm text-body-xs text-error">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }

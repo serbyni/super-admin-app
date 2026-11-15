@@ -59,6 +59,22 @@ Extra tokens: icon sizes `text-icon-xs…3xl`, small text `text-caption` / `text
 
 Auth UI building blocks are in `src/components/auth/`: `AuthShell`, `TextField`, `SelectField`, `PasswordField`, `SocialButtons`, `OrDivider`, and `StaticForm` (blocks submit until auth is implemented).
 
+## Auth & database
+
+Auth is **Supabase Auth** (email + password, Google, Facebook). Owner applications live in the private `platform` schema (`platform.owner_accounts`). A trigger on `auth.users` creates them; clients only use the RPCs `get_my_owner_status()` and `complete_owner_profile(...)`. Migrations are in `supabase/migrations/` and are applied to the Supabase project with the same version numbers.
+
+Owner status flow: `email_unverified` → (email link) → `pending_approval` → `approved` / `rejected`. Google/Facebook sign-ups start at `profile_incomplete` and must complete `/register/complete`.
+
+### Environment variables
+
+| Name                                   | Where                           | Value                                                             |
+| -------------------------------------- | ------------------------------- | ----------------------------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`             | `.env.local`, Vercel (all envs) | Supabase project URL                                              |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | `.env.local`, Vercel (all envs) | Supabase **publishable** key (`sb_publishable_…`)                 |
+| `NEXT_PUBLIC_SITE_URL`                 | `.env.local`, Vercel            | `http://localhost:3000` locally, `https://dev.serbi.me` on Vercel |
+
+Copy `.env.example` to `.env.local` for local development.
+
 ## Development
 
 ```bash

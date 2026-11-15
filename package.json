@@ -11,17 +11,22 @@
     "format:check": "prettier --check .",
     "typecheck": "next typegen && tsc --noEmit",
     "tokens:palettes": "tsx scripts/generate-palettes.mjs",
-    "lint:tokens": "node scripts/check-arbitrary-values.mjs"
+    "lint:tokens": "node scripts/check-arbitrary-values.mjs",
+    "test": "vitest run"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.119.0",
     "next": "16.4.6",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "server-only": "^0.0.1",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@material/material-color-utilities": "^0.4.0",
     "@tailwindcss/turbopack": "4.3.3",
-    "@types/node": "^20",
+    "@types/node": "^24.19.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
@@ -31,7 +36,8 @@
     "prettier-plugin-tailwindcss": "^0.8.1",
     "tailwindcss": "4.3.3",
     "tsx": "^4.23.15",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^5.1.0"
   },
   "engines": {
     "node": ">=24"
