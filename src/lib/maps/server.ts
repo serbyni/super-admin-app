@@ -5,7 +5,7 @@ import { googleProvider } from "./providers/google";
 import { rateLimit } from "./rate-limit";
 import type { MapsProvider } from "./types";
 
-export { STATIC_MAP } from "./types";
+export { NEARBY_MIN_ZOOM, STATIC_MAP, TILE_ZOOM } from "./types";
 
 /**
  * Active provider from server-only env (never NEXT_PUBLIC_):
@@ -29,9 +29,15 @@ export function mapsConfigured(): boolean {
 }
 
 /** Public info the browser may know (no keys). */
-export function mapsClientConfig(): { enabled: boolean; attribution?: string } {
+export function mapsClientConfig(): {
+  enabled: boolean;
+  interactive: boolean;
+  attribution?: string;
+} {
   const p = mapsProvider();
-  return p ? { enabled: true, attribution: p.attribution } : { enabled: false };
+  return p
+    ? { enabled: true, interactive: p.interactive, attribution: p.attribution }
+    : { enabled: false, interactive: false };
 }
 
 /**

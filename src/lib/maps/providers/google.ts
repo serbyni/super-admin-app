@@ -104,6 +104,7 @@ async function staticMap(lat: number, lng: number, zoom: number, marker: boolean
 
 export const googleProvider: MapsProvider = {
   name: "google",
+  interactive: false, // map tiles need the Map Tiles API session flow; static map is used
   attribution: "Map data © Google",
   autocomplete: placesAutocomplete,
   details: placeDetails,

@@ -2,8 +2,10 @@ import "server-only";
 import { roundCoord, type BusinessLocation } from "@/lib/location/address";
 import {
   STATIC_MAP,
+  type BBox,
   type Language,
   type MapsProvider,
+  type NearbyPlace,
   type ReverseAddress,
   type Suggestion,
 } from "../types";
@@ -62,8 +64,28 @@ async function get(url: URL): Promise<{ results?: GeoResult[] }> {
   return (await res.json()) as { results?: GeoResult[] };
 }
 
+/** Geoapify Places categories shown on the map, with the Material Symbol used for each. */
+const NEARBY_CATEGORIES: [category: string, icon: string][] = [
+  ["catering.cafe", "local_cafe"],
+  ["catering.restaurant", "restaurant"],
+  ["catering.fast_food", "fastfood"],
+  ["catering.ice_cream", "icecream"],
+  ["catering.bar", "local_bar"],
+  ["catering.pub", "sports_bar"],
+  ["commercial.food_and_drink.bakery", "bakery_dining"],
+  ["commercial.food_and_drink.coffee_and_tea", "coffee"],
+];
+
+type PlacesFeature = { properties: GeoResult & { categories?: string[] } };
+
+function iconFor(categories: string[] | undefined): string {
+  for (const [cat, icon] of NEARBY_CATEGORIES) if (categories?.includes(cat)) return icon;
+  return "storefront";
+}
+
 export const geoapifyProvider: MapsProvider = {
   name: "geoapify",
+  interactive: true,
   attribution: "© OpenStreetMap contributors · Powered by Geoapify",
 
   async autocomplete(
@@ -114,5 +136,34 @@ export const geoapifyProvider: MapsProvider = {
     if (marker) url.searchParams.set("marker", `lonlat:${lng},${lat};color:#6f4e37;size:medium`);
     url.searchParams.set("apiKey", key());
     return fetch(url, { cache: "no-store" });
+  },
+
+  async tile(z: number, x: number, y: number, retina: boolean): Promise<Response> {
+    const url = new URL(
+      `https://maps.geoapify.com/v1/tile/osm-bright/${z}/${x}/${y}${retina ? "@2x" : ""}.png`,
+    );
+    url.searchParams.set("apiKey", key());
+    return fetch(url, { cache: "no-store" });
+  },
+
+  async nearby(bbox: BBox, language: Language): Promise<NearbyPlace[]> {
+    const url = new URL("https://api.geoapify.com/v2/places");
+    url.searchParams.set("categories", NEARBY_CATEGORIES.map(([c]) => c).join(","));
+    url.searchParams.set("filter", `rect:${bbox.west},${bbox.south},${bbox.east},${bbox.north}`);
+    url.searchParams.set("limit", "60");
+    url.searchParams.set("lang", language);
+    url.searchParams.set("apiKey", key());
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) throw new Error(`geoapify places ${res.status}`);
+    const data = (await res.json()) as { features?: PlacesFeature[] };
+    return (data.features ?? [])
+      .map((f) => f.properties)
+      .filter((p) => p.name)
+      .map((p) => ({
+        id: p.place_id,
+        name: p.name!,
+        icon: iconFor(p.categories),
+        place: toPlace(p),
+      }));
   },
 };

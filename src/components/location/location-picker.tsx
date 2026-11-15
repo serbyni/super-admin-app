@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useId, useRef, useState, type MouseEvent } from "react";
 import { FieldError, FieldLabel, TextField } from "@/components/auth/fields";
 import { Icon } from "@/components/ui/icon";
@@ -12,7 +13,15 @@ type Errors = Partial<
 >;
 
 /** What the server tells the browser about maps — never a key. */
-export type MapsClientConfig = { enabled: boolean; attribution?: string };
+export type MapsClientConfig = { enabled: boolean; interactive: boolean; attribution?: string };
+
+/** Leaflet needs `window`: load the interactive map in the browser only. */
+const InteractiveMap = dynamic(() => import("./interactive-map"), {
+  ssr: false,
+  loading: () => (
+    <div className="aspect-4/3 w-full animate-pulse rounded-lg bg-surface-container sm:aspect-map" />
+  ),
+});
 
 type Props = {
   initial?: Partial<BusinessLocation>;
@@ -100,11 +109,20 @@ export function LocationPicker({ initial, errors = {}, maps }: Props) {
       {mapsEnabled ? (
         <>
           <PlaceSearch onPlace={update} error={errors.location} />
-          <StaticMapPicker
-            loc={loc}
-            attribution={maps.attribution}
-            onPick={(lat, lng) => void locate(lat, lng, "map_pin")}
-          />
+          {maps.interactive ? (
+            <InteractiveMap
+              loc={loc}
+              attribution={maps.attribution}
+              onPick={(lat, lng) => void locate(lat, lng, "map_pin")}
+              onSelectPlace={update}
+            />
+          ) : (
+            <StaticMapPicker
+              loc={loc}
+              attribution={maps.attribution}
+              onPick={(lat, lng) => void locate(lat, lng, "map_pin")}
+            />
+          )}
           <ManualCoordinates
             loc={loc}
             errors={errors}
