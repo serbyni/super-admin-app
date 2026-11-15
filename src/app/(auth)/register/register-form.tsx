@@ -12,7 +12,13 @@ import { initialLocation } from "@/lib/location/initial";
 import type { BusinessType } from "@/lib/business-types/schema";
 import { registerOwner, type FormState } from "./actions";
 
-export function RegisterForm({ businessTypes }: { businessTypes: BusinessType[] }) {
+export function RegisterForm({
+  businessTypes,
+  mapsEnabled,
+}: {
+  businessTypes: BusinessType[];
+  mapsEnabled: boolean;
+}) {
   const [state, action] = useActionState<FormState, FormData>(registerOwner, {});
   const [password, setPassword] = useState("");
   const errors = state.errors ?? {};
@@ -27,6 +33,7 @@ export function RegisterForm({ businessTypes }: { businessTypes: BusinessType[] 
         withEmail
       />
       <LocationPicker
+        mapsEnabled={mapsEnabled}
         key={state.values?.location ?? ""}
         initial={initialLocation(state.values)}
         errors={errors}

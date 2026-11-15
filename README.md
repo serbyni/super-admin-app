@@ -78,15 +78,18 @@ Copy `.env.example` to `.env.local` for local development.
 
 ### Business location (register)
 
-The register and complete-profile forms collect the business location with **Google Maps** (`@vis.gl/react-google-maps`):
+The register and complete-profile forms collect the business location with Google Maps. **No Google key is ever sent to the browser.** All Google calls go through our server routes, which use the server-only `GOOGLE_MAPS_SERVER_KEY`:
 
-- **Places search:** Places API (New) autocomplete with session tokens.
-- **Map preview:** click the map or drag the pin. Reverse geocoding (Geocoding API) fills in the address.
-- **Typed latitude and longitude:** for places not on Google Maps.
+| Browser calls                   | Server calls Google                                    |
+| ------------------------------- | ------------------------------------------------------ |
+| `POST /api/places/autocomplete` | Places API (New) autocomplete (session tokens)         |
+| `GET /api/places/details`       | Places API (New) place details                         |
+| `GET /api/geocode/reverse`      | Geocoding API (address for a pin or typed coordinates) |
+| `GET /api/maps/static`          | Maps Static API (map image, cached 1 day)              |
 
-Street, postal code and city are editable. Stored on `platform.owner_accounts`: `latitude`, `longitude`, `place_id`, `formatted_address`, `street`, `postal_code`, `city`, `region`, `country`, `country_code`, `location_source` (`google_place` | `map_pin` | `coordinates`).
+Every route checks that the request comes from the same site, validates its input (zod), and is rate-limited per IP (in memory; move to a shared store when running several instances). The map is a static image: **click to move the pin**, use + / − to zoom; the coordinates come from Web-Mercator math (`src/lib/location/mercator.ts`). Owners can also type latitude/longitude. Street, postal code and city are editable.
 
-Env: `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` (browser key restricted to your domains; enable Maps JavaScript API, Places API (New) and Geocoding API) and optionally `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID` (draggable Advanced Marker). Without a key the form shows manual coordinates and address fields.
+Stored on `platform.owner_accounts`: `latitude`, `longitude`, `place_id`, `formatted_address`, `street`, `postal_code`, `city`, `region`, `country`, `country_code`, `location_source` (`google_place` | `map_pin` | `coordinates`). Without the server key the form shows manual coordinates and address fields.
 
 ### Super admins
 

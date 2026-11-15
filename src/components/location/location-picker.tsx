@@ -1,37 +1,68 @@
 "use client";
 
-import {
-  APIProvider,
-  AdvancedMarker,
-  Map,
-  Marker,
-  useMap,
-  useMapsLibrary,
-  type MapMouseEvent,
-} from "@vis.gl/react-google-maps";
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState, type MouseEvent } from "react";
 import { FieldError, FieldLabel, TextField } from "@/components/auth/fields";
 import { Icon } from "@/components/ui/icon";
 import { DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM, PLACE_ZOOM } from "@/config/maps";
-import { mapsEnv } from "@/lib/env";
-import { parseAddressComponents, roundCoord, type BusinessLocation } from "@/lib/location/address";
+import { roundCoord, type BusinessLocation } from "@/lib/location/address";
+import { pointAtOffset } from "@/lib/location/mercator";
 
 type Errors = Partial<
   Record<"location" | "street" | "postal_code" | "city" | "country_code", string>
 >;
 
-type Props = { initial?: Partial<BusinessLocation>; errors?: Errors };
+type Props = {
+  initial?: Partial<BusinessLocation>;
+  errors?: Errors;
+  /** True when the server has a Google Maps key (all Google calls go through our /api routes). */
+  mapsEnabled: boolean;
+};
+
+/** Logical size of /api/maps/static images (must match STATIC_MAP on the server). */
+const MAP_W = 640;
+const MIN_ZOOM = 3;
+const MAX_ZOOM = 20;
+
+type Address = Partial<
+  Pick<
+    BusinessLocation,
+    "formatted_address" | "street" | "postal_code" | "city" | "region" | "country" | "country_code"
+  >
+>;
+
+async function getJson<T>(url: string, init?: RequestInit): Promise<T | null> {
+  try {
+    const res = await fetch(url, init);
+    return res.ok ? ((await res.json()) as T) : null;
+  } catch {
+    return null;
+  }
+}
 
 /**
- * Business location: Google Places search + map preview with a draggable pin, or typed
- * coordinates. Submits `location` (JSON) plus editable `street`, `postal_code`, `city`.
+ * Business location: Google Places search, a static map you click to move the pin, or typed
+ * coordinates. No Google key reaches the browser — everything goes through our /api proxies.
+ * Submits `location` (JSON) plus editable `street`, `postal_code`, `city`.
  */
-export function LocationPicker({ initial, errors = {} }: Props) {
-  const { apiKey, mapId } = mapsEnv();
+export function LocationPicker({ initial, errors = {}, mapsEnabled }: Props) {
   const [loc, setLoc] = useState<Partial<BusinessLocation>>(initial ?? {});
   const update = useCallback(
     (next: Partial<BusinessLocation>) => setLoc((prev) => ({ ...prev, ...next })),
     [],
+  );
+
+  /** Move the pin and (when maps are enabled) look up the address for it. */
+  const locate = useCallback(
+    async (lat: number, lng: number, source: BusinessLocation["source"]) => {
+      const point = { lat: roundCoord(lat), lng: roundCoord(lng) };
+      update({ ...point, source, place_id: undefined, formatted_address: undefined });
+      if (!mapsEnabled) return;
+      const data = await getJson<{ address: Address | null }>(
+        `/api/geocode/reverse?lat=${point.lat}&lng=${point.lng}`,
+      );
+      if (data?.address) update(data.address);
+    },
+    [mapsEnabled, update],
   );
 
   return (
@@ -49,139 +80,30 @@ export function LocationPicker({ initial, errors = {} }: Props) {
         </div>
       </div>
       <input type="hidden" name="location" value={JSON.stringify(loc)} />
-      {apiKey ? (
-        <APIProvider apiKey={apiKey} libraries={["places", "geocoding", "marker"]}>
-          <MapsLocation loc={loc} update={update} mapId={mapId} errors={errors} />
-        </APIProvider>
+
+      {mapsEnabled ? (
+        <>
+          <PlaceSearch onPlace={update} error={errors.location} />
+          <StaticMapPicker loc={loc} onPick={(lat, lng) => void locate(lat, lng, "map_pin")} />
+          <ManualCoordinates
+            loc={loc}
+            errors={errors}
+            onSet={(lat, lng) => void locate(lat, lng, "coordinates")}
+          />
+        </>
       ) : (
-        <ManualCoordinates loc={loc} update={update} errors={errors} withCountry />
+        <ManualCoordinates loc={loc} errors={errors} update={update} withCountry />
       )}
+
       <AddressFields loc={loc} update={update} errors={errors} />
     </fieldset>
   );
 }
 
-/* ── With Google Maps ─────────────────────────────────────────────────────── */
+/* ── Search (Places API (New) via /api/places/*) ──────────────────────────── */
 
-function MapsLocation({
-  loc,
-  update,
-  mapId,
-  errors,
-}: {
-  loc: Partial<BusinessLocation>;
-  update: (l: Partial<BusinessLocation>) => void;
-  mapId?: string;
-  errors: Errors;
-}) {
-  const geocodingLib = useMapsLibrary("geocoding");
-  const geocoder = useMemo(
-    () => (geocodingLib ? new geocodingLib.Geocoder() : null),
-    [geocodingLib],
-  );
-  const hasPin = typeof loc.lat === "number" && typeof loc.lng === "number";
+type Suggestion = { placeId: string; main: string; secondary?: string };
 
-  /** Reverse-geocode a point and fill the address (keeps the chosen source). */
-  const locate = useCallback(
-    async (lat: number, lng: number, source: BusinessLocation["source"]) => {
-      const point = { lat: roundCoord(lat), lng: roundCoord(lng) };
-      update({ ...point, source, place_id: undefined });
-      if (!geocoder) return;
-      try {
-        const { results } = await geocoder.geocode({ location: point });
-        const best = results[0];
-        if (best) {
-          update({
-            ...parseAddressComponents(best.address_components),
-            formatted_address: best.formatted_address,
-          });
-        }
-      } catch {
-        /* keep coordinates; the owner can type the address */
-      }
-    },
-    [geocoder, update],
-  );
-
-  const onMapClick = useCallback(
-    (e: MapMouseEvent) => {
-      const p = e.detail.latLng;
-      if (p) void locate(p.lat, p.lng, "map_pin");
-    },
-    [locate],
-  );
-
-  const onDragEnd = useCallback(
-    (e: google.maps.MapMouseEvent) => {
-      const p = e.latLng;
-      if (p) void locate(p.lat(), p.lng(), "map_pin");
-    },
-    [locate],
-  );
-
-  const position = hasPin ? { lat: loc.lat!, lng: loc.lng! } : null;
-
-  return (
-    <>
-      <PlaceSearch onPlace={(place) => update(place)} error={errors.location} />
-      <div className="overflow-hidden rounded-lg shadow-sm">
-        <Map
-          className="h-72 w-full"
-          defaultCenter={position ?? DEFAULT_MAP_CENTER}
-          defaultZoom={position ? PLACE_ZOOM : DEFAULT_MAP_ZOOM}
-          mapId={mapId}
-          gestureHandling="cooperative"
-          streetViewControl={false}
-          mapTypeControl={false}
-          fullscreenControl={false}
-          onClick={onMapClick}
-        >
-          <FollowPin position={position} />
-          {position ? (
-            mapId ? (
-              <AdvancedMarker
-                position={position}
-                draggable
-                onDragEnd={onDragEnd}
-                title="Your business"
-              />
-            ) : (
-              <Marker position={position} draggable onDragEnd={onDragEnd} title="Your business" />
-            )
-          ) : null}
-        </Map>
-      </div>
-      <p className="flex items-start gap-xs text-caption text-on-surface-variant">
-        <Icon name="touch_app" className="text-icon-sm" />
-        Not on Google Maps? Click the map or drag the pin to your entrance, or enter coordinates
-        below.
-      </p>
-      <ManualCoordinates
-        loc={loc}
-        update={update}
-        errors={errors}
-        onSet={(lat, lng) => locate(lat, lng, "coordinates")}
-      />
-    </>
-  );
-}
-
-/** Pans/zooms the map when the pin moves from outside the map (search or typed coordinates). */
-function FollowPin({ position }: { position: { lat: number; lng: number } | null }) {
-  const map = useMap();
-  const last = useRef<string>("");
-  useEffect(() => {
-    if (!map || !position) return;
-    const key = `${position.lat},${position.lng}`;
-    if (key === last.current) return;
-    last.current = key;
-    map.panTo(position);
-    if ((map.getZoom() ?? 0) < PLACE_ZOOM - 2) map.setZoom(PLACE_ZOOM);
-  }, [map, position]);
-  return null;
-}
-
-/** Places API (New) autocomplete with session tokens (billing-friendly). */
 function PlaceSearch({
   onPlace,
   error,
@@ -189,58 +111,42 @@ function PlaceSearch({
   onPlace: (place: Partial<BusinessLocation>) => void;
   error?: string;
 }) {
-  const places = useMapsLibrary("places");
   const listId = useId();
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
-  const [suggestions, setSuggestions] = useState<google.maps.places.PlacePrediction[]>([]);
-  const token = useRef<google.maps.places.AutocompleteSessionToken | null>(null);
-
-  const searchable = !!places && query.trim().length >= 3;
-  const visible = searchable ? suggestions : [];
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [busy, setBusy] = useState(false);
+  const token = useRef<string | null>(null);
+  const visible = query.trim().length >= 3 ? suggestions : [];
 
   useEffect(() => {
-    if (!places || query.trim().length < 3) return;
-    token.current ??= new places.AutocompleteSessionToken();
+    const input = query.trim();
+    if (input.length < 3) return;
+    token.current ??= crypto.randomUUID(); // one billing session per selection
+    const sessionToken = token.current;
     const handle = setTimeout(async () => {
-      try {
-        const { suggestions: s } = await places.AutocompleteSuggestion.fetchAutocompleteSuggestions(
-          {
-            input: query,
-            sessionToken: token.current!,
-          },
-        );
-        setSuggestions(
-          s
-            .map((x) => x.placePrediction)
-            .filter((p): p is google.maps.places.PlacePrediction => !!p),
-        );
-        setOpen(true);
-      } catch {
-        setSuggestions([]);
-      }
-    }, 250);
+      const data = await getJson<{ suggestions: Suggestion[] }>("/api/places/autocomplete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ input, sessionToken }),
+      });
+      setSuggestions(data?.suggestions ?? []);
+      setOpen(true);
+    }, 300);
     return () => clearTimeout(handle);
-  }, [places, query]);
+  }, [query]);
 
-  async function choose(prediction: google.maps.places.PlacePrediction) {
+  async function choose(s: Suggestion) {
     setOpen(false);
-    setQuery(prediction.text.text);
-    const place = prediction.toPlace();
-    await place.fetchFields({
-      fields: ["id", "displayName", "formattedAddress", "addressComponents", "location"],
-    });
-    token.current = null; // session ends after fetchFields
-    const p = place.location;
-    if (!p) return;
-    onPlace({
-      source: "google_place",
-      place_id: place.id,
-      formatted_address: place.formattedAddress ?? undefined,
-      lat: roundCoord(p.lat()),
-      lng: roundCoord(p.lng()),
-      ...parseAddressComponents(place.addressComponents),
-    });
+    setQuery(s.secondary ? `${s.main}, ${s.secondary}` : s.main);
+    if (!token.current) return;
+    setBusy(true);
+    const data = await getJson<{ place: BusinessLocation }>(
+      `/api/places/details?placeId=${encodeURIComponent(s.placeId)}&sessionToken=${token.current}`,
+    );
+    token.current = null; // session ends with the details call
+    setBusy(false);
+    if (data?.place) onPlace(data.place);
   }
 
   return (
@@ -250,8 +156,8 @@ function PlaceSearch({
       </FieldLabel>
       <div className="relative flex items-center">
         <Icon
-          name="search"
-          className="pointer-events-none absolute start-3.5 text-icon-lg text-on-surface-variant"
+          name={busy ? "progress_activity" : "search"}
+          className={`pointer-events-none absolute start-3.5 text-icon-lg text-on-surface-variant ${busy ? "animate-spin" : ""}`}
         />
         <input
           id="placeSearch"
@@ -287,12 +193,12 @@ function PlaceSearch({
               >
                 <Icon name="location_on" className="mt-0.5 text-icon-md text-primary" />
                 <span>
-                  <span className="block text-body-sm font-semibold text-on-surface">
-                    {s.mainText?.text ?? s.text.text}
-                  </span>
-                  <span className="block text-caption text-on-surface-variant">
-                    {s.secondaryText?.text}
-                  </span>
+                  <span className="block text-body-sm font-semibold text-on-surface">{s.main}</span>
+                  {s.secondary ? (
+                    <span className="block text-caption text-on-surface-variant">
+                      {s.secondary}
+                    </span>
+                  ) : null}
                 </span>
               </button>
             </li>
@@ -304,37 +210,133 @@ function PlaceSearch({
   );
 }
 
-/* ── Coordinates (fallback, and "not on Google Maps") ─────────────────────── */
+/* ── Map (Google Static Maps via /api/maps/static; click to move the pin) ─── */
+
+function StaticMapPicker({
+  loc,
+  onPick,
+}: {
+  loc: Partial<BusinessLocation>;
+  onPick: (lat: number, lng: number) => void;
+}) {
+  const hasPin = typeof loc.lat === "number" && typeof loc.lng === "number";
+  const center = hasPin ? { lat: loc.lat!, lng: loc.lng! } : DEFAULT_MAP_CENTER;
+  const [zoom, setZoom] = useState(hasPin ? PLACE_ZOOM : DEFAULT_MAP_ZOOM);
+  const [pinned, setPinned] = useState(hasPin);
+  const [loading, setLoading] = useState(true);
+
+  // Zoom in when a pin appears (search result, typed coordinates).
+  if (hasPin && !pinned) {
+    setPinned(true);
+    setZoom(PLACE_ZOOM);
+  }
+
+  const src = `/api/maps/static?lat=${center.lat}&lng=${center.lng}&zoom=${zoom}&marker=${hasPin ? 1 : 0}`;
+
+  function onClick(e: MouseEvent<HTMLButtonElement>) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const ratio = MAP_W / rect.width; // displayed px → map logical px
+    const dx = (e.clientX - rect.left - rect.width / 2) * ratio;
+    const dy = (e.clientY - rect.top - rect.height / 2) * ratio;
+    const p = pointAtOffset(center, zoom, dx, dy);
+    setLoading(true);
+    onPick(p.lat, p.lng);
+  }
+
+  return (
+    <div className="flex flex-col gap-xs">
+      <div className="relative overflow-hidden rounded-lg bg-surface-container shadow-sm">
+        <button
+          type="button"
+          onClick={onClick}
+          aria-label="Map — click to place your business pin"
+          className="block aspect-map w-full cursor-crosshair"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element -- proxied Google Static Map, not a static asset */}
+          <img
+            key={src}
+            src={src}
+            alt={hasPin ? "Map of your business location" : "Map — click to place your business"}
+            className={`h-full w-full object-cover transition-opacity ${loading ? "opacity-60" : "opacity-100"}`}
+            onLoad={() => setLoading(false)}
+            onError={() => setLoading(false)}
+            draggable={false}
+          />
+        </button>
+        <div className="absolute end-sm top-sm flex flex-col overflow-hidden rounded-lg bg-surface-container-lowest/95 shadow-md">
+          <button
+            type="button"
+            onClick={() => {
+              setLoading(true);
+              setZoom((z) => Math.min(MAX_ZOOM, z + 1));
+            }}
+            disabled={zoom >= MAX_ZOOM}
+            aria-label="Zoom in"
+            className="flex h-9 w-9 items-center justify-center text-on-surface hover:bg-surface-container disabled:opacity-40"
+          >
+            <Icon name="add" className="text-icon-lg" />
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setLoading(true);
+              setZoom((z) => Math.max(MIN_ZOOM, z - 1));
+            }}
+            disabled={zoom <= MIN_ZOOM}
+            aria-label="Zoom out"
+            className="flex h-9 w-9 items-center justify-center border-t border-surface-container-high text-on-surface hover:bg-surface-container disabled:opacity-40"
+          >
+            <Icon name="remove" className="text-icon-lg" />
+          </button>
+        </div>
+        {!hasPin ? (
+          <div className="pointer-events-none absolute inset-x-0 bottom-sm flex justify-center">
+            <span className="rounded-full bg-surface-container-lowest/95 px-md py-xs text-caption font-semibold text-on-surface shadow-sm">
+              Search above or click the map to place your pin
+            </span>
+          </div>
+        ) : null}
+      </div>
+      <p className="flex items-start gap-xs text-caption text-on-surface-variant">
+        <Icon name="touch_app" className="text-icon-sm" />
+        Pin in the wrong place? Click the exact spot on the map — it re-centres on your pin. Use + /
+        − to zoom.
+      </p>
+    </div>
+  );
+}
+
+/* ── Coordinates ──────────────────────────────────────────────────────────── */
 
 function ManualCoordinates({
   loc,
-  update,
   errors,
   onSet,
+  update,
   withCountry = false,
 }: {
   loc: Partial<BusinessLocation>;
-  update: (l: Partial<BusinessLocation>) => void;
   errors: Errors;
   onSet?: (lat: number, lng: number) => void;
+  update?: (l: Partial<BusinessLocation>) => void;
   withCountry?: boolean;
 }) {
   const [lat, setLat] = useState(loc.lat?.toString() ?? "");
   const [lng, setLng] = useState(loc.lng?.toString() ?? "");
-  const valid =
-    lat.trim() !== "" &&
-    lng.trim() !== "" &&
-    Math.abs(Number(lat)) <= 90 &&
-    Math.abs(Number(lng)) <= 180 &&
-    !Number.isNaN(Number(lat)) &&
-    !Number.isNaN(Number(lng));
+  const la = Number(lat);
+  const lo = Number(lng);
+  const valid = lat.trim() !== "" && lng.trim() !== "" && Math.abs(la) <= 90 && Math.abs(lo) <= 180;
 
   function apply() {
     if (!valid) return;
-    const la = roundCoord(Number(lat));
-    const lo = roundCoord(Number(lng));
     if (onSet) onSet(la, lo);
-    else update({ lat: la, lng: lo, source: "coordinates", place_id: undefined });
+    else
+      update?.({
+        lat: roundCoord(la),
+        lng: roundCoord(lo),
+        source: "coordinates",
+        place_id: undefined,
+      });
   }
 
   const body = (
@@ -348,7 +350,7 @@ function ManualCoordinates({
           placeholder="36.8065"
           value={lat}
           onChange={(e) => setLat(e.target.value)}
-          onBlur={!onSet ? apply : undefined}
+          onBlur={onSet ? undefined : apply}
         />
         <TextField
           id="lngInput"
@@ -358,7 +360,7 @@ function ManualCoordinates({
           placeholder="10.1815"
           value={lng}
           onChange={(e) => setLng(e.target.value)}
-          onBlur={!onSet ? apply : undefined}
+          onBlur={onSet ? undefined : apply}
         />
         {onSet ? (
           <div className="flex items-end">
@@ -383,18 +385,18 @@ function ManualCoordinates({
           maxLength={2}
           required
           value={loc.country_code ?? ""}
-          onChange={(e) => update({ country_code: e.target.value.toUpperCase() })}
+          onChange={(e) => update?.({ country_code: e.target.value.toUpperCase() })}
           error={errors.country_code}
         />
       ) : null}
-      {!onSet ? <FieldError id="latInput" message={errors.location} /> : null}
+      {onSet ? null : <FieldError id="latInput" message={errors.location} />}
     </div>
   );
 
   return onSet ? (
     <details className="rounded-lg bg-surface-container-lowest p-sm">
       <summary className="cursor-pointer text-body-sm font-semibold text-primary">
-        Enter coordinates instead
+        Not on Google Maps? Enter coordinates
       </summary>
       <div className="pt-sm">{body}</div>
     </details>

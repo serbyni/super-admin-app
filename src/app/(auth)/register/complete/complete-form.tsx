@@ -13,9 +13,11 @@ import { completeOwnerProfile, type FormState } from "../actions";
 export function CompleteProfileForm({
   defaults,
   businessTypes,
+  mapsEnabled,
 }: {
   defaults: Record<string, string>;
   businessTypes: BusinessType[];
+  mapsEnabled: boolean;
 }) {
   const [state, action] = useActionState<FormState, FormData>(completeOwnerProfile, {});
   const errors = state.errors ?? {};
@@ -28,6 +30,7 @@ export function CompleteProfileForm({
         values={state.values ?? defaults}
       />
       <LocationPicker
+        mapsEnabled={mapsEnabled}
         key={state.values?.location ?? ""}
         initial={initialLocation(state.values)}
         errors={errors}

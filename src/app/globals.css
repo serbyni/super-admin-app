@@ -202,6 +202,9 @@
   --shadow-card-warm: 0 12px 40px rgb(85 55 34 / 0.08);
   --shadow-button-warm: 0 4px 16px rgb(85 55 34 / 0.2);
 
+  /* Aspect ratios — aspect-map matches the 640×320 static map */
+  --aspect-map: 2 / 1;
+
   /* Third-party brand colors */
   --color-facebook: #1877f2;
 
