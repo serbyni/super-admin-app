@@ -1,17 +1,22 @@
 import { SelectField, TextField } from "./fields";
 import type { FieldErrors } from "@/lib/auth/register-schema";
+import { localizedName, type BusinessType } from "@/lib/business-types/schema";
 
-const businessTypes = [
-  { value: "cafe", label: "Café / coffee shop" },
-  { value: "restaurant", label: "Restaurant" },
-  { value: "bakery", label: "Bakery" },
-  { value: "other", label: "Other" },
-];
-
-type Props = { errors?: FieldErrors; values?: Record<string, string>; withEmail?: boolean };
+type Props = {
+  businessTypes: BusinessType[];
+  errors?: FieldErrors;
+  values?: Record<string, string>;
+  withEmail?: boolean;
+};
 
 /** Owner + business details, shared by email sign-up and the social "complete profile" step. */
-export function BusinessFields({ errors = {}, values = {}, withEmail = false }: Props) {
+export function BusinessFields({
+  businessTypes,
+  errors = {},
+  values = {},
+  withEmail = false,
+}: Props) {
+  const options = businessTypes.map((t) => ({ value: t.slug, label: localizedName(t.name) }));
   return (
     <>
       <div className="grid grid-cols-1 gap-md sm:grid-cols-2">
@@ -67,7 +72,7 @@ export function BusinessFields({ errors = {}, values = {}, withEmail = false }: 
           label="Business type"
           icon="restaurant"
           placeholder="Select type"
-          options={businessTypes}
+          options={options}
           required
           defaultValue={values.businessType}
           error={errors.businessType}

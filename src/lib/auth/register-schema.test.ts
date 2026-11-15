@@ -44,8 +44,8 @@ describe("registerSchema", () => {
     expect(fieldErrors(r.error!).terms).toMatch(/accept/);
   });
 
-  it("rejects unknown business types", () => {
-    const r = registerSchema.safeParse({ ...valid, businessType: "bar" });
+  it("rejects malformed business types", () => {
+    const r = registerSchema.safeParse({ ...valid, businessType: "Not A Slug" });
     expect(fieldErrors(r.error!).businessType).toBeDefined();
   });
 });

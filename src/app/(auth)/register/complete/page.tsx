@@ -5,6 +5,7 @@ import { AuthShell } from "@/components/auth/auth-shell";
 import { Icon } from "@/components/ui/icon";
 import { pathForStatus } from "@/lib/auth/owner-status";
 import { getOwnerSession } from "@/lib/auth/session";
+import { getActiveBusinessTypes } from "@/lib/business-types/data";
 import { CompleteProfileForm } from "./complete-form";
 
 export const metadata: Metadata = { title: "Complete your profile" };
@@ -26,7 +27,10 @@ async function Form() {
         Signed in as <strong className="text-on-surface">{user.email}</strong>. Tell us about your
         business so the Serbi team can review your application.
       </p>
-      <CompleteProfileForm defaults={{ fullName: name }} />
+      <CompleteProfileForm
+        defaults={{ fullName: name }}
+        businessTypes={await getActiveBusinessTypes()}
+      />
     </>
   );
 }

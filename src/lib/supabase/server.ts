@@ -1,10 +1,14 @@
 import "server-only";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { connection } from "next/server";
 import { publicEnv } from "@/lib/env";
 
 /** Supabase client for Server Components, Server Actions and Route Handlers (user's session). */
 export async function createClient() {
+  // Request-time only: the Supabase auth client reads the clock (Date.now()) on init, which
+  // Cache Components forbid during prerendering.
+  await connection();
   const env = publicEnv();
   const cookieStore = await cookies();
   return createServerClient(

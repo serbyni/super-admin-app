@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import { AuthShell } from "@/components/auth/auth-shell";
-import { TextField } from "@/components/auth/fields";
-import { PasswordField } from "@/components/auth/password-field";
 import { OrDivider, SocialButtons } from "@/components/auth/social-buttons";
-import { StaticForm } from "@/components/auth/static-form";
 import { Icon } from "@/components/ui/icon";
+import { LoginForm } from "./login-form";
 
 export const metadata: Metadata = { title: "Login" };
 
@@ -39,49 +38,9 @@ export default function LoginPage() {
             </div>
             <OrDivider label="or sign in with email" />
 
-            <StaticForm className="space-y-4">
-              <TextField
-                id="email"
-                label="Email address"
-                icon="mail"
-                type="email"
-                autoComplete="email"
-                placeholder="owner@yourcafe.com"
-                required
-              />
-              <PasswordField
-                id="password"
-                label="Password"
-                autoComplete="current-password"
-                placeholder="••••••••••"
-                required
-              />
-              <div className="flex flex-col justify-between gap-2 pt-1 sm:flex-row sm:items-center">
-                <label className="group flex cursor-pointer items-center gap-2 select-none">
-                  <input
-                    type="checkbox"
-                    name="remember"
-                    className="h-4 w-4 cursor-pointer rounded accent-primary-container"
-                  />
-                  <span className="text-sm text-on-surface-variant transition-colors group-hover:text-on-surface">
-                    Remember this device for 30 days
-                  </span>
-                </label>
-                <Link
-                  href="/forgot-password"
-                  className="self-start font-label-sm text-label-sm tracking-wide text-primary transition-colors hover:text-primary-container sm:self-auto"
-                >
-                  Forgot password?
-                </Link>
-              </div>
-              <button
-                type="submit"
-                className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3.5 font-semibold tracking-wide text-on-primary shadow-md transition-all duration-200 hover:scale-101 hover:bg-primary-container hover:shadow-lg active:scale-99"
-              >
-                <span>Sign in</span>
-                <Icon name="arrow_forward" className="text-icon-md" flipRtl />
-              </button>
-            </StaticForm>
+            <Suspense fallback={null}>
+              <LoginForm />
+            </Suspense>
 
             <div className="mt-6 flex items-start gap-3 rounded-lg bg-surface-container-low p-3">
               <Icon name="shield" filled className="mt-0.5 shrink-0 text-icon-lg text-tertiary" />

@@ -7,9 +7,10 @@ import { PasswordField } from "@/components/auth/password-field";
 import { PasswordStrengthMeter } from "@/components/auth/password-strength-meter";
 import { SubmitButton } from "@/components/auth/submit-button";
 import { TermsCheckbox } from "@/components/auth/terms-checkbox";
+import type { BusinessType } from "@/lib/business-types/schema";
 import { registerOwner, type FormState } from "./actions";
 
-export function RegisterForm() {
+export function RegisterForm({ businessTypes }: { businessTypes: BusinessType[] }) {
   const [state, action] = useActionState<FormState, FormData>(registerOwner, {});
   const [password, setPassword] = useState("");
   const errors = state.errors ?? {};
@@ -17,7 +18,12 @@ export function RegisterForm() {
   return (
     <form action={action} noValidate className="flex flex-col gap-md">
       <FormAlert message={errors.form} />
-      <BusinessFields errors={errors} values={state.values} withEmail />
+      <BusinessFields
+        businessTypes={businessTypes}
+        errors={errors}
+        values={state.values}
+        withEmail
+      />
       <div className="grid grid-cols-1 gap-md sm:grid-cols-2">
         <PasswordField
           id="password"

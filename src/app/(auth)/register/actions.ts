@@ -9,7 +9,12 @@ import {
   registerSchema,
   type FieldErrors,
 } from "@/lib/auth/register-schema";
+import { getActiveBusinessTypes } from "@/lib/business-types/data";
 import { createClient } from "@/lib/supabase/server";
+
+async function isActiveBusinessType(slug: string): Promise<boolean> {
+  return (await getActiveBusinessTypes()).some((t) => t.slug === slug);
+}
 
 export type FormState = { errors?: FieldErrors; values?: Record<string, string> };
 
@@ -34,6 +39,12 @@ export async function registerOwner(_prev: FormState, formData: FormData): Promi
   if (!parsed.success) return { errors: fieldErrors(parsed.error), values: keepValues(raw) };
 
   const d = parsed.data;
+  if (!(await isActiveBusinessType(d.businessType))) {
+    return {
+      errors: { businessType: "Choose a business type from the list" },
+      values: keepValues(raw),
+    };
+  }
   const supabase = await createClient();
   const { error } = await supabase.auth.signUp({
     email: d.email,
@@ -99,6 +110,12 @@ export async function completeOwnerProfile(
   if (!parsed.success) return { errors: fieldErrors(parsed.error), values: keepValues(raw) };
 
   const d = parsed.data;
+  if (!(await isActiveBusinessType(d.businessType))) {
+    return {
+      errors: { businessType: "Choose a business type from the list" },
+      values: keepValues(raw),
+    };
+  }
   const supabase = await createClient();
   const { error } = await supabase.rpc("complete_owner_profile", {
     p_full_name: d.fullName,

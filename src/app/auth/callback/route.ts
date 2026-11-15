@@ -27,6 +27,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL("/login?error=link_invalid", origin));
   }
 
+  const { data: isAdmin } = await supabase.rpc("is_platform_admin");
+  if (isAdmin === true) return NextResponse.redirect(new URL("/admin", origin));
+
   const { data: status } = await supabase.rpc("get_my_owner_status");
   return NextResponse.redirect(
     new URL(pathForStatus(isOwnerStatus(status) ? status : null), origin),

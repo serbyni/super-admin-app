@@ -10,14 +10,15 @@ Stack: **Next.js 16** (App Router, `cacheComponents`), React 19, TypeScript, Tai
 | Route                     | Page                                                                                         | Status                  |
 | ------------------------- | -------------------------------------------------------------------------------------------- | ----------------------- |
 | `/`                       | Platform home (temporary route map)                                                          | placeholder             |
-| `/login`                  | Login (café owners, platform)                                                                | **UI done** (not wired) |
+| `/login`                  | Email/password + Google/Facebook sign-in; super admins → `/admin`, owners → by status        | **working**             |
 | `/register`               | Café-owner registration → email verification → approval                                      | **UI done** (not wired) |
 | `/forgot-password`        | Password reset request                                                                       | **UI done** (not wired) |
 | `/reset-password/success` | Password updated confirmation                                                                | **UI done**             |
 | `/privacy`, `/terms`      | Legal pages                                                                                  | placeholder             |
 | `/about`                  | About us                                                                                     | placeholder             |
 | `/contact`                | Contact                                                                                      | placeholder             |
-| `/admin`                  | Super-admin console (applications, café directory, plans, aggregated stats)                  | placeholder             |
+| `/admin`                  | Super-admin overview (super admins only)                                                     | **working** (basic)     |
+| `/admin/business`         | Business types CRUD: list, create, edit (EN/FR/AR names, icon, order, active), delete unused | **working**             |
 | `/[tenant]/admin`         | Platform-side management of one café (status, plan, owner); **no café business data** (GDPR) | placeholder             |
 
 Route files live in `src/app`:
@@ -74,6 +75,22 @@ Owner status flow: `email_unverified` → (email link) → `pending_approval` �
 | `NEXT_PUBLIC_SITE_URL`                 | `.env.local`, Vercel            | `http://localhost:3000` locally, `https://dev.serbi.me` on Vercel |
 
 Copy `.env.example` to `.env.local` for local development.
+
+### Super admins
+
+Super admins are rows in `platform.platform_admins`. **No admin account or password is hard-coded.** Create one with the one-time script:
+
+```bash
+# needs NEXT_PUBLIC_SUPABASE_URL (in .env.local) and the Supabase SECRET key (never commit it)
+SUPABASE_SECRET_KEY=sb_secret_... npm run admin:create
+# prompts for email + password (or pass ADMIN_EMAIL / ADMIN_PASSWORD)
+```
+
+Then sign in at `/login`, and you are sent to `/admin`. Every admin page and RPC re-checks `is_platform_admin()` on the server. (Next step: require TOTP two-factor for admins.)
+
+### Business types
+
+Managed at `/admin/business` and stored in `platform.business_types` (slug, names in EN/FR/AR, icon, order, active). The register form shows only **active** types, cached with the tag `business-types` and refreshed instantly on every admin save. Types used by café owners cannot be deleted, only deactivated.
 
 ## Development
 

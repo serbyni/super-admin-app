@@ -12,7 +12,8 @@
     "typecheck": "next typegen && tsc --noEmit",
     "tokens:palettes": "tsx scripts/generate-palettes.mjs",
     "lint:tokens": "node scripts/check-arbitrary-values.mjs",
-    "test": "vitest run"
+    "test": "vitest run",
+    "admin:create": "node --env-file-if-exists=.env.local scripts/create-super-admin.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

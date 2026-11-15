@@ -1,8 +1,6 @@
 import { z } from "zod";
 import { PASSWORD_MIN_LENGTH } from "./password-strength";
 
-export const BUSINESS_TYPES = ["cafe", "restaurant", "bakery", "other"] as const;
-
 const trimmed = (min: number, max: number, message: string) =>
   z.string().trim().min(min, message).max(max, message);
 
@@ -21,7 +19,8 @@ export const businessProfileSchema = z.object({
   fullName: trimmed(2, 80, "Enter your full name (2–80 characters)"),
   phone,
   businessName: trimmed(2, 80, "Enter your business name (2–80 characters)"),
-  businessType: z.enum(BUSINESS_TYPES, { error: "Choose a business type" }),
+  // Checked against the active list (managed by super admins) in the server action.
+  businessType: z.string().regex(/^[a-z][a-z0-9_]{1,30}$/, "Choose a business type"),
   country: trimmed(2, 60, "Enter your country"),
   city: trimmed(1, 80, "Enter your city"),
   terms: z.literal("on", { error: "You must accept the Terms and Privacy Policy" }),

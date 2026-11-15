@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { OrDivider, SocialButtons } from "@/components/auth/social-buttons";
+import { connection } from "next/server";
+import { Suspense } from "react";
+import { getActiveBusinessTypes } from "@/lib/business-types/data";
 import { RegisterForm } from "./register-form";
 import { Icon } from "@/components/ui/icon";
 
@@ -12,6 +15,12 @@ const steps = [
   "The Serbi team reviews your application",
   "Choose your subdomain — your café is live",
 ];
+
+/** Business types are managed by super admins; read at request time (cached, tag-invalidated). */
+async function RegisterFormWithTypes() {
+  await connection();
+  return <RegisterForm businessTypes={await getActiveBusinessTypes()} />;
+}
 
 export default function RegisterPage() {
   return (
@@ -72,7 +81,9 @@ export default function RegisterPage() {
           <SocialButtons verb="Sign up" layout="grid" />
           <OrDivider label="or register with email" />
 
-          <RegisterForm />
+          <Suspense fallback={<p className="text-on-surface-variant">Loading form…</p>}>
+            <RegisterFormWithTypes />
+          </Suspense>
 
           <div className="mt-lg flex items-center justify-center gap-xs rounded-lg bg-surface-container-low/50 p-sm text-center">
             <span className="text-body-sm text-on-surface-variant">Already have an account?</span>
