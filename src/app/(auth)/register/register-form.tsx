@@ -7,6 +7,8 @@ import { PasswordField } from "@/components/auth/password-field";
 import { PasswordStrengthMeter } from "@/components/auth/password-strength-meter";
 import { SubmitButton } from "@/components/auth/submit-button";
 import { TermsCheckbox } from "@/components/auth/terms-checkbox";
+import { LocationPicker } from "@/components/location/location-picker";
+import { initialLocation } from "@/lib/location/initial";
 import type { BusinessType } from "@/lib/business-types/schema";
 import { registerOwner, type FormState } from "./actions";
 
@@ -23,6 +25,11 @@ export function RegisterForm({ businessTypes }: { businessTypes: BusinessType[] 
         errors={errors}
         values={state.values}
         withEmail
+      />
+      <LocationPicker
+        key={state.values?.location ?? ""}
+        initial={initialLocation(state.values)}
+        errors={errors}
       />
       <div className="grid grid-cols-1 gap-md sm:grid-cols-2">
         <PasswordField

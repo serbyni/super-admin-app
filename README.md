@@ -76,6 +76,18 @@ Owner status flow: `email_unverified` → (email link) → `pending_approval` �
 
 Copy `.env.example` to `.env.local` for local development.
 
+### Business location (register)
+
+The register and complete-profile forms collect the business location with **Google Maps** (`@vis.gl/react-google-maps`):
+
+- **Places search:** Places API (New) autocomplete with session tokens.
+- **Map preview:** click the map or drag the pin. Reverse geocoding (Geocoding API) fills in the address.
+- **Typed latitude and longitude:** for places not on Google Maps.
+
+Street, postal code and city are editable. Stored on `platform.owner_accounts`: `latitude`, `longitude`, `place_id`, `formatted_address`, `street`, `postal_code`, `city`, `region`, `country`, `country_code`, `location_source` (`google_place` | `map_pin` | `coordinates`).
+
+Env: `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` (browser key restricted to your domains; enable Maps JavaScript API, Places API (New) and Geocoding API) and optionally `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID` (draggable Advanced Marker). Without a key the form shows manual coordinates and address fields.
+
 ### Super admins
 
 Super admins are rows in `platform.platform_admins`. **No admin account or password is hard-coded.** Create one with the one-time script:

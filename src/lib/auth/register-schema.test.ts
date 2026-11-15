@@ -8,8 +8,6 @@ const valid = {
   email: "  Owner@YourCafe.com ",
   businessName: "Artisan Brew",
   businessType: "cafe",
-  country: "Tunisia",
-  city: "Tunis",
   password: "Espresso#2026",
   confirmPassword: "Espresso#2026",
   terms: "on",

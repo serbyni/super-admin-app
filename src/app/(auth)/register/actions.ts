@@ -10,7 +10,25 @@ import {
   type FieldErrors,
 } from "@/lib/auth/register-schema";
 import { getActiveBusinessTypes } from "@/lib/business-types/data";
+import { locationFromForm } from "@/lib/location/schema";
 import { createClient } from "@/lib/supabase/server";
+
+/** Map location validation issues onto the picker's fields. */
+function locationErrors(error: {
+  issues: { path: PropertyKey[]; message: string }[];
+}): FieldErrors {
+  const out: FieldErrors = {};
+  for (const issue of error.issues) {
+    const key = String(issue.path[0] ?? "location");
+    if (key === "city" || key === "street" || key === "postal_code" || key === "country_code") {
+      out[key] ??= issue.message;
+    } else {
+      out.location ??=
+        "Choose your business location: search on the map, drop a pin or enter coordinates.";
+    }
+  }
+  return out;
+}
 
 async function isActiveBusinessType(slug: string): Promise<boolean> {
   return (await getActiveBusinessTypes()).some((t) => t.slug === slug);
@@ -18,7 +36,17 @@ async function isActiveBusinessType(slug: string): Promise<boolean> {
 
 export type FormState = { errors?: FieldErrors; values?: Record<string, string> };
 
-const KEEP = ["fullName", "phone", "email", "businessName", "businessType", "country", "city"];
+const KEEP = [
+  "fullName",
+  "phone",
+  "email",
+  "businessName",
+  "businessType",
+  "location",
+  "street",
+  "postal_code",
+  "city",
+];
 
 function keepValues(raw: Record<string, FormDataEntryValue>): Record<string, string> {
   return Object.fromEntries(KEEP.map((k) => [k, typeof raw[k] === "string" ? raw[k] : ""]));
@@ -36,7 +64,16 @@ const AUTH_ERRORS: Record<string, string> = {
 export async function registerOwner(_prev: FormState, formData: FormData): Promise<FormState> {
   const raw = Object.fromEntries(formData);
   const parsed = registerSchema.safeParse(raw);
-  if (!parsed.success) return { errors: fieldErrors(parsed.error), values: keepValues(raw) };
+  const location = locationFromForm(formData);
+  if (!parsed.success || !location.success) {
+    return {
+      errors: {
+        ...(location.success ? {} : locationErrors(location.error)),
+        ...(parsed.success ? {} : fieldErrors(parsed.error)),
+      },
+      values: keepValues(raw),
+    };
+  }
 
   const d = parsed.data;
   if (!(await isActiveBusinessType(d.businessType))) {
@@ -57,8 +94,7 @@ export async function registerOwner(_prev: FormState, formData: FormData): Promi
         phone: d.phone,
         business_name: d.businessName,
         business_type: d.businessType,
-        country: d.country,
-        city: d.city,
+        location: location.data,
         locale: "en",
         terms_version: TERMS_VERSION,
       },
@@ -107,7 +143,16 @@ export async function completeOwnerProfile(
 ): Promise<FormState> {
   const raw = Object.fromEntries(formData);
   const parsed = businessProfileSchema.safeParse(raw);
-  if (!parsed.success) return { errors: fieldErrors(parsed.error), values: keepValues(raw) };
+  const location = locationFromForm(formData);
+  if (!parsed.success || !location.success) {
+    return {
+      errors: {
+        ...(location.success ? {} : locationErrors(location.error)),
+        ...(parsed.success ? {} : fieldErrors(parsed.error)),
+      },
+      values: keepValues(raw),
+    };
+  }
 
   const d = parsed.data;
   if (!(await isActiveBusinessType(d.businessType))) {
@@ -122,14 +167,19 @@ export async function completeOwnerProfile(
     p_phone: d.phone,
     p_business_name: d.businessName,
     p_business_type: d.businessType,
-    p_country: d.country,
-    p_city: d.city,
+    p_location: location.data,
     p_locale: "en",
     p_terms_version: TERMS_VERSION,
   });
   if (error) {
     if (error.message.includes("not_authenticated")) redirect("/login");
     if (error.message.includes("profile_already_completed")) redirect("/pending");
+    if (error.message.includes("invalid_location")) {
+      return {
+        errors: { location: "Choose your business location on the map." },
+        values: keepValues(raw),
+      };
+    }
     return {
       errors: { form: "Could not save your details. Please try again." },
       values: keepValues(raw),

@@ -34,3 +34,14 @@ export function publicEnv(): PublicEnv {
 export function siteUrl(path: string): string {
   return new URL(path, publicEnv().NEXT_PUBLIC_SITE_URL).toString();
 }
+
+/**
+ * Optional Google Maps browser config. Without a key the register form falls back to manual
+ * address + coordinates fields. Restrict the key to this site's domains in Google Cloud.
+ */
+export function mapsEnv(): { apiKey?: string; mapId?: string } {
+  return {
+    apiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || undefined,
+    mapId: process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID || undefined,
+  };
+}

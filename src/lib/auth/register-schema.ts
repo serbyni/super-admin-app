@@ -21,8 +21,6 @@ export const businessProfileSchema = z.object({
   businessName: trimmed(2, 80, "Enter your business name (2–80 characters)"),
   // Checked against the active list (managed by super admins) in the server action.
   businessType: z.string().regex(/^[a-z][a-z0-9_]{1,30}$/, "Choose a business type"),
-  country: trimmed(2, 60, "Enter your country"),
-  city: trimmed(1, 80, "Enter your city"),
   terms: z.literal("on", { error: "You must accept the Terms and Privacy Policy" }),
 });
 
@@ -44,7 +42,12 @@ export const registerSchema = businessProfileSchema
   });
 
 export type RegisterInput = z.infer<typeof registerSchema>;
-export type FieldErrors = Partial<Record<keyof RegisterInput | "form", string>>;
+export type FieldErrors = Partial<
+  Record<
+    keyof RegisterInput | "form" | "location" | "street" | "postal_code" | "city" | "country_code",
+    string
+  >
+>;
 
 /** First error message per field, for showing under inputs. */
 export function fieldErrors(error: z.ZodError): FieldErrors {

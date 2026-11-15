@@ -78,28 +78,6 @@ export function BusinessFields({
           error={errors.businessType}
         />
       </div>
-      <div className="grid grid-cols-1 gap-md sm:grid-cols-2">
-        <TextField
-          id="country"
-          label="Country"
-          icon="public"
-          autoComplete="country-name"
-          placeholder="Tunisia"
-          required
-          defaultValue={values.country}
-          error={errors.country}
-        />
-        <TextField
-          id="city"
-          label="City"
-          icon="location_on"
-          autoComplete="address-level2"
-          placeholder="Tunis"
-          required
-          defaultValue={values.city}
-          error={errors.city}
-        />
-      </div>
     </>
   );
 }
