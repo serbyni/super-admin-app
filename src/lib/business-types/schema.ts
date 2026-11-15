@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { BUSINESS_ICONS } from "@/config/business-icons";
 
 export const LOCALES = ["en", "fr", "ar"] as const;
 export type Locale = (typeof LOCALES)[number];
@@ -15,7 +16,6 @@ export type AdminBusinessType = BusinessType & {
 };
 
 export const BUSINESS_TYPE_SLUG = /^[a-z][a-z0-9_]{1,30}$/;
-export const ICON_NAME = /^[a-z0-9_]{2,40}$/;
 
 const optionalName = z
   .string()
@@ -41,7 +41,13 @@ export const businessTypeFormSchema = z.object({
   name_en: z.string().trim().min(2, "English name is required (2–60 chars)").max(60),
   name_fr: optionalName,
   name_ar: optionalName,
-  icon: z.string().trim().regex(ICON_NAME, "Material Symbols name, e.g. local_cafe"),
+  icon: z
+    .string()
+    .trim()
+    .refine(
+      (v) => (BUSINESS_ICONS as readonly string[]).includes(v),
+      "Choose an icon from the list",
+    ),
   sort_order: z.coerce.number().int("Whole number").min(0).max(10000),
   is_active: z.preprocess((v) => v === "on" || v === "true", z.boolean()),
 });

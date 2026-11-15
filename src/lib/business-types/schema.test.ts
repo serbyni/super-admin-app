@@ -33,6 +33,13 @@ describe("businessTypeFormSchema", () => {
     expect(businessTypeFormSchema.safeParse({ ...base, slug }).success).toBe(false);
   });
 
+  it("only accepts icons from the curated list", () => {
+    expect(businessTypeFormSchema.safeParse({ ...base, icon: "rocket_launch" }).success).toBe(
+      false,
+    );
+    expect(businessTypeFormSchema.safeParse({ ...base, icon: "local_cafe" }).success).toBe(true);
+  });
+
   it("requires an English name", () => {
     expect(businessTypeFormSchema.safeParse({ ...base, name_en: "x" }).success).toBe(false);
   });

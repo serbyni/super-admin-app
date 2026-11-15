@@ -5,7 +5,9 @@ import { useActionState } from "react";
 import { FieldError, FieldLabel } from "@/components/auth/fields";
 import { FormAlert } from "@/components/auth/form-alert";
 import { SubmitButton } from "@/components/auth/submit-button";
+import { IconPicker } from "@/components/admin/icon-picker";
 import { Icon } from "@/components/ui/icon";
+import { DEFAULT_BUSINESS_ICON } from "@/config/business-icons";
 import type { AdminBusinessType } from "@/lib/business-types/schema";
 import { saveBusinessType, type BusinessTypeFormState } from "./actions";
 
@@ -50,7 +52,7 @@ export function BusinessTypeForm({ type }: { type?: AdminBusinessType }) {
   const v = state.values;
   const val = (key: string, fallback: string | number | undefined) => v?.[key] ?? fallback ?? "";
   const activeDefault = v ? v.is_active === "on" : (type?.is_active ?? true);
-  const icon = String(val("icon", type?.icon ?? "storefront"));
+  const icon = String(val("icon", type?.icon ?? DEFAULT_BUSINESS_ICON));
 
   return (
     <form
@@ -70,23 +72,7 @@ export function BusinessTypeForm({ type }: { type?: AdminBusinessType }) {
           hint="Stable identifier, lowercase (a–z, 0–9, _)."
           error={e.slug}
         />
-        <div>
-          <Field
-            id="icon"
-            label="Icon"
-            required
-            defaultValue={icon}
-            placeholder="local_cafe"
-            hint="Material Symbols name."
-            error={e.icon}
-          />
-        </div>
-      </div>
-      <div className="flex items-center gap-sm rounded-lg bg-surface-container-low p-sm">
-        <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary-container text-primary">
-          <Icon name={icon} className="text-icon-lg" />
-        </span>
-        <span className="text-body-sm text-on-surface-variant">Icon preview (saved value)</span>
+        <IconPicker name="icon" label="Icon" defaultValue={icon} error={e.icon} />
       </div>
       <Field
         id="name_en"
