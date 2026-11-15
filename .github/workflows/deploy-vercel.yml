@@ -1,12 +1,9 @@
 name: Deploy develop to Vercel
 
-# Runs only after CI succeeded for a push to `develop`.
+# Called by ci.yml after all checks pass on a push to `develop` (or run manually).
 # The Vercel project is the DEVELOPMENT environment of this app.
 on:
-  workflow_run:
-    workflows: [CI]
-    types: [completed]
-    branches: [develop]
+  workflow_call:
   workflow_dispatch:
 
 concurrency:
@@ -25,17 +22,12 @@ env:
 jobs:
   deploy:
     name: Deploy to Vercel (development)
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
     runs-on: ubuntu-latest
     environment:
       name: development
       url: https://${{ vars.DEV_DOMAIN }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc

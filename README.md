@@ -62,10 +62,10 @@ No staging environment for now. Feature branches → PR into `develop` → CI mu
 
 ## CI/CD (`.github/workflows/`)
 
-| Workflow            | Trigger                                                    | Jobs                                                                      |
-| ------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------- |
-| `ci.yml`            | PR to `develop`/`main`, push to `develop`                  | **Lint · Prettier · Typecheck** and **Build** (parallel)                  |
-| `deploy-vercel.yml` | after `CI` succeeds on a push to `develop` (or manual run) | `vercel pull` → `vercel build --prod` → `vercel deploy --prebuilt --prod` |
+| Workflow            | Trigger                                                                         | Jobs                                                                      |
+| ------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `ci.yml`            | PR to `develop`/`main`, push to `develop`                                       | **Lint · Prettier · Typecheck** and **Build** (parallel)                  |
+| `deploy-vercel.yml` | called by `ci.yml` after all checks pass on a push to `develop` (or manual run) | `vercel pull` → `vercel build --prod` → `vercel deploy --prebuilt --prod` |
 
 `vercel.json` disables Vercel's own Git auto-deploys, so deployments come **only** from this workflow, after CI passes.
 
