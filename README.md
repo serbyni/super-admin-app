@@ -75,6 +75,8 @@ No staging environment for now. Feature branches → PR into `develop` → CI mu
 2. **GitHub secrets** (Settings → Secrets and variables → Actions):
    - `VERCEL_TOKEN`: Vercel → Account Settings → Tokens
    - `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`: from `.vercel/project.json`
-3. **GitHub environment:** create an environment named `development` (optional protection rules).
-4. **Branch protection** on `develop` (and `main`): require PRs, require the status checks **Lint · Prettier · Typecheck** and **Build**, and no direct pushes.
-5. Set `develop` as the default branch so PRs target it by default.
+3. **GitHub variable** (Settings → Secrets and variables → Actions → Variables):
+   - `DEV_DOMAIN`: public domain of the development environment, e.g. `dev.serbi.me`. The deploy workflow points it at each new deployment.
+4. **GitHub environment:** create an environment named `development` (optional protection rules).
+5. **Branch protection** on `develop` (and `main`): require PRs, require the status checks **Lint · Prettier · Typecheck** and **Build**, and no direct pushes.
+6. Set `develop` as the default branch so PRs target it by default.

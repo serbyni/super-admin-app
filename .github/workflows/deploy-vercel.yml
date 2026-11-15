@@ -19,6 +19,8 @@ permissions:
 env:
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+  # Public domain of the development environment (repository/organization variable).
+  DEV_DOMAIN: ${{ vars.DEV_DOMAIN }}
 
 jobs:
   deploy:
@@ -29,7 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: development
-      url: ${{ steps.deploy.outputs.url }}
+      url: https://${{ vars.DEV_DOMAIN }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -50,3 +52,8 @@ jobs:
           url=$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})
           echo "url=$url" >> "$GITHUB_OUTPUT"
           echo "Deployed: $url" >> "$GITHUB_STEP_SUMMARY"
+      - name: Point dev domain to this deployment
+        if: ${{ vars.DEV_DOMAIN != '' }}
+        run: |
+          vercel alias set "${{ steps.deploy.outputs.url }}" "$DEV_DOMAIN" --token=${{ secrets.VERCEL_TOKEN }} --scope="$VERCEL_ORG_ID"
+          echo "Live: https://$DEV_DOMAIN" >> "$GITHUB_STEP_SUMMARY"
