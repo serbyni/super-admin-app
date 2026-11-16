@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useId, useRef, useState, type MouseEvent } from "react";
-import { FieldError, FieldLabel, TextField } from "@/components/auth/fields";
+import { FieldError, FloatingLabel, outlinedBox, TextField } from "@/components/auth/fields";
 import { Icon } from "@/components/ui/icon";
 import { DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM, PLACE_ZOOM } from "@/config/maps";
 import { roundCoord, type BusinessLocation } from "@/lib/location/address";
@@ -98,7 +98,7 @@ export function LocationPicker({ initial, errors = {}, maps, onCountryChange }: 
   );
 
   return (
-    <fieldset className="flex flex-col gap-md rounded-xl bg-surface-container-low/60 p-md">
+    <fieldset className="flex flex-col gap-md rounded-xl border border-surface-container-high p-md">
       <legend className="sr-only">Business location</legend>
       <div className="flex items-center gap-sm">
         <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-secondary-container text-primary">
@@ -211,14 +211,7 @@ function PlaceSearch({
 
   return (
     <div className="relative">
-      <FieldLabel htmlFor="placeSearch" required>
-        Find your business on the map
-      </FieldLabel>
       <div className="relative flex items-center">
-        <Icon
-          name={busy ? "progress_activity" : "search"}
-          className={`pointer-events-none absolute start-3.5 text-icon-lg text-on-surface-variant ${busy ? "animate-spin" : ""}`}
-        />
         <input
           id="placeSearch"
           type="search"
@@ -232,10 +225,15 @@ function PlaceSearch({
           onFocus={() => visible.length > 0 && setOpen(true)}
           onBlur={() => setTimeout(() => setOpen(false), 150)}
           placeholder="Café name or address, e.g. Artisan Brew Tunis"
-          className={`w-full rounded-lg bg-surface-container-lowest py-3 ps-11 pe-4 text-body-md text-on-surface placeholder:text-outline focus:ring-2 focus:ring-primary-container focus:outline-none ${
-            error ? "ring-2 ring-error" : ""
-          }`}
+          className={`${outlinedBox(error)} ps-11 pe-4`}
         />
+        <Icon
+          name={busy ? "progress_activity" : "search"}
+          className={`pointer-events-none absolute start-3.5 text-icon-lg text-on-surface-variant ${busy ? "animate-spin" : ""}`}
+        />
+        <FloatingLabel htmlFor="placeSearch" required error={error} withIcon>
+          Find your business on the map
+        </FloatingLabel>
       </div>
       {open && visible.length > 0 ? (
         <ul

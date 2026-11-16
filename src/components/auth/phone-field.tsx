@@ -21,7 +21,7 @@ import {
   type KeyboardEvent,
   type RefObject,
 } from "react";
-import { FieldError, FieldLabel } from "./fields";
+import { FieldError, FieldHint, FloatingLabel } from "./fields";
 import { Icon } from "@/components/ui/icon";
 import { DEFAULT_PHONE_COUNTRY, PREFERRED_PHONE_COUNTRIES } from "@/config/phone";
 
@@ -139,15 +139,17 @@ export function PhoneField({ id, label, required, defaultValue, error, suggested
   }
 
   return (
-    <div ref={wrapperRef} className="relative">
-      <FieldLabel htmlFor={id} required={required}>
-        {label}
-      </FieldLabel>
+    <div ref={wrapperRef} className="group relative">
       <div
-        className={`flex items-stretch rounded-lg bg-surface-container-low transition-all focus-within:bg-surface-container-lowest focus-within:ring-2 focus-within:ring-primary-container ${
-          error ? "ring-2 ring-error" : ""
+        className={`relative flex items-stretch rounded-lg border transition-colors focus-within:ring-1 ${
+          error
+            ? "border-error focus-within:ring-error"
+            : "border-outline-variant focus-within:border-primary focus-within:ring-primary hover:border-outline"
         }`}
       >
+        <FloatingLabel htmlFor={id} required={required} error={error} rest="never">
+          <span className={error ? "" : "group-focus-within:text-primary"}>{label}</span>
+        </FloatingLabel>
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
@@ -174,8 +176,8 @@ export function PhoneField({ id, label, required, defaultValue, error, suggested
           onChange={(e) => onType(e.target.value)}
           placeholder={placeholder}
           aria-invalid={error ? true : undefined}
-          aria-describedby={error ? `${id}-error` : `${id}-hint`}
-          className="w-full min-w-0 bg-transparent py-3 ps-3 pe-2 text-body-md text-on-surface tabular-nums placeholder:text-outline focus:outline-none"
+          aria-describedby={error ? `${id}-error` : national && !valid ? `${id}-hint` : undefined}
+          className="w-full min-w-0 bg-transparent py-3.5 ps-3 pe-2 text-body-md text-on-surface tabular-nums placeholder:text-outline focus:outline-none"
         />
         {valid ? (
           <span className="flex items-center pe-3" title="Valid number">
@@ -194,13 +196,9 @@ export function PhoneField({ id, label, required, defaultValue, error, suggested
       ) : null}
       {error ? (
         <FieldError id={id} message={error} />
-      ) : (
-        <p id={`${id}-hint`} className="mt-1 text-caption text-on-surface-variant">
-          {national && !valid
-            ? "Keep typing — the number looks incomplete for this country."
-            : "Choose your country, then type your number. You can also paste +…"}
-        </p>
-      )}
+      ) : national && !valid ? (
+        <FieldHint id={id}>Keep typing — the number looks incomplete for this country.</FieldHint>
+      ) : null}
     </div>
   );
 }

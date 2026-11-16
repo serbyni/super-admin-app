@@ -58,6 +58,8 @@ Extra tokens: icon sizes `text-icon-xs…3xl`, small text `text-caption` / `text
 
 ⚠ Tailwind 4 also uses the spacing names for sizing: `max-w-xl` = 48px here, not a container width. Use `max-w-card-*` or `max-w-2xl` and larger.
 
+**Form fields** are Material 3 _outlined_ fields with a floating label (`src/components/auth/fields.tsx`): at rest the label sits inside the box; on focus or when filled it moves onto the top border (pure CSS via `peer` + `:placeholder-shown` / `:invalid`, no JavaScript). Example placeholders only appear while a field is focused. The label notch uses the `bg-field-notch` token (= card surface), so put fields on `surface-container-lowest` cards. Use `TextField` / `PasswordField` / `SelectField` / `PhoneField`; for custom inputs combine `outlinedBox()` + `FloatingLabel` (the input must come before the label).
+
 Auth UI building blocks are in `src/components/auth/`: `AuthShell`, `TextField`, `SelectField`, `PasswordField`, `SocialButtons`, `OrDivider`, and `StaticForm` (blocks submit until auth is implemented).
 
 ## Auth & database

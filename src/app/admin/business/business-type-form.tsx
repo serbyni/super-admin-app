@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useActionState } from "react";
-import { FieldError, FieldLabel } from "@/components/auth/fields";
+import { TextField } from "@/components/auth/fields";
 import { FormAlert } from "@/components/auth/form-alert";
 import { SubmitButton } from "@/components/auth/submit-button";
 import { IconPicker } from "@/components/admin/icon-picker";
@@ -10,41 +10,6 @@ import { Icon } from "@/components/ui/icon";
 import { DEFAULT_BUSINESS_ICON } from "@/config/business-icons";
 import type { AdminBusinessType } from "@/lib/business-types/schema";
 import { saveBusinessType, type BusinessTypeFormState } from "./actions";
-
-const input =
-  "w-full rounded-lg bg-surface-container-low px-4 py-3 text-body-md text-on-surface transition-all placeholder:text-outline focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary-container focus:outline-none";
-
-function Field({
-  id,
-  label,
-  error,
-  hint,
-  required,
-  ...rest
-}: React.InputHTMLAttributes<HTMLInputElement> & {
-  id: string;
-  label: string;
-  error?: string;
-  hint?: string;
-}) {
-  return (
-    <div>
-      <FieldLabel htmlFor={id} required={required}>
-        {label}
-      </FieldLabel>
-      <input
-        id={id}
-        name={id}
-        required={required}
-        aria-invalid={error ? true : undefined}
-        className={`${input} ${error ? "ring-2 ring-error" : ""}`}
-        {...rest}
-      />
-      {hint && !error ? <p className="mt-1 text-caption text-on-surface-variant">{hint}</p> : null}
-      <FieldError id={id} message={error} />
-    </div>
-  );
-}
 
 export function BusinessTypeForm({ type }: { type?: AdminBusinessType }) {
   const [state, action] = useActionState<BusinessTypeFormState, FormData>(saveBusinessType, {});
@@ -63,7 +28,7 @@ export function BusinessTypeForm({ type }: { type?: AdminBusinessType }) {
       <FormAlert message={e.form} />
       <input type="hidden" name="id" value={type?.id ?? ""} />
       <div className="grid grid-cols-1 gap-md sm:grid-cols-2">
-        <Field
+        <TextField
           id="slug"
           label="Code"
           required
@@ -74,7 +39,7 @@ export function BusinessTypeForm({ type }: { type?: AdminBusinessType }) {
         />
         <IconPicker name="icon" label="Icon" defaultValue={icon} error={e.icon} />
       </div>
-      <Field
+      <TextField
         id="name_en"
         label="Name (English)"
         required
@@ -83,14 +48,14 @@ export function BusinessTypeForm({ type }: { type?: AdminBusinessType }) {
         error={e.name_en}
       />
       <div className="grid grid-cols-1 gap-md sm:grid-cols-2">
-        <Field
+        <TextField
           id="name_fr"
           label="Name (French)"
           defaultValue={val("name_fr", type?.name.fr)}
           placeholder="Food truck"
           error={e.name_fr}
         />
-        <Field
+        <TextField
           id="name_ar"
           label="Name (Arabic)"
           dir="rtl"

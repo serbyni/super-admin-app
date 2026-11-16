@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useMemo, useRef, useState } from "react";
-import { FieldError, FieldLabel } from "@/components/auth/fields";
+import { FieldError, FloatingLabel } from "@/components/auth/fields";
 import { Icon } from "@/components/ui/icon";
 import { BUSINESS_ICON_GROUPS, iconLabel } from "@/config/business-icons";
 
@@ -38,18 +38,17 @@ export function IconPicker({ name, label, defaultValue, error }: IconPickerProps
   }
 
   return (
-    <div>
-      <FieldLabel htmlFor={`${name}-trigger`} required>
-        {label}
-      </FieldLabel>
+    <div className="relative">
       <input type="hidden" name={name} value={value} />
       <button
         id={`${name}-trigger`}
         type="button"
         onClick={open}
         aria-haspopup="dialog"
-        className={`group flex w-full items-center gap-sm rounded-lg bg-surface-container-low p-sm text-start transition-colors hover:bg-surface-container ${
-          error ? "ring-2 ring-error" : ""
+        className={`group peer flex w-full items-center gap-sm rounded-lg border p-sm text-start transition-colors focus:ring-1 focus:outline-none ${
+          error
+            ? "border-error focus:ring-error"
+            : "border-outline-variant hover:border-outline focus:border-primary focus:ring-primary"
         }`}
       >
         <span className="flex h-12 w-12 items-center justify-center rounded-lg bg-secondary-container text-primary transition-transform group-hover:scale-105">
@@ -65,6 +64,9 @@ export function IconPicker({ name, label, defaultValue, error }: IconPickerProps
         </span>
         <Icon name="edit" className="text-icon-md text-on-surface-variant" />
       </button>
+      <FloatingLabel htmlFor={`${name}-trigger`} required error={error} rest="never">
+        {label}
+      </FloatingLabel>
       <FieldError id={name} message={error} />
 
       <dialog

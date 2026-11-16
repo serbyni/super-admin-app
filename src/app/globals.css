@@ -148,6 +148,9 @@
   --color-success-container: var(--sb-success-container);
   --color-info: var(--sb-info);
   --color-info-container: var(--sb-info-container);
+
+  /* Background behind floating field labels (cuts the outline); = card surface */
+  --color-field-notch: var(--sb-surface-container-lowest);
 }
 
 @theme {
