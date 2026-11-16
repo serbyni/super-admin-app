@@ -8,6 +8,7 @@ import {
   type FieldErrors,
 } from "@/lib/auth/register-schema";
 import { isDataError } from "@/lib/data/errors";
+import { kickEmailDispatch } from "@/lib/data/kick-email";
 import { serverApi } from "@/lib/data/server-api";
 import { locationFromForm } from "@/lib/location/schema";
 
@@ -163,5 +164,6 @@ export async function completeOwnerProfile(
       values: keepValues(raw),
     };
   }
+  kickEmailDispatch(); // register_new_user
   redirect("/pending");
 }

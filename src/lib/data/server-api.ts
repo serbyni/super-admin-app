@@ -4,7 +4,9 @@ import { createClient } from "@/lib/supabase/server";
 import { AdminsService } from "./services/admins";
 import { AuthService } from "./services/auth";
 import { BusinessTypesService } from "./services/business-types";
+import { NotificationsService } from "./services/notifications";
 import { OwnersService } from "./services/owners";
+import { UsersService } from "./services/users";
 import type { Db, LazyDb } from "./types";
 
 /** All server-side data services, sharing one Supabase client (one user session). */
@@ -13,6 +15,9 @@ export class ServerApi {
   readonly owners: OwnersService;
   readonly businessTypes: BusinessTypesService;
   readonly auth: AuthService;
+  /** Super-admin user management (applications). */
+  readonly users: UsersService;
+  readonly notifications: NotificationsService;
 
   constructor(createDb: () => Promise<Db>) {
     // One client per ServerApi, created on first use: pages that only need cached public data
@@ -23,6 +28,8 @@ export class ServerApi {
     this.owners = new OwnersService(db);
     this.businessTypes = new BusinessTypesService(db);
     this.auth = new AuthService(db, this.admins, this.owners);
+    this.users = new UsersService(db);
+    this.notifications = new NotificationsService(db);
   }
 }
 

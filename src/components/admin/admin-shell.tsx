@@ -1,12 +1,32 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import { signOut } from "@/app/auth/actions";
 import { Icon } from "@/components/ui/icon";
+import { serverApi } from "@/lib/data/server-api";
 
 const NAV = [
   { href: "/admin", icon: "dashboard", label: "Dashboard" },
+  { href: "/admin/users", icon: "group", label: "Users", badge: "pending" },
+  { href: "/admin/notifications", icon: "notifications", label: "Notifications", badge: "unread" },
   { href: "/admin/business", icon: "category", label: "Business types" },
 ] as const;
+
+/** Count bubble next to a menu item (streams in; hidden when zero or on error). */
+async function NavBadge({ kind }: { kind: "pending" | "unread" }) {
+  const api = serverApi();
+  const count = await (
+    kind === "pending" ? api.users.stats().then((s) => s.pending) : api.notifications.unreadCount()
+  ).catch(() => 0);
+  if (!count) return null;
+  return (
+    <span
+      aria-label={`${count} ${kind === "pending" ? "pending" : "unread"}`}
+      className="ms-auto rounded-full bg-cta px-xs text-caption font-bold text-on-cta"
+    >
+      {count > 99 ? "99+" : count}
+    </span>
+  );
+}
 
 /** Desktop-first admin frame: fixed 240px sidebar + content (Stitch "Admin Dashboard"). */
 export function AdminShell({ active, children }: { active: string; children: ReactNode }) {
@@ -38,6 +58,11 @@ export function AdminShell({ active, children }: { active: string; children: Rea
               >
                 <Icon name={item.icon} className="text-icon-lg" />
                 {item.label}
+                {"badge" in item ? (
+                  <Suspense fallback={null}>
+                    <NavBadge kind={item.badge} />
+                  </Suspense>
+                ) : null}
               </Link>
             );
           })}

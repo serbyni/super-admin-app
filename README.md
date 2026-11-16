@@ -18,6 +18,8 @@ Stack: **Next.js 16** (App Router, `cacheComponents`), React 19, TypeScript, Tai
 | `/about`                  | About us                                                                                     | placeholder             |
 | `/contact`                | Contact                                                                                      | placeholder             |
 | `/admin`                  | Super-admin overview (super admins only)                                                     | **working** (basic)     |
+| `/admin/users`            | User management: owner applications, approve / decline (emails the owner)                    | **working**             |
+| `/admin/notifications`    | Admin notifications (new applications)                                                       | **working**             |
 | `/admin/business`         | Business types CRUD: list, create, edit (EN/FR/AR names, icon, order, active), delete unused | **working**             |
 | `/[tenant]/admin`         | Platform-side management of one café (status, plan, owner); **no café business data** (GDPR) | placeholder             |
 
@@ -128,6 +130,24 @@ Stored on `platform.owner_accounts`: `latitude`, `longitude`, `place_id`, `forma
 `src/components/auth/phone-field.tsx`: a country picker (SVG flag, name, dial code; search by name, ISO code or `+code`; keyboard ↑ ↓ Enter Esc) with the main markets first (`src/config/phone.ts`). The number is formatted as you type for the chosen country ([libphonenumber-js](https://gitlab.com/catamphetamine/libphonenumber-js)), a pasted `+33…` or `0033…` number switches the country automatically, and while the field is empty the country follows the business location. The form submits E.164 (`+21620123456`); the server re-validates with the **full** per-country rules (`libphonenumber-js/max`).
 
 Flags come from `country-flag-icons` and are copied to `public/flags/` by `npm install` (postinstall, gitignored), so only the flags shown are downloaded.
+
+### Emails & notifications (events)
+
+Owner status changes are **events**, written by a database trigger in the same transaction as the change (`platform.events` → `platform.email_deliveries` + `platform.notifications`):
+
+| Event                 | When                                                     | Email (Resend)                   | In-app notification                         |
+| --------------------- | -------------------------------------------------------- | -------------------------------- | ------------------------------------------- |
+| `register_new_user`   | email confirmed / profile completed → `pending_approval` | owner: application received      | every super admin: new application          |
+| `admin_approve_user`  | admin approves                                           | owner: approved + sign-in link   | owner (shown on `/pending` until dismissed) |
+| `admin_declined_user` | admin declines with a reason                             | owner: not approved + the reason | —                                           |
+
+- **Templates**: React Email in `src/emails/` (layout, `copy.ts` per locale: EN now, FR/AR later). Preview: render with `renderEmail()`; tests in `src/emails/templates.test.tsx`.
+- **Sending**: `EmailDispatcher` (`src/lib/data/email-dispatcher.ts`) claims due deliveries with the service-role key, sends them via Resend with the delivery id as idempotency key, and records the result. Failures retry with backoff (1, 2, 4 … min, max 8 attempts).
+- **When**: right after the action that created the event (`kickEmailDispatch()` runs after the response), plus a daily sweep `GET /api/internal/email/dispatch` (Vercel Cron, `Authorization: Bearer $CRON_SECRET`).
+- Without `RESEND_API_KEY` / `EMAIL_FROM` / `SUPABASE_SECRET_KEY`, emails stay queued (nothing is lost) and a warning is logged.
+- **Sender domains** (Resend, EU region): `dev.serbi.me` for development, `serbi.me` for production; DNS records at Namecheap.
+
+**User management** (`/admin/users`): pending / approved / declined lists, application details, **Approve** or **Decline with a reason** (emailed to the owner). The sidebar shows pending and unread counts; `/admin/notifications` lists admin notifications.
 
 ### Super admins
 

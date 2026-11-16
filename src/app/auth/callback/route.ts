@@ -1,5 +1,6 @@
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
+import { kickEmailDispatch } from "@/lib/data/kick-email";
 import { serverApi } from "@/lib/data/server-api";
 
 /**
@@ -17,5 +18,7 @@ export async function GET(request: NextRequest) {
     code: searchParams.get("code"),
   });
   if (!ok) return NextResponse.redirect(new URL("/login?error=link_invalid", origin));
+  // Confirming the email may have created register_new_user: send its email after responding.
+  kickEmailDispatch();
   return NextResponse.redirect(new URL(await api.auth.homePath(), origin));
 }

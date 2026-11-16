@@ -8,6 +8,9 @@ import { Icon } from "@/components/ui/icon";
 import type { OwnerStatus } from "@/lib/auth/owner-status";
 import { pathForStatus } from "@/lib/auth/owner-status";
 import { getOwnerSession } from "@/lib/auth/session";
+import { markAllNotificationsRead } from "@/components/notifications/actions";
+import { describeNotification } from "@/components/notifications/notification-list";
+import { serverApi } from "@/lib/data/server-api";
 
 export const metadata: Metadata = { title: "Application status" };
 
@@ -59,8 +62,35 @@ async function Status() {
     redirect(pathForStatus(status));
   }
   const c = COPY[status]!;
+  // In-app notifications (e.g. "You're approved!") until the owner dismisses them.
+  const unread = (await serverApi().notifications.list(5)).filter((n) => !n.readAt);
   return (
     <StatusCard icon={c.icon} eyebrow={c.eyebrow} title={c.title}>
+      {unread.length > 0 ? (
+        <div role="status" className="flex flex-col gap-sm rounded-lg bg-success-container p-md">
+          {unread.map((n) => {
+            const d = describeNotification(n);
+            return (
+              <div key={n.id} className="flex items-start gap-sm">
+                <Icon name={d.icon} filled className="text-icon-xl text-success" />
+                <div>
+                  <p className="font-semibold text-on-surface">{d.title}</p>
+                  <p className="text-body-sm text-on-surface-variant">{d.body}</p>
+                </div>
+              </div>
+            );
+          })}
+          <form action={markAllNotificationsRead} className="flex justify-end">
+            <input type="hidden" name="back" value="/pending" />
+            <button
+              type="submit"
+              className="rounded-lg px-sm py-xs text-body-sm font-semibold text-success hover:bg-surface-container-lowest"
+            >
+              Got it
+            </button>
+          </form>
+        </div>
+      ) : null}
       <p className="text-center text-on-surface-variant">{c.body}</p>
       <div className="flex items-center justify-center gap-sm rounded-lg bg-surface-container-low p-sm text-body-sm text-on-surface-variant">
         <Icon name="account_circle" className="text-icon-md text-tertiary" />

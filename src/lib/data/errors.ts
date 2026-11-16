@@ -12,6 +12,8 @@ export const DATA_ERROR_CODES = [
   "stale_list",
   "profile_already_completed",
   "invalid_location",
+  "invalid_status", // e.g. approving an application that is no longer pending
+  "invalid_reason",
   "unknown",
 ] as const;
 

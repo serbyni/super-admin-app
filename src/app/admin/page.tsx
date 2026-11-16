@@ -4,18 +4,45 @@ import { Suspense } from "react";
 import { AdminShell, PageHeader } from "@/components/admin/admin-shell";
 import { Icon } from "@/components/ui/icon";
 import { requireAdmin } from "@/lib/auth/admin";
+import { serverApi } from "@/lib/data/server-api";
 import { listBusinessTypesForAdmin } from "./business/data";
 
 export const metadata: Metadata = { title: "Admin" };
 
 async function Welcome() {
   const { user } = await requireAdmin();
-  const types = await listBusinessTypesForAdmin();
+  const [types, owners] = await Promise.all([
+    listBusinessTypesForAdmin(),
+    serverApi().users.stats(),
+  ]);
   const active = types.filter((t) => t.is_active).length;
   return (
     <>
       <PageHeader title="Overview" description={`Signed in as ${user.email}`} />
       <div className="grid grid-cols-1 gap-md sm:grid-cols-2 lg:grid-cols-3">
+        <Link
+          href="/admin/users"
+          className="group rounded-xl bg-surface-container-lowest p-lg shadow-sm transition-all hover:scale-101 hover:shadow-md"
+        >
+          <div className="mb-md flex items-start justify-between gap-sm">
+            <span className="flex h-12 w-12 items-center justify-center rounded-lg bg-secondary-container text-primary">
+              <Icon name="group" className="text-icon-xl" />
+            </span>
+            <span
+              className={`rounded-full px-sm py-xs font-label-sm text-label-sm ${
+                owners.pending > 0
+                  ? "bg-info-container text-info"
+                  : "bg-success-container text-success"
+              }`}
+            >
+              {owners.pending} pending
+            </span>
+          </div>
+          <p className="text-headline-md text-on-surface">Users</p>
+          <p className="mt-xs text-body-sm text-on-surface-variant">
+            {owners.approved} approved · {owners.rejected} declined · {owners.total} total
+          </p>
+        </Link>
         <Link
           href="/admin/business"
           className="group rounded-xl bg-surface-container-lowest p-lg shadow-sm transition-all hover:scale-101 hover:shadow-md"

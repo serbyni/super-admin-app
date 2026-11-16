@@ -1,4 +1,9 @@
-import type { InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from "react";
+import type {
+  InputHTMLAttributes,
+  ReactNode,
+  SelectHTMLAttributes,
+  TextareaHTMLAttributes,
+} from "react";
 import { Icon } from "@/components/ui/icon";
 
 /*
@@ -221,6 +226,55 @@ export function SelectField({
         />
       </div>
       <FieldError id={id} message={error} />
+    </div>
+  );
+}
+
+type TextAreaFieldProps = TextareaHTMLAttributes<HTMLTextAreaElement> & {
+  id: string;
+  label: string;
+  error?: string;
+  hint?: ReactNode;
+};
+
+/** Multi-line outlined field; the label floats like TextField's. */
+export function TextAreaField({
+  id,
+  label,
+  required,
+  error,
+  hint,
+  placeholder,
+  rows = 4,
+  ...rest
+}: TextAreaFieldProps) {
+  return (
+    <div>
+      <div className="relative">
+        <textarea
+          id={id}
+          name={id}
+          rows={rows}
+          required={required}
+          placeholder={placeholder ?? " "}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? `${id}-error` : hint ? `${id}-hint` : undefined}
+          className={`${outlinedBox(error)} block resize-y px-4`}
+          {...rest}
+        />
+        <label
+          htmlFor={id}
+          className={`${floated} peer-placeholder-shown:top-7 peer-placeholder-shown:text-body-md peer-placeholder-shown:font-normal peer-focus:top-0 peer-focus:text-body-xs peer-focus:font-semibold ${labelColor(error)}`}
+        >
+          {label}
+          <RequiredMark required={required} />
+        </label>
+      </div>
+      {error ? (
+        <FieldError id={id} message={error} />
+      ) : hint ? (
+        <FieldHint id={id}>{hint}</FieldHint>
+      ) : null}
     </div>
   );
 }
