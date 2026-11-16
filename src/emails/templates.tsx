@@ -85,6 +85,7 @@ function RegisterNewUser({ v, locale }: { v: EmailVars; locale?: string | null }
   const r = c.received;
   return (
     <EmailLayout
+      logoUrl={`${v.SITE_URL}/brand/serbi-email-mark.png`}
       preview={r.preview}
       badge={c.headerBadge}
       tagline={c.brandTagline}
@@ -156,6 +157,7 @@ function AdminApproveUser({ v, locale }: { v: EmailVars; locale?: string | null 
   const a = c.approved;
   return (
     <EmailLayout
+      logoUrl={`${v.SITE_URL}/brand/serbi-email-mark.png`}
       preview={a.preview}
       badge={c.headerBadge}
       tagline={c.brandTagline}
@@ -201,6 +203,7 @@ function AdminDeclinedUser({ v, locale }: { v: EmailVars; locale?: string | null
   const d = c.declined;
   return (
     <EmailLayout
+      logoUrl={`${v.SITE_URL}/brand/serbi-email-mark.png`}
       preview={d.preview}
       badge={c.headerBadge}
       tagline={c.brandTagline}

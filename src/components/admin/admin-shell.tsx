@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Suspense, type ReactNode } from "react";
 import { signOut } from "@/app/auth/actions";
+import { BrandMark } from "@/components/ui/brand-mark";
 import { Icon } from "@/components/ui/icon";
 import { serverApi } from "@/lib/data/server-api";
 
@@ -34,9 +35,7 @@ export function AdminShell({ active, children }: { active: string; children: Rea
     <div className="flex min-h-screen bg-background">
       <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-e border-surface-container-high bg-surface-container-lowest p-md md:flex">
         <Link href="/admin" className="mb-xl flex items-center gap-sm px-sm">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-container text-on-primary-container">
-            <Icon name="coffee" className="text-icon-lg" />
-          </span>
+          <BrandMark className="h-9 w-9" priority />
           <span className="text-headline-md tracking-tight text-primary">Serbi</span>
           <span className="ms-auto rounded bg-tertiary-fixed px-xs font-label-sm text-caption text-on-tertiary-fixed uppercase">
             Admin

@@ -6,6 +6,7 @@ import {
   Head,
   Heading,
   Html,
+  Img,
   Link,
   Preview,
   Row,
@@ -47,6 +48,7 @@ const heroColors: Record<Tone, { bg: string; gradient: string; pillBg: string; p
 };
 
 export function EmailLayout({
+  logoUrl,
   preview,
   badge,
   tagline,
@@ -54,6 +56,8 @@ export function EmailLayout({
   children,
   footer,
 }: {
+  /** Absolute URL of the app mark (served from the app: /brand/serbi-email-mark.png). */
+  logoUrl: string;
   preview: string;
   badge: string;
   tagline: string;
@@ -91,23 +95,14 @@ export function EmailLayout({
           {/* Logo header */}
           <Section style={{ padding: "24px 24px 16px" }}>
             <Row>
-              <Column style={{ width: "48px", verticalAlign: "middle" }}>
-                <Text
-                  style={{
-                    margin: 0,
-                    width: "40px",
-                    height: "40px",
-                    lineHeight: "40px",
-                    textAlign: "center",
-                    borderRadius: t.radius.card,
-                    backgroundColor: t.color.primary,
-                    color: t.color.onPrimary,
-                    fontSize: "20px",
-                    fontWeight: 700,
-                  }}
-                >
-                  S
-                </Text>
+              <Column style={{ width: "56px", verticalAlign: "middle" }}>
+                <Img
+                  src={logoUrl}
+                  width="44"
+                  height="44"
+                  alt="Serbi"
+                  style={{ display: "block", width: "44px", height: "44px", border: 0 }}
+                />
               </Column>
               <Column style={{ verticalAlign: "middle" }}>
                 <Text

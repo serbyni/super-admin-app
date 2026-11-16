@@ -11,6 +11,8 @@ const jakarta = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   title: { default: "Serbi", template: "%s · Serbi" },
   description: "Serbi — QR menus and ordering for cafés.",
+  // Icons come from src/app/icon.png + apple-icon.png (Next.js file conventions).
+  openGraph: { images: ["/brand/serbi-logo.jpg"] },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

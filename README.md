@@ -62,6 +62,8 @@ Extra tokens: icon sizes `text-icon-xs…3xl`, small text `text-caption` / `text
 
 **Form fields** are Material 3 _outlined_ fields with a floating label (`src/components/auth/fields.tsx`): at rest the label sits inside the box; on focus or when filled it moves onto the top border (pure CSS via `peer` + `:placeholder-shown` / `:invalid`, no JavaScript). Example placeholders only appear while a field is focused. The label notch uses the `bg-field-notch` token (= card surface), so put fields on `surface-container-lowest` cards. Use `TextField` / `PasswordField` / `SelectField` / `PhoneField`; for custom inputs combine `outlinedBox()` + `FloatingLabel` (the input must come before the label).
 
+**Brand**: the Serbi mark (QR-cup on a leather tile) lives in `public/brand/` — `serbi-mark.png` (UI, via `<BrandMark />`), `serbi-mark-192.png`, `serbi-email-mark.png` (emails, 96 px shown at 44 px), `serbi-logo.jpg` (full logo with lettering, Open Graph). Favicon and Apple touch icon are `src/app/icon.png` / `apple-icon.png`. Emails load the mark from `{SITE_URL}/brand/serbi-email-mark.png`, so the site must be publicly reachable (no Vercel login wall).
+
 Auth UI building blocks are in `src/components/auth/`: `AuthShell`, `TextField`, `SelectField`, `PasswordField`, `SocialButtons`, `OrDivider`, and `StaticForm` (blocks submit until auth is implemented).
 
 ## Auth & database
