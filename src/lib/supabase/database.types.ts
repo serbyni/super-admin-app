@@ -123,12 +123,15 @@ export type Database = {
         Args: { p_lease_seconds?: number; p_limit?: number };
         Returns: {
           attempts: number;
+          business_address: string;
           business_name: string;
+          decided_at: string;
           delivery_id: string;
           locale: string;
           reason: string;
           recipient_email: string;
           recipient_name: string;
+          submitted_at: string;
           template: string;
         }[];
       };

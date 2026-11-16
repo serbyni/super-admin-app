@@ -15,7 +15,8 @@
     "lint:tokens": "node scripts/check-arbitrary-values.mjs",
     "test": "vitest run",
     "db:types": "npx supabase gen types typescript --project-id \"$SUPABASE_PROJECT_REF\" --schema public > src/lib/supabase/database.types.tmp && node scripts/finish-db-types.mjs",
-    "admin:create": "node --env-file-if-exists=.env.local scripts/create-super-admin.mjs"
+    "admin:create": "node --env-file-if-exists=.env.local scripts/create-super-admin.mjs",
+    "email:sync": "node --env-file-if-exists=.env.local --import tsx scripts/email-sync.tsx"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

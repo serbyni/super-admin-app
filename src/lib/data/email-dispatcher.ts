@@ -1,8 +1,9 @@
 import "server-only";
 import { Resend } from "resend";
-import { isEmailTemplate, renderEmail } from "@/emails/templates";
+import { formatDateTime } from "@/config/locale";
+import { isEmailTemplate, TEMPLATE_VARIABLES, type EmailVariable } from "@/emails/templates";
 import { emailConfig, type EmailConfig } from "@/lib/email/config";
-import { siteUrl } from "@/lib/env";
+import { publicEnv } from "@/lib/env";
 import { createServiceClient } from "@/lib/supabase/service";
 import { unwrap } from "./errors";
 
@@ -13,19 +14,56 @@ export type DispatchResult =
 type Db = NonNullable<ReturnType<typeof createServiceClient>>;
 type Delivery = Awaited<ReturnType<EmailDispatcher["claim"]>>[number];
 
+/** Resend inserts {{{VAR}}} values unescaped: escape user-entered text (names, reasons). */
+export function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 /**
- * Sends due email deliveries from the outbox (platform.email_deliveries).
+ * Event payload for a delivery: snake_case keys (Resend event schema), one per template variable
+ * the template uses. Automations map them to the template's {{{UPPER_CASE}}} variables.
+ */
+export function eventPayload(d: Delivery, siteUrl: string): Record<string, string> {
+  const all: Record<EmailVariable, string | null | undefined> = {
+    SITE_URL: siteUrl.replace(/\/$/, ""),
+    OWNER_NAME: d.recipient_name?.trim().split(/\s+/)[0],
+    OWNER_EMAIL: d.recipient_email,
+    BUSINESS_NAME: d.business_name,
+    BUSINESS_ADDRESS: d.business_address,
+    SUBMITTED_AT: d.submitted_at ? formatDateTime(d.submitted_at) : null,
+    DECIDED_AT: d.decided_at ? formatDateTime(d.decided_at) : null,
+    REASON: d.reason,
+  };
+  const keys = isEmailTemplate(d.template) ? TEMPLATE_VARIABLES[d.template] : [];
+  const payload: Record<string, string> = {};
+  for (const k of keys) {
+    const v = all[k]?.trim();
+    // Empty → omitted, so the Resend template's fallback value is used.
+    if (v) payload[k.toLowerCase()] = k === "SITE_URL" ? v : escapeHtml(v);
+  }
+  return payload;
+}
+
+/**
+ * Turns due email deliveries (platform.email_deliveries) into Resend **events**. In Resend, one
+ * automation per event sends the matching published template (see README → Emails).
  *
- * Runs with the service-role client (deliveries belong to many users) — it never takes user
- * input about WHAT to send: it only processes rows the database trigger created. Each delivery
- * uses its id as Resend idempotency key, so a retry after a timeout never sends twice.
+ * Runs with the service-role client (deliveries belong to many users) and never takes user input
+ * about WHAT to send: it only processes rows the database trigger created. The delivery id is the
+ * idempotency key, so a retry after a timeout never triggers the automation twice.
  */
 export class EmailDispatcher {
   private readonly resend: Resend;
 
   constructor(
     private readonly db: Db,
-    private readonly config: EmailConfig,
+    config: EmailConfig,
+    private readonly siteUrl: string,
   ) {
     this.resend = new Resend(config.RESEND_API_KEY);
   }
@@ -34,11 +72,10 @@ export class EmailDispatcher {
   static fromEnv(): EmailDispatcher | { missing: string[] } {
     const db = createServiceClient();
     const config = emailConfig();
-    const missing = [
-      ...(db ? [] : ["SUPABASE_SECRET_KEY"]),
-      ...(config ? [] : ["RESEND_API_KEY", "EMAIL_FROM"]),
-    ];
-    return db && config ? new EmailDispatcher(db, config) : { missing };
+    const missing = [...(db ? [] : ["SUPABASE_SECRET_KEY"]), ...(config ? [] : ["RESEND_API_KEY"])];
+    return db && config
+      ? new EmailDispatcher(db, config, publicEnv().NEXT_PUBLIC_SITE_URL)
+      : { missing };
   }
 
   private async claim(limit: number) {
@@ -61,33 +98,17 @@ export class EmailDispatcher {
 
   private async sendOne(d: Delivery): Promise<{ messageId?: string; error?: string }> {
     if (!isEmailTemplate(d.template)) return { error: `unknown template ${d.template}` };
-    const email = await renderEmail(d.template, {
-      recipientName: d.recipient_name,
-      businessName: d.business_name,
-      locale: d.locale,
-      reason: d.reason,
-      links: {
-        status: siteUrl("/pending"),
-        signIn: siteUrl("/login"),
-        contact: siteUrl("/contact"),
-      },
-    });
-    const { data, error } = await this.resend.emails.send(
-      {
-        from: this.config.EMAIL_FROM,
-        to: d.recipient_email,
-        replyTo: this.config.EMAIL_REPLY_TO,
-        subject: email.subject,
-        html: email.html,
-        text: email.text,
-        tags: [{ name: "template", value: d.template }],
-      },
-      { idempotencyKey: `delivery-${d.delivery_id}` },
+    const { data, error } = await this.resend.events.send(
+      { event: d.template, email: d.recipient_email, payload: eventPayload(d, this.siteUrl) },
+      // Same key on every retry of this delivery (standard Resend Idempotency-Key header).
+      { headers: { "Idempotency-Key": `delivery-${d.delivery_id}` } },
     );
-    return error ? { error: `${error.name}: ${error.message}` } : { messageId: data?.id };
+    return error
+      ? { error: `${error.name}: ${error.message}` }
+      : { messageId: `event:${data?.event}` };
   }
 
-  /** Claim and send up to `limit` due emails. Never throws for a single failed email. */
+  /** Claim and dispatch up to `limit` due deliveries. Never throws for a single failure. */
   async run(limit = 20): Promise<{ sent: number; failed: number }> {
     let sent = 0;
     let failed = 0;
@@ -107,7 +128,7 @@ export class EmailDispatcher {
   }
 }
 
-/** Send all due emails now (used by after()-kicks and the cron route). */
+/** Dispatch all due deliveries now (used by after()-kicks and the cron route). */
 export async function dispatchDueEmails(limit = 20): Promise<DispatchResult> {
   const dispatcher = EmailDispatcher.fromEnv();
   if (!(dispatcher instanceof EmailDispatcher)) {

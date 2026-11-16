@@ -141,10 +141,18 @@ Owner status changes are **events**, written by a database trigger in the same t
 | `admin_approve_user`  | admin approves                                           | owner: approved + sign-in link   | owner (shown on `/pending` until dismissed) |
 | `admin_declined_user` | admin declines with a reason                             | owner: not approved + the reason | —                                           |
 
-- **Templates**: React Email in `src/emails/` (layout, `copy.ts` per locale: EN now, FR/AR later). Preview: render with `renderEmail()`; tests in `src/emails/templates.test.tsx`.
-- **Sending**: `EmailDispatcher` (`src/lib/data/email-dispatcher.ts`) claims due deliveries with the service-role key, sends them via Resend with the delivery id as idempotency key, and records the result. Failures retry with backoff (1, 2, 4 … min, max 8 attempts).
+- **Templates** (design: Stitch "Email Template" screens): React Email in `src/emails/` — `layout.tsx` (blocks), `templates.tsx` (the 3 emails), `copy.ts` (texts per locale: EN now, FR/AR later), `theme.ts` (brand colours). The **same components** render real values (previews, tests) or `{{{VARIABLES}}}` for Resend.
+- **Resend side** (templates, events, automations) is created from the repo: `RESEND_API_KEY=<full-access key> EMAIL_FROM="Serbi <noreply@dev.serbi.me>" npm run email:sync`. Run it after changing an email and once per environment (prod: `noreply@serbi.me`). Resend only accepts automations for a **verified** sender domain.
+
+  | Resend event = template alias | Variables (event payload keys in snake_case)                                   |
+  | ----------------------------- | ------------------------------------------------------------------------------ |
+  | `register_new_user`           | SITE_URL, OWNER_NAME, BUSINESS_NAME, BUSINESS_ADDRESS, SUBMITTED_AT            |
+  | `admin_approve_user`          | SITE_URL, OWNER_NAME, OWNER_EMAIL, BUSINESS_NAME, BUSINESS_ADDRESS, DECIDED_AT |
+  | `admin_declined_user`         | SITE_URL, OWNER_NAME, BUSINESS_NAME, DECIDED_AT, REASON                        |
+
+- **Dispatching**: `EmailDispatcher` (`src/lib/data/email-dispatcher.ts`) claims due deliveries with the service-role key and sends one **Resend event** per delivery (`resend.events.send`, idempotency key = delivery id). Values are HTML-escaped (Resend inserts `{{{VAR}}}` unescaped); empty values are omitted so the template fallback is used. Failures retry with backoff (1, 2, 4 … min, max 8 attempts).
 - **When**: right after the action that created the event (`kickEmailDispatch()` runs after the response), plus a daily sweep `GET /api/internal/email/dispatch` (Vercel Cron, `Authorization: Bearer $CRON_SECRET`).
-- Without `RESEND_API_KEY` / `EMAIL_FROM` / `SUPABASE_SECRET_KEY`, emails stay queued (nothing is lost) and a warning is logged.
+- Without `RESEND_API_KEY` / `SUPABASE_SECRET_KEY`, deliveries stay queued (nothing is lost) and a warning is logged.
 - **Sender domains** (Resend, EU region): `dev.serbi.me` for development, `serbi.me` for production; DNS records at Namecheap.
 
 **User management** (`/admin/users`): pending / approved / declined lists, application details, **Approve** or **Decline with a reason** (emailed to the owner). The sidebar shows pending and unread counts; `/admin/notifications` lists admin notifications.
