@@ -1,18 +1,26 @@
+import { parsePhoneNumberFromString } from "libphonenumber-js/max";
 import { z } from "zod";
 import { PASSWORD_MIN_LENGTH } from "./password-strength";
 
 const trimmed = (min: number, max: number, message: string) =>
   z.string().trim().min(min, message).max(max, message);
 
-/** Normalises "+216 20 000 000" → "+21620000000" and requires E.164. */
-const phone = z
-  .string()
-  .transform((v) => v.replace(/[\s().-]/g, ""))
-  .pipe(
-    z
-      .string()
-      .regex(/^\+[1-9][0-9]{6,14}$/, "Enter the number with country code, e.g. +216 20 000 000"),
-  );
+/**
+ * International number (the form submits E.164 from the country picker). Validated with the full
+ * libphonenumber rules for that country and normalised to E.164, e.g. "+216 20 123 456" → "+21620123456".
+ */
+const phone = z.string().transform((v, ctx) => {
+  const parsed = parsePhoneNumberFromString(v.replace(/[\s().-]/g, ""));
+  if (!v.trim().startsWith("+") || !parsed) {
+    ctx.addIssue({ code: "custom", message: "Choose your country and enter your phone number" });
+    return z.NEVER;
+  }
+  if (!parsed.isValid()) {
+    ctx.addIssue({ code: "custom", message: "This number is not valid for the selected country" });
+    return z.NEVER;
+  }
+  return parsed.number;
+});
 
 /** Business details (shared by email sign-up and the social "complete profile" step). */
 export const businessProfileSchema = z.object({

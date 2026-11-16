@@ -20,6 +20,7 @@ export function RegisterForm({
   maps: MapsClientConfig;
 }) {
   const [state, action] = useActionState<FormState, FormData>(registerOwner, {});
+  const [locationCountry, setLocationCountry] = useState<string | undefined>();
   const [password, setPassword] = useState("");
   const errors = state.errors ?? {};
 
@@ -27,12 +28,14 @@ export function RegisterForm({
     <form action={action} noValidate className="flex flex-col gap-md">
       <FormAlert message={errors.form} />
       <BusinessFields
+        phoneCountryHint={locationCountry}
         businessTypes={businessTypes}
         errors={errors}
         values={state.values}
         withEmail
       />
       <LocationPicker
+        onCountryChange={setLocationCountry}
         maps={maps}
         key={state.values?.location ?? ""}
         initial={initialLocation(state.values)}

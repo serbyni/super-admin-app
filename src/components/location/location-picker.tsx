@@ -28,6 +28,8 @@ type Props = {
   errors?: Errors;
   /** All provider calls go through our /api routes with a server-only key. */
   maps: MapsClientConfig;
+  /** Called with the ISO country code whenever the location's country changes. */
+  onCountryChange?: (countryCode: string | undefined) => void;
 };
 
 /** Logical size of /api/maps/static images (must match STATIC_MAP on the server). */
@@ -56,13 +58,18 @@ async function getJson<T>(url: string, init?: RequestInit): Promise<T | null> {
  * coordinates. No Google key reaches the browser — everything goes through our /api proxies.
  * Submits `location` (JSON) plus editable `street`, `postal_code`, `city`.
  */
-export function LocationPicker({ initial, errors = {}, maps }: Props) {
+export function LocationPicker({ initial, errors = {}, maps, onCountryChange }: Props) {
   const mapsEnabled = maps.enabled;
   const [loc, setLoc] = useState<Partial<BusinessLocation>>(initial ?? {});
   const update = useCallback(
     (next: Partial<BusinessLocation>) => setLoc((prev) => ({ ...prev, ...next })),
     [],
   );
+
+  const countryCode = loc.country_code;
+  useEffect(() => {
+    onCountryChange?.(countryCode);
+  }, [countryCode, onCountryChange]);
 
   /** Move the pin and (when maps are enabled) look up the address for it. */
   const locate = useCallback(

@@ -102,6 +102,12 @@ Every route checks the request comes from the same site, validates input (zod), 
 
 Stored on `platform.owner_accounts`: `latitude`, `longitude`, `place_id`, `formatted_address`, `street`, `postal_code`, `city`, `region`, `country`, `country_code`, `location_source` (`place_search` | `map_pin` | `coordinates`). Without any maps key the form shows manual coordinates and address fields.
 
+### Phone number
+
+`src/components/auth/phone-field.tsx`: a country picker (SVG flag, name, dial code; search by name, ISO code or `+code`; keyboard ↑ ↓ Enter Esc) with the main markets first (`src/config/phone.ts`). The number is formatted as you type for the chosen country ([libphonenumber-js](https://gitlab.com/catamphetamine/libphonenumber-js)), a pasted `+33…` or `0033…` number switches the country automatically, and while the field is empty the country follows the business location. The form submits E.164 (`+21620123456`); the server re-validates with the **full** per-country rules (`libphonenumber-js/max`).
+
+Flags come from `country-flag-icons` and are copied to `public/flags/` by `npm install` (postinstall, gitignored), so only the flags shown are downloaded.
+
 ### Super admins
 
 Super admins are rows in `platform.platform_admins`. **No admin account or password is hard-coded.** Create one with the one-time script:

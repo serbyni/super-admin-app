@@ -1,4 +1,5 @@
 import { SelectField, TextField } from "./fields";
+import { PhoneField } from "./phone-field";
 import type { FieldErrors } from "@/lib/auth/register-schema";
 import { localizedName, type BusinessType } from "@/lib/business-types/schema";
 
@@ -7,6 +8,8 @@ type Props = {
   errors?: FieldErrors;
   values?: Record<string, string>;
   withEmail?: boolean;
+  /** ISO country of the business location; pre-selects the phone country while it is empty. */
+  phoneCountryHint?: string;
 };
 
 /** Owner + business details, shared by email sign-up and the social "complete profile" step. */
@@ -15,6 +18,7 @@ export function BusinessFields({
   errors = {},
   values = {},
   withEmail = false,
+  phoneCountryHint,
 }: Props) {
   const options = businessTypes.map((t) => ({ value: t.slug, label: localizedName(t.name) }));
   return (
@@ -30,16 +34,14 @@ export function BusinessFields({
           defaultValue={values.fullName}
           error={errors.fullName}
         />
-        <TextField
+        <PhoneField
+          key={values.phone ?? ""}
           id="phone"
           label="Phone"
-          icon="call"
-          type="tel"
-          autoComplete="tel"
-          placeholder="+216 20 000 000"
           required
           defaultValue={values.phone}
           error={errors.phone}
+          suggestedCountry={phoneCountryHint}
         />
       </div>
       {withEmail ? (

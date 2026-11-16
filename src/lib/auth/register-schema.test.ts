@@ -4,7 +4,7 @@ import { fieldErrors, registerSchema } from "./register-schema";
 
 const valid = {
   fullName: "Amira Ben Salah",
-  phone: "+216 20 000 000",
+  phone: "+216 20 123 456",
   email: "  Owner@YourCafe.com ",
   businessName: "Artisan Brew",
   businessType: "cafe",
@@ -18,7 +18,7 @@ describe("registerSchema", () => {
     const r = registerSchema.safeParse(valid);
     expect(r.success).toBe(true);
     expect(r.data?.email).toBe("owner@yourcafe.com");
-    expect(r.data?.phone).toBe("+21620000000");
+    expect(r.data?.phone).toBe("+21620123456");
   });
 
   it("rejects mismatched passwords on confirmPassword", () => {
@@ -32,9 +32,28 @@ describe("registerSchema", () => {
     expect(fieldErrors(r.error!).password).toMatch(/at least 10/);
   });
 
-  it("requires phone with country code", () => {
-    const r = registerSchema.safeParse({ ...valid, phone: "20 000 000" });
-    expect(fieldErrors(r.error!).phone).toMatch(/country code/);
+  it("requires an international phone number", () => {
+    const r = registerSchema.safeParse({ ...valid, phone: "20 123 456" });
+    expect(fieldErrors(r.error!).phone).toMatch(/Choose your country/);
+    expect(
+      fieldErrors(registerSchema.safeParse({ ...valid, phone: "" }).error!).phone,
+    ).toBeTruthy();
+  });
+
+  it("rejects numbers that are not valid for their country", () => {
+    // Right length for Tunisia but no Tunisian number starts with 0.
+    const r = registerSchema.safeParse({ ...valid, phone: "+216 00 000 000" });
+    expect(fieldErrors(r.error!).phone).toMatch(/not valid/);
+    expect(registerSchema.safeParse({ ...valid, phone: "+216 2012" }).success).toBe(false);
+  });
+
+  it("accepts and normalises other countries", () => {
+    expect(registerSchema.safeParse({ ...valid, phone: "+33 6 12 34 56 78" }).data?.phone).toBe(
+      "+33612345678",
+    );
+    expect(registerSchema.safeParse({ ...valid, phone: "+213 551 23 45 67" }).data?.phone).toBe(
+      "+213551234567",
+    );
   });
 
   it("requires accepting the terms", () => {
