@@ -70,12 +70,20 @@ Owner status flow: `email_unverified` → (email link) → `pending_approval` �
 
 ### Data access layer
 
-All Supabase calls live in **`src/lib/data/`**, one module per area (`business-types`, `owners`, `admins`, `auth`, `browser`). Pages, server actions and components call typed functions such as `adminSaveBusinessType({ id, slug, name, icon, isActive })`; they never use `.rpc()` or create a Supabase client. ESLint blocks client imports and `.rpc()` outside `src/lib/data` and `src/lib/supabase`.
+All Supabase calls live in **service classes** in `src/lib/data/`. Code gets this request's API and calls methods with typed arguments:
 
-- Each function creates the right client itself: the **public** client inside cached functions, the **per-request** client (user cookies) otherwise. Clients are never stored in module state.
+```ts
+const api = serverApi();
+await api.businessTypes.adminSave({ id, slug, name, icon, isActive });
+redirect(await api.auth.homePath());
+```
+
+Services: `api.businessTypes`, `api.owners`, `api.admins`, `api.auth` (server) and `browserApi()` (Client Components). ESLint blocks Supabase client imports and `.rpc()` everywhere else.
+
+- **One instance per request** (`serverApi()` is memoized per request with React `cache`), never a shared global, because it carries the user's session. The Supabase client is created lazily on the first query, so cached public reads don't touch cookies.
 - Arguments and results are typed from the database (`src/lib/supabase/database.types.ts`). After every migration run `SUPABASE_PROJECT_REF=<ref> npm run db:types` (needs `npx supabase login` once); a renamed SQL argument then fails `npm run typecheck`.
-- Failures throw `DataError` with a domain `code` (`forbidden`, `conflict`, `in_use`, `stale_list`, `not_authenticated`, `profile_already_completed`, `invalid_location`, `unknown`); actions map the code to a message. Unknown errors are logged once in `unwrap()`.
-- Where a signed-in user belongs (admin → `/admin`, owner → by status) is decided only in `homePathForCurrentUser()`.
+- Failures throw `DataError` with a domain `code` (`forbidden`, `conflict`, `in_use`, `stale_list`, `not_authenticated`, `profile_already_completed`, `invalid_location`, `unknown`); actions map the code to a message. Unknown errors are logged once.
+- Where a signed-in user belongs (admin → `/admin`, owner → by status) is decided only in `api.auth.homePath()`.
 
 More in `src/lib/data/README.md`.
 

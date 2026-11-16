@@ -1,6 +1,6 @@
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
-import { completeAuthRedirect, homePathForCurrentUser } from "@/lib/data/auth";
+import { serverApi } from "@/lib/data/server-api";
 
 /**
  * Single landing point for:
@@ -10,11 +10,12 @@ import { completeAuthRedirect, homePathForCurrentUser } from "@/lib/data/auth";
  */
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
-  const ok = await completeAuthRedirect({
+  const api = serverApi();
+  const ok = await api.auth.completeRedirect({
     tokenHash: searchParams.get("token_hash"),
     type: searchParams.get("type") as EmailOtpType | null,
     code: searchParams.get("code"),
   });
   if (!ok) return NextResponse.redirect(new URL("/login?error=link_invalid", origin));
-  return NextResponse.redirect(new URL(await homePathForCurrentUser(), origin));
+  return NextResponse.redirect(new URL(await api.auth.homePath(), origin));
 }

@@ -1,9 +1,9 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { signOut as endSession } from "@/lib/data/auth";
+import { serverApi } from "@/lib/data/server-api";
 
 export async function signOut() {
-  await endSession();
+  await serverApi().auth.signOut();
   redirect("/login");
 }

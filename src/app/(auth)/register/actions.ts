@@ -7,13 +7,8 @@ import {
   registerSchema,
   type FieldErrors,
 } from "@/lib/auth/register-schema";
-import { isActiveBusinessType } from "@/lib/data/business-types";
 import { isDataError } from "@/lib/data/errors";
-import {
-  completeOwnerProfile as saveOwnerProfile,
-  resendSignupEmail,
-  signUpOwner,
-} from "@/lib/data/owners";
+import { serverApi } from "@/lib/data/server-api";
 import { locationFromForm } from "@/lib/location/schema";
 
 /** Map location validation issues onto the picker's fields. */
@@ -75,13 +70,14 @@ export async function registerOwner(_prev: FormState, formData: FormData): Promi
   }
 
   const d = parsed.data;
-  if (!(await isActiveBusinessType(d.businessType))) {
+  const api = serverApi();
+  if (!(await api.businessTypes.isActive(d.businessType))) {
     return {
       errors: { businessType: "Choose a business type from the list" },
       values: keepValues(raw),
     };
   }
-  const result = await signUpOwner({
+  const result = await api.owners.signUp({
     email: d.email,
     password: d.password,
     fullName: d.fullName,
@@ -113,7 +109,7 @@ export async function resendConfirmation(
     .trim()
     .toLowerCase();
   if (!email) return { error: "Missing email address." };
-  const result = await resendSignupEmail(email);
+  const result = await serverApi().owners.resendSignupEmail(email);
   if (!result.ok) {
     return { error: AUTH_ERRORS[result.code] ?? "Could not resend the email. Try again later." };
   }
@@ -139,14 +135,15 @@ export async function completeOwnerProfile(
   }
 
   const d = parsed.data;
-  if (!(await isActiveBusinessType(d.businessType))) {
+  const api = serverApi();
+  if (!(await api.businessTypes.isActive(d.businessType))) {
     return {
       errors: { businessType: "Choose a business type from the list" },
       values: keepValues(raw),
     };
   }
   try {
-    await saveOwnerProfile({
+    await api.owners.completeProfile({
       fullName: d.fullName,
       phone: d.phone,
       businessName: d.businessName,

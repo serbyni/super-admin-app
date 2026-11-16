@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { homePathForCurrentUser, signInWithPassword } from "@/lib/data/auth";
+import { serverApi } from "@/lib/data/server-api";
 
 export type LoginState = { error?: string; email?: string };
 
@@ -22,7 +22,8 @@ export async function signIn(_prev: LoginState, formData: FormData): Promise<Log
   const email = String(formData.get("email") ?? "");
   if (!parsed.success) return { error: "Enter your email and password.", email };
 
-  const result = await signInWithPassword(parsed.data.email, parsed.data.password);
+  const api = serverApi();
+  const result = await api.auth.signInWithPassword(parsed.data.email, parsed.data.password);
   if (!result.ok) {
     if (result.code === "email_not_confirmed") {
       redirect(`/register/check-email?email=${encodeURIComponent(parsed.data.email)}`);
@@ -35,5 +36,5 @@ export async function signIn(_prev: LoginState, formData: FormData): Promise<Log
       email,
     };
   }
-  redirect(await homePathForCurrentUser(safeNext(parsed.data.next) ?? undefined));
+  redirect(await api.auth.homePath(safeNext(parsed.data.next) ?? undefined));
 }

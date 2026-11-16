@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { Provider } from "@supabase/supabase-js";
-import { startOAuthSignIn } from "@/lib/data/browser";
+import { browserApi } from "@/lib/data/browser-api";
 
 function GoogleLogo() {
   return (
@@ -52,7 +52,7 @@ export function SocialButtons({
   async function signIn(provider: Provider) {
     setPending(provider);
     setError(null);
-    if (!(await startOAuthSignIn(provider))) {
+    if (!(await browserApi().startOAuthSignIn(provider))) {
       setPending(null);
       setError("Could not start sign-in with this provider. Please try again or use email.");
     }

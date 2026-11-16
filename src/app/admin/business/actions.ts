@@ -4,12 +4,8 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/auth/admin";
 import { businessTypeFormSchema } from "@/lib/business-types/schema";
-import {
-  adminDeleteBusinessType,
-  adminReorderBusinessTypes,
-  adminSaveBusinessType,
-} from "@/lib/data/business-types";
 import { isDataError, type DataErrorCode } from "@/lib/data/errors";
+import { serverApi } from "@/lib/data/server-api";
 
 export type BusinessTypeFormState = {
   errors?: Partial<Record<string, string>>;
@@ -39,7 +35,7 @@ export async function saveBusinessType(
 
   const d = parsed.data;
   try {
-    await adminSaveBusinessType({
+    await serverApi().businessTypes.adminSave({
       id: d.id,
       slug: d.slug,
       name: {
@@ -73,7 +69,7 @@ export async function deleteBusinessType(
   const id = z.uuid().safeParse(formData.get("id"));
   if (!id.success) return { error: "Invalid business type." };
   try {
-    await adminDeleteBusinessType(id.data);
+    await serverApi().businessTypes.adminDelete(id.data);
   } catch (e) {
     return {
       error:
@@ -93,7 +89,7 @@ export async function reorderBusinessTypes(ids: string[]): Promise<ReorderResult
   const parsed = z.array(z.uuid()).min(1).max(500).safeParse(ids);
   if (!parsed.success) return { ok: false, error: "Invalid order." };
   try {
-    await adminReorderBusinessTypes(parsed.data);
+    await serverApi().businessTypes.adminReorder(parsed.data);
   } catch (e) {
     return {
       ok: false,
