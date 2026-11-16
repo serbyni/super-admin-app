@@ -1,17 +1,20 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { TERMS_VERSION } from "@/config/legal";
-import { siteUrl } from "@/lib/env";
 import {
   businessProfileSchema,
   fieldErrors,
   registerSchema,
   type FieldErrors,
 } from "@/lib/auth/register-schema";
-import { getActiveBusinessTypes } from "@/lib/business-types/data";
+import { isActiveBusinessType } from "@/lib/data/business-types";
+import { isDataError } from "@/lib/data/errors";
+import {
+  completeOwnerProfile as saveOwnerProfile,
+  resendSignupEmail,
+  signUpOwner,
+} from "@/lib/data/owners";
 import { locationFromForm } from "@/lib/location/schema";
-import { createClient } from "@/lib/supabase/server";
 
 /** Map location validation issues onto the picker's fields. */
 function locationErrors(error: {
@@ -28,10 +31,6 @@ function locationErrors(error: {
     }
   }
   return out;
-}
-
-async function isActiveBusinessType(slug: string): Promise<boolean> {
-  return (await getActiveBusinessTypes()).some((t) => t.slug === slug);
 }
 
 export type FormState = { errors?: FieldErrors; values?: Record<string, string> };
@@ -82,29 +81,20 @@ export async function registerOwner(_prev: FormState, formData: FormData): Promi
       values: keepValues(raw),
     };
   }
-  const supabase = await createClient();
-  const { error } = await supabase.auth.signUp({
+  const result = await signUpOwner({
     email: d.email,
     password: d.password,
-    options: {
-      emailRedirectTo: siteUrl("/auth/callback"),
-      data: {
-        signup_source: "owner",
-        full_name: d.fullName,
-        phone: d.phone,
-        business_name: d.businessName,
-        business_type: d.businessType,
-        location: location.data,
-        locale: "en",
-        terms_version: TERMS_VERSION,
-      },
-    },
+    fullName: d.fullName,
+    phone: d.phone,
+    businessName: d.businessName,
+    businessType: d.businessType,
+    location: location.data,
+    locale: "en",
   });
-
-  if (error) {
+  if (!result.ok) {
     return {
       errors: {
-        form: AUTH_ERRORS[error.code ?? ""] ?? "Could not create the account. Please try again.",
+        form: AUTH_ERRORS[result.code] ?? "Could not create the account. Please try again.",
       },
       values: keepValues(raw),
     };
@@ -123,16 +113,10 @@ export async function resendConfirmation(
     .trim()
     .toLowerCase();
   if (!email) return { error: "Missing email address." };
-  const supabase = await createClient();
-  const { error } = await supabase.auth.resend({
-    type: "signup",
-    email,
-    options: { emailRedirectTo: siteUrl("/auth/callback") },
-  });
-  if (error)
-    return {
-      error: AUTH_ERRORS[error.code ?? ""] ?? "Could not resend the email. Try again later.",
-    };
+  const result = await resendSignupEmail(email);
+  if (!result.ok) {
+    return { error: AUTH_ERRORS[result.code] ?? "Could not resend the email. Try again later." };
+  }
   return { sent: true };
 }
 
@@ -161,27 +145,24 @@ export async function completeOwnerProfile(
       values: keepValues(raw),
     };
   }
-  const supabase = await createClient();
-  const { error } = await supabase.rpc("complete_owner_profile", {
-    p_full_name: d.fullName,
-    p_phone: d.phone,
-    p_business_name: d.businessName,
-    p_business_type: d.businessType,
-    p_location: location.data,
-    p_locale: "en",
-    p_terms_version: TERMS_VERSION,
-  });
-  if (error) {
-    if (error.message.includes("not_authenticated")) redirect("/login");
-    if (error.message.includes("profile_already_completed")) redirect("/pending");
-    if (error.message.includes("invalid_location")) {
-      return {
-        errors: { location: "Choose your business location on the map." },
-        values: keepValues(raw),
-      };
-    }
+  try {
+    await saveOwnerProfile({
+      fullName: d.fullName,
+      phone: d.phone,
+      businessName: d.businessName,
+      businessType: d.businessType,
+      location: location.data,
+      locale: "en",
+    });
+  } catch (e) {
+    if (!isDataError(e)) throw e;
+    if (e.code === "not_authenticated") redirect("/login");
+    if (e.code === "profile_already_completed") redirect("/pending");
     return {
-      errors: { form: "Could not save your details. Please try again." },
+      errors:
+        e.code === "invalid_location"
+          ? { location: "Choose your business location on the map." }
+          : { form: "Could not save your details. Please try again." },
       values: keepValues(raw),
     };
   }

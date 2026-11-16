@@ -2,8 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { isOwnerStatus, pathForStatus } from "@/lib/auth/owner-status";
-import { createClient } from "@/lib/supabase/server";
+import { homePathForCurrentUser, signInWithPassword } from "@/lib/data/auth";
 
 export type LoginState = { error?: string; email?: string };
 
@@ -23,27 +22,18 @@ export async function signIn(_prev: LoginState, formData: FormData): Promise<Log
   const email = String(formData.get("email") ?? "");
   if (!parsed.success) return { error: "Enter your email and password.", email };
 
-  const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({
-    email: parsed.data.email,
-    password: parsed.data.password,
-  });
-  if (error) {
-    if (error.code === "email_not_confirmed") {
+  const result = await signInWithPassword(parsed.data.email, parsed.data.password);
+  if (!result.ok) {
+    if (result.code === "email_not_confirmed") {
       redirect(`/register/check-email?email=${encodeURIComponent(parsed.data.email)}`);
     }
     return {
       error:
-        error.code === "invalid_credentials"
+        result.code === "invalid_credentials"
           ? "Incorrect email or password."
           : "Could not sign in. Please try again in a moment.",
       email,
     };
   }
-
-  const { data: isAdmin } = await supabase.rpc("is_platform_admin");
-  if (isAdmin === true) redirect(safeNext(parsed.data.next) ?? "/admin");
-
-  const { data: status } = await supabase.rpc("get_my_owner_status");
-  redirect(pathForStatus(isOwnerStatus(status) ? status : null));
+  redirect(await homePathForCurrentUser(safeNext(parsed.data.next) ?? undefined));
 }

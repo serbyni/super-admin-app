@@ -68,6 +68,17 @@ Auth is **Supabase Auth** (email + password, Google, Facebook). Owner applicatio
 
 Owner status flow: `email_unverified` → (email link) → `pending_approval` → `approved` / `rejected`. Google/Facebook sign-ups start at `profile_incomplete` and must complete `/register/complete`.
 
+### Data access layer
+
+All Supabase calls live in **`src/lib/data/`**, one module per area (`business-types`, `owners`, `admins`, `auth`, `browser`). Pages, server actions and components call typed functions such as `adminSaveBusinessType({ id, slug, name, icon, isActive })`; they never use `.rpc()` or create a Supabase client. ESLint blocks client imports and `.rpc()` outside `src/lib/data` and `src/lib/supabase`.
+
+- Each function creates the right client itself: the **public** client inside cached functions, the **per-request** client (user cookies) otherwise. Clients are never stored in module state.
+- Arguments and results are typed from the database (`src/lib/supabase/database.types.ts`). After every migration run `SUPABASE_PROJECT_REF=<ref> npm run db:types` (needs `npx supabase login` once); a renamed SQL argument then fails `npm run typecheck`.
+- Failures throw `DataError` with a domain `code` (`forbidden`, `conflict`, `in_use`, `stale_list`, `not_authenticated`, `profile_already_completed`, `invalid_location`, `unknown`); actions map the code to a message. Unknown errors are logged once in `unwrap()`.
+- Where a signed-in user belongs (admin → `/admin`, owner → by status) is decided only in `homePathForCurrentUser()`.
+
+More in `src/lib/data/README.md`.
+
 ### Environment variables
 
 | Name                                   | Where                           | Value                                                             |

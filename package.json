@@ -14,6 +14,7 @@
     "tokens:palettes": "tsx scripts/generate-palettes.mjs",
     "lint:tokens": "node scripts/check-arbitrary-values.mjs",
     "test": "vitest run",
+    "db:types": "npx supabase gen types typescript --project-id \"$SUPABASE_PROJECT_REF\" --schema public > src/lib/supabase/database.types.tmp && node scripts/finish-db-types.mjs",
     "admin:create": "node --env-file-if-exists=.env.local scripts/create-super-admin.mjs"
   },
   "dependencies": {

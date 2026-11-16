@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import type { Provider } from "@supabase/supabase-js";
-import { siteUrl } from "@/lib/env";
-import { createClient } from "@/lib/supabase/client";
+import { startOAuthSignIn } from "@/lib/data/browser";
 
 function GoogleLogo() {
   return (
@@ -53,11 +52,7 @@ export function SocialButtons({
   async function signIn(provider: Provider) {
     setPending(provider);
     setError(null);
-    const { error } = await createClient().auth.signInWithOAuth({
-      provider,
-      options: { redirectTo: siteUrl("/auth/callback") },
-    });
-    if (error) {
+    if (!(await startOAuthSignIn(provider))) {
       setPending(null);
       setError("Could not start sign-in with this provider. Please try again or use email.");
     }

@@ -5,7 +5,7 @@ import { AuthShell } from "@/components/auth/auth-shell";
 import { Icon } from "@/components/ui/icon";
 import { pathForStatus } from "@/lib/auth/owner-status";
 import { getOwnerSession } from "@/lib/auth/session";
-import { getActiveBusinessTypes } from "@/lib/business-types/data";
+import { listActiveBusinessTypes } from "@/lib/data/business-types";
 import { mapsClientConfig } from "@/lib/maps/server";
 import { CompleteProfileForm } from "./complete-form";
 
@@ -30,7 +30,7 @@ async function Form() {
       </p>
       <CompleteProfileForm
         defaults={{ fullName: name }}
-        businessTypes={await getActiveBusinessTypes()}
+        businessTypes={await listActiveBusinessTypes()}
         maps={mapsClientConfig()}
       />
     </>

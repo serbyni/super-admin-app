@@ -4,7 +4,7 @@ import { AuthShell } from "@/components/auth/auth-shell";
 import { OrDivider, SocialButtons } from "@/components/auth/social-buttons";
 import { connection } from "next/server";
 import { Suspense } from "react";
-import { getActiveBusinessTypes } from "@/lib/business-types/data";
+import { listActiveBusinessTypes } from "@/lib/data/business-types";
 import { mapsClientConfig } from "@/lib/maps/server";
 import { RegisterForm } from "./register-form";
 import { Icon } from "@/components/ui/icon";
@@ -20,7 +20,7 @@ const steps = [
 /** Business types are managed by super admins; read at request time (cached, tag-invalidated). */
 async function RegisterFormWithTypes() {
   await connection();
-  return <RegisterForm businessTypes={await getActiveBusinessTypes()} maps={mapsClientConfig()} />;
+  return <RegisterForm businessTypes={await listActiveBusinessTypes()} maps={mapsClientConfig()} />;
 }
 
 export default function RegisterPage() {
