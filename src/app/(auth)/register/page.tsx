@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { RedirectIfSignedIn } from "@/components/auth/redirect-if-signed-in";
-import { OrDivider, SocialButtons } from "@/components/auth/social-buttons";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { serverApi } from "@/lib/data/server-api";
@@ -87,9 +86,6 @@ export default function RegisterPage() {
               24 hours.
             </p>
           </div>
-
-          <SocialButtons verb="Sign up" layout="grid" />
-          <OrDivider label="or register with email" />
 
           <Suspense fallback={<p className="text-on-surface-variant">Loading form…</p>}>
             <RegisterFormWithTypes />

@@ -44,6 +44,21 @@ export class AuthService {
     return false;
   }
 
+  /**
+   * True when `user` just came in through Google/Facebook WITHOUT a Serbi registration: the
+   * account is not linked to an email sign-up, is not a super admin and has no completed owner
+   * profile. Owners must register with email first (business details + location); after that,
+   * signing in with a provider using the same email works (Supabase links the identities).
+   */
+  async isUnregisteredOAuthUser(user: User): Promise<boolean> {
+    const providers = (user.identities ?? []).map((i) => i.provider);
+    const viaEmail = user.app_metadata?.provider === "email" || providers.includes("email");
+    if (viaEmail) return false;
+    if (await this.admins.isPlatformAdmin()) return false;
+    const me = await this.owners.me();
+    return me === null || me.status === "profile_incomplete";
+  }
+
   async signOut(): Promise<void> {
     await (await this.db()).auth.signOut();
   }

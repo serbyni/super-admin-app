@@ -11,7 +11,7 @@ Stack: **Next.js 16** (App Router, `cacheComponents`), React 19, TypeScript, Tai
 | ------------------------- | -------------------------------------------------------------------------------------------- | ----------------------- |
 | `/`                       | Platform home (temporary route map)                                                          | placeholder             |
 | `/login`                  | Email/password + Google/Facebook sign-in; super admins → `/admin`, owners → by status        | **working**             |
-| `/register`               | Café-owner registration → email verification → approval                                      | **UI done** (not wired) |
+| `/register`               | Café-owner registration (email only) → email verification → approval                         | **UI done** (not wired) |
 | `/forgot-password`        | Password reset request                                                                       | **UI done** (not wired) |
 | `/reset-password/success` | Password updated confirmation                                                                | **UI done**             |
 | `/privacy`, `/terms`      | Legal pages                                                                                  | placeholder             |
@@ -67,6 +67,8 @@ Extra tokens: icon sizes `text-icon-xs…3xl`, small text `text-caption` / `text
 **Form fields** are Material 3 _outlined_ fields with a floating label (`src/components/auth/fields.tsx`): at rest the label sits inside the box; on focus or when filled it moves onto the top border (pure CSS via `peer` + `:placeholder-shown` / `:invalid`, no JavaScript). Example placeholders only appear while a field is focused. The label notch uses the `bg-field-notch` token (= card surface), so put fields on `surface-container-lowest` cards. Use `TextField` / `PasswordField` / `SelectField` / `PhoneField`; for custom inputs combine `outlinedBox()` + `FloatingLabel` (the input must come before the label).
 
 **Brand**: the Serbi mark (QR-cup on a leather tile) lives in `public/brand/` — `serbi-mark.png` (UI, via `<BrandMark />`), `serbi-mark-192.png`, `serbi-email-mark.png` (emails, 96 px shown at 44 px), `serbi-logo.jpg` (full logo with lettering, Open Graph). Favicon and Apple touch icon are `src/app/icon.png` / `apple-icon.png`. Emails load the mark from `{SITE_URL}/brand/serbi-email-mark.png`, so the site must be publicly reachable (no Vercel login wall).
+
+**Toasts**: `useToast().show({ variant, title, description, actions, duration })` from `src/components/ui/toast.tsx` (`<ToastProvider>` is in the root layout). Variants `info` / `success` / `warning` / `error`; auto-dismiss (paused on hover/focus, `duration: null` keeps it), close button, action buttons (`href` or `onClick`).
 
 **Dialogs**: never use `window.alert/confirm/prompt`. Use `Dialog` / `ConfirmDialog` from `src/components/ui/dialog.tsx` (native `<dialog>`: focus trap, Esc, themed backdrop; tones `primary` / `success` / `danger`; `pending` shows a spinner and blocks closing).
 
@@ -163,10 +165,13 @@ Owner status changes are **events**, written by a database trigger in the same t
 - Without `RESEND_API_KEY` / `SUPABASE_SECRET_KEY`, deliveries stay queued (nothing is lost) and a warning is logged.
 - **Sender domains** (Resend, EU region): `dev.serbi.me` for development, `serbi.me` for production; DNS records at Namecheap.
 
-- **Supabase Auth emails** (the "confirm your email" link) are sent by Supabase, not by the dispatcher. To send them through Resend with our design:
-  1. Supabase → Authentication → Emails → **SMTP Settings** → enable custom SMTP: host `smtp.resend.com`, port `465`, username `resend`, password = a Resend API key (sending access), sender `noreply@dev.serbi.me` (prod: `noreply@serbi.me`), name `Serbi`.
-  2. Supabase → Authentication → Emails → **Templates → Confirm signup**: subject and HTML from `npm run email:supabase` (`supabase/templates/confirm-signup.html`, generated from `src/emails/auth-templates.tsx`).
-  3. Authentication → URL Configuration: **Site URL** = `https://dev.serbi.me` (used for the logo and footer links in that email).
+- **Google / Facebook = sign-in only.** Owners register with email (business details + location are required). In `/auth/callback`, a provider account without a Serbi registration (not linked to an email sign-up, not an admin, no completed profile) is deleted again and sent to `/login?error=no_account` (error toast with **Register**). After registering, signing in with Google/Facebook using the same email works (Supabase links the identities).
+
+**Supabase Auth emails** (the "confirm your email" link) are sent by Supabase, not by the dispatcher. To send them through Resend with our design:
+
+1. Supabase → Authentication → Emails → **SMTP Settings** → enable custom SMTP: host `smtp.resend.com`, port `465`, username `resend`, password = a Resend API key (sending access), sender `noreply@dev.serbi.me` (prod: `noreply@serbi.me`), name `Serbi`.
+2. Supabase → Authentication → Emails → **Templates → Confirm signup**: subject and HTML from `npm run email:supabase` (`supabase/templates/confirm-signup.html`, generated from `src/emails/auth-templates.tsx`).
+3. Authentication → URL Configuration: **Site URL** = `https://dev.serbi.me` (used for the logo and footer links in that email).
 
 **Real-time notifications** (Supabase Realtime, private Broadcast): a trigger on `platform.notifications` broadcasts each new row to the private topic `notifications:<user_id>`; a policy on `realtime.messages` lets only that signed-in user subscribe. `<LiveNotifications>` (admin shell, `/pending`, `/onboarding`) refreshes the page and shows a toast when one arrives. New super admins also get notifications for applications still pending (`grant_platform_admin`).
 

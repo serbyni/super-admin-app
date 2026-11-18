@@ -111,3 +111,36 @@ describe("AuthService.homePath", () => {
     expect(await a.homePath()).toBe("/register/complete");
   });
 });
+
+describe("AuthService.isUnregisteredOAuthUser", () => {
+  const user = (provider: string, identities: string[]) =>
+    ({ app_metadata: { provider }, identities: identities.map((p) => ({ provider: p })) }) as never;
+  function auth(isAdmin: boolean, owner: { status: string } | null) {
+    const { lazy } = fakeDb({
+      is_platform_admin: { data: isAdmin, error: null },
+      get_my_owner: { data: owner ? [{ ...owner, cafe_slug: null }] : [], error: null },
+    });
+    return new AuthService(lazy, new AdminsService(lazy), new OwnersService(lazy));
+  }
+
+  it("refuses a fresh Google/Facebook account without registration", async () => {
+    expect(await auth(false, null).isUnregisteredOAuthUser(user("google", ["google"]))).toBe(true);
+    expect(
+      await auth(false, { status: "profile_incomplete" }).isUnregisteredOAuthUser(
+        user("facebook", ["facebook"]),
+      ),
+    ).toBe(true);
+  });
+
+  it("lets registered owners, linked email accounts and admins sign in with a provider", async () => {
+    expect(
+      await auth(false, { status: "pending_approval" }).isUnregisteredOAuthUser(
+        user("google", ["google"]),
+      ),
+    ).toBe(false);
+    expect(
+      await auth(false, null).isUnregisteredOAuthUser(user("email", ["email", "google"])),
+    ).toBe(false);
+    expect(await auth(true, null).isUnregisteredOAuthUser(user("google", ["google"]))).toBe(false);
+  });
+});
