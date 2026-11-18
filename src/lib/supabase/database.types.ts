@@ -11,7 +11,101 @@ export type Database = {
   };
   public: {
     Tables: {
-      [_ in never]: never;
+      cafe_members: {
+        Row: {
+          cafe_id: string;
+          created_at: string;
+          role: string;
+          user_id: string;
+        };
+        Insert: {
+          cafe_id: string;
+          created_at?: string;
+          role: string;
+          user_id: string;
+        };
+        Update: {
+          cafe_id?: string;
+          created_at?: string;
+          role?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "cafe_members_cafe_id_fkey";
+            columns: ["cafe_id"];
+            isOneToOne: false;
+            referencedRelation: "cafes";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      cafes: {
+        Row: {
+          address: string | null;
+          agreed_at: string;
+          city: string | null;
+          country_code: string;
+          created_at: string;
+          created_by: string | null;
+          currency: string;
+          default_locale: string;
+          dpa_version: string;
+          id: string;
+          latitude: number | null;
+          longitude: number | null;
+          name: string;
+          slug: string;
+          status: string;
+          terms_version: string;
+          theme: Json;
+          timezone: string;
+          updated_at: string;
+        };
+        Insert: {
+          address?: string | null;
+          agreed_at: string;
+          city?: string | null;
+          country_code: string;
+          created_at?: string;
+          created_by?: string | null;
+          currency: string;
+          default_locale?: string;
+          dpa_version: string;
+          id?: string;
+          latitude?: number | null;
+          longitude?: number | null;
+          name: string;
+          slug: string;
+          status?: string;
+          terms_version: string;
+          theme?: Json;
+          timezone: string;
+          updated_at?: string;
+        };
+        Update: {
+          address?: string | null;
+          agreed_at?: string;
+          city?: string | null;
+          country_code?: string;
+          created_at?: string;
+          created_by?: string | null;
+          currency?: string;
+          default_locale?: string;
+          dpa_version?: string;
+          id?: string;
+          latitude?: number | null;
+          longitude?: number | null;
+          name?: string;
+          slug?: string;
+          status?: string;
+          terms_version?: string;
+          theme?: Json;
+          timezone?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -66,6 +160,21 @@ export type Database = {
           updated_at: string;
         }[];
       };
+      admin_list_cafes: {
+        Args: never;
+        Returns: {
+          city: string;
+          country_code: string;
+          created_at: string;
+          id: string;
+          name: string;
+          owner_email: string;
+          owner_name: string;
+          owner_user_id: string;
+          slug: string;
+          status: string;
+        }[];
+      };
       admin_list_owners: {
         Args: { p_status?: string };
         Returns: {
@@ -107,6 +216,7 @@ export type Database = {
         };
         Returns: string;
       };
+      check_slug: { Args: { p_slug: string }; Returns: Json };
       complete_owner_profile: {
         Args: {
           p_business_name: string;
@@ -143,6 +253,7 @@ export type Database = {
         };
         Returns: undefined;
       };
+      get_my_onboarding: { Args: never; Returns: Json };
       get_my_owner: {
         Args: never;
         Returns: {
@@ -152,6 +263,7 @@ export type Database = {
       };
       get_my_owner_status: { Args: never; Returns: string };
       grant_platform_admin: { Args: { p_user_id: string }; Returns: undefined };
+      is_cafe_member: { Args: { p_cafe_id: string }; Returns: boolean };
       is_platform_admin: { Args: never; Returns: boolean };
       list_business_types: {
         Args: never;
@@ -176,6 +288,27 @@ export type Database = {
         }[];
       };
       my_unread_notification_count: { Args: never; Returns: number };
+      provision_cafe: {
+        Args: {
+          p_address: string;
+          p_city: string;
+          p_country_code: string;
+          p_currency: string;
+          p_dpa_version: string;
+          p_locale: string;
+          p_name: string;
+          p_slug: string;
+          p_terms_version: string;
+          p_theme: Json;
+          p_timezone: string;
+        };
+        Returns: string;
+      };
+      reserve_slug: { Args: { p_slug: string }; Returns: Json };
+      save_onboarding: {
+        Args: { p_data: Json; p_step: number };
+        Returns: undefined;
+      };
     };
     Enums: {
       [_ in never]: never;
