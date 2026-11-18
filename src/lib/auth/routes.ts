@@ -27,7 +27,9 @@ export function tenantDashboard(slug: string): string {
   return `/${slug}/dashboard`;
 }
 
-const TENANT_PATH = /^\/([a-z][a-z0-9-]{1,30}[a-z0-9])\/dashboard(\/|$)/;
+// Café address format: same as SLUG_PATTERN in src/lib/cafes/slug.ts (kept inline: this file
+// must stay import-free for the proxy).
+const TENANT_PATH = /^\/([a-z0-9](?:[a-z0-9-]{1,28}[a-z0-9]))\/dashboard(\/|$)/;
 
 /** The café slug when the path is a tenant (owner dashboard) page, else null. */
 export function tenantSlugOf(pathname: string): string | null {
