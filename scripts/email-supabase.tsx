@@ -1,18 +1,25 @@
 /**
  * Writes the Supabase Auth email templates (styled like our emails) to supabase/templates/.
  *   npm run email:supabase
- * Then paste the HTML into Supabase → Authentication → Emails → Templates → "Confirm signup".
+ * Then paste each HTML into Supabase → Authentication → Emails → Templates
+ * ("Confirm signup", "Reset password").
  */
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { renderSupabaseConfirmSignup } from "../src/emails/auth-templates";
+import {
+  renderSupabaseConfirmSignup,
+  renderSupabaseResetPassword,
+} from "../src/emails/auth-templates";
 
 void (async () => {
   const out = join(import.meta.dirname, "..", "supabase", "templates");
-  const confirm = await renderSupabaseConfirmSignup();
-  writeFileSync(join(out, "confirm-signup.html"), confirm.html + "\n");
-  writeFileSync(join(out, "confirm-signup.subject.txt"), confirm.subject + "\n");
-  console.log(
-    `email:supabase: supabase/templates/confirm-signup.html (subject: ${confirm.subject})`,
-  );
+  const templates = [
+    ["confirm-signup", await renderSupabaseConfirmSignup()],
+    ["reset-password", await renderSupabaseResetPassword()],
+  ] as const;
+  for (const [name, t] of templates) {
+    writeFileSync(join(out, `${name}.html`), t.html + "\n");
+    writeFileSync(join(out, `${name}.subject.txt`), t.subject + "\n");
+    console.log(`email:supabase: supabase/templates/${name}.html (subject: ${t.subject})`);
+  }
 })();

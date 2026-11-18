@@ -12,7 +12,8 @@ Stack: **Next.js 16** (App Router, `cacheComponents`), React 19, TypeScript, Tai
 | `/`                       | Platform home (temporary route map)                                                          | placeholder             |
 | `/login`                  | Email/password + Google/Facebook sign-in; super admins → `/admin`, owners → by status        | **working**             |
 | `/register`               | Café-owner registration (email only) → email verification → approval                         | **UI done** (not wired) |
-| `/forgot-password`        | Password reset request                                                                       | **UI done** (not wired) |
+| `/forgot-password`        | Password reset request (email link → `/auth/reset` → `/reset-password`)                      | **working**             |
+| `/reset-password`         | Choose a new password (only via the reset email link)                                        | **working**             |
 | `/reset-password/success` | Password updated confirmation                                                                | **UI done**             |
 | `/privacy`, `/terms`      | Legal pages                                                                                  | placeholder             |
 | `/about`                  | About us                                                                                     | placeholder             |
@@ -98,6 +99,53 @@ Services: `api.businessTypes`, `api.owners`, `api.admins`, `api.auth` (server) a
 - Where a signed-in user belongs (admin → `/admin`, owner → by status) is decided only in `api.auth.homePath()`.
 
 More in `src/lib/data/README.md`.
+
+## Authentication setup (Supabase project `cjxlyomshhmnohrthbvm`)
+
+Everything below is configured in dashboards (not in code). Repeat it for the production project.
+
+### 1. URL configuration — Authentication → URL Configuration
+
+| Field         | Value                                                                                             |
+| ------------- | ------------------------------------------------------------------------------------------------- |
+| Site URL      | `https://dev.serbi.me` (prod: `https://serbi.me`) — used in auth emails for the logo/footer links |
+| Redirect URLs | `http://localhost:3000/**`, `https://dev.serbi.me/**` (prod: `https://serbi.me/**`)               |
+
+Without the redirect URLs, Supabase ignores our callback (`/auth/callback`, `/auth/reset`) and links open the Site URL instead.
+
+### 2. Emails through Resend — Authentication → Emails → SMTP Settings
+
+Enable custom SMTP: host `smtp.resend.com`, port `465`, username `resend`, password = a Resend API key with **Sending access** for `dev.serbi.me`, sender `noreply@dev.serbi.me` (prod: `noreply@serbi.me`), name `Serbi`. This also lifts Supabase's built-in limit (only organisation members receive emails).
+
+### 3. Email templates — Authentication → Emails → Templates
+
+Generated from `src/emails/auth-templates.tsx` with `npm run email:supabase` (files in `supabase/templates/`, excluded from Prettier — paste them as generated, e.g. `wl-copy < supabase/templates/reset-password.html`).
+
+| Template       | Subject                        | Body                  | Link goes to                                                                  |
+| -------------- | ------------------------------ | --------------------- | ----------------------------------------------------------------------------- |
+| Confirm signup | `Confirm your email for Serbi` | `confirm-signup.html` | `{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=email` → `/auth/callback` |
+| Reset password | `Reset your Serbi password`    | `reset-password.html` | `{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=recovery` → `/auth/reset` |
+
+We use `token_hash` links (verified server-side) instead of `{{ .ConfirmationURL }}`, so links also work when opened on another device. `/auth/reset` also accepts Supabase's default `?code=` link.
+
+### 4. Password rules — Authentication → Sign In / Providers → Email
+
+Minimum length **10** (the app also requires an upper-case letter, a digit and a symbol — `passwordSchema`). Recommended: enable leaked-password protection (Pro plan).
+
+### 5. Google — Google Cloud Console + Authentication → Sign In / Providers → Google
+
+- **OAuth consent screen**: app name `Serbi`, support email, home `https://serbi.me`, privacy `https://serbi.me/privacy`, terms `https://serbi.me/terms`, authorized domains `serbi.me` and `supabase.co`, scopes `openid`, `email`, `profile`. While **Testing**, only listed test users can sign in; publish for production.
+- **Credentials → OAuth client ID (Web application)**: authorized JavaScript origins `http://localhost:3000`, `https://dev.serbi.me` (prod `https://serbi.me`); **authorized redirect URI: only** `https://cjxlyomshhmnohrthbvm.supabase.co/auth/v1/callback`.
+- **Supabase → Google**: enable, paste Client ID + Client secret (never in the repo or env files — Google needs no app env variable).
+- Google is **sign-in only**: a Google account without a Serbi registration is removed again in `/auth/callback` and the user sees a "No Serbi account" toast with **Register**. Registered owners (same email) and super admins can sign in with Google.
+
+### 6. Facebook — later
+
+Not configured yet (the button exists on `/login`). When added: Meta for Developers → Facebook Login → **Valid OAuth Redirect URIs** = `https://cjxlyomshhmnohrthbvm.supabase.co/auth/v1/callback`; App domains `serbi.me`, `cjxlyomshhmnohrthbvm.supabase.co`; then Supabase → Facebook: App ID + App secret. Same sign-in-only rule as Google.
+
+### Password reset flow
+
+`/forgot-password` → `resetPasswordForEmail` (same "check your inbox" answer whether or not the account exists) → email → `/auth/reset` (opens a recovery session) → `/reset-password` (new password + strength meter) → signed out on all devices → `/reset-password/success`. Expired/used links → `/forgot-password` with an error toast.
 
 ### Environment variables
 

@@ -94,3 +94,80 @@ export async function renderSupabaseConfirmSignup() {
   const html = compactHtml(await render(<ConfirmSignup {...SUPABASE} />));
   return { subject: COPY.subject, html };
 }
+
+/* ── Reset password ───────────────────────────────────────────────────────── */
+
+const RESET = {
+  subject: "Reset your Serbi password",
+  preview: "Choose a new password for your Serbi account.",
+  heroLabel: "Account recovery",
+  heroTitle: "Reset your password",
+  title: "Choose a new password",
+  intro:
+    "We received a request to reset the password of your Serbi account. Click the button to choose a new one — the link expires after a short time.",
+  cta: "Choose a new password",
+  fallback: "Button not working? Copy this link into your browser:",
+  noteTitle: "Didn't ask for this?",
+  noteBody:
+    "You can ignore this email — your password stays the same. If you keep getting these emails, contact us.",
+};
+
+export function ResetPassword({
+  siteUrl,
+  resetUrl,
+  email,
+}: {
+  siteUrl: string;
+  resetUrl: string;
+  email: string;
+}) {
+  const c = emailCopy("en");
+  return (
+    <EmailLayout
+      logoUrl={`${siteUrl}/brand/serbi-email-mark.png`}
+      preview={RESET.preview}
+      badge={RESET.heroLabel}
+      tagline={c.brandTagline}
+      hero={{ tone: "brand", label: RESET.heroLabel, title: RESET.heroTitle, subtitle: email }}
+      footer={{
+        tagline: c.footerTagline,
+        why: "You receive this email because a password reset was requested for this address on Serbi.",
+        links: [
+          { label: c.footerLinks.privacy, href: `${siteUrl}/privacy` },
+          { label: c.footerLinks.terms, href: `${siteUrl}/terms` },
+          { label: c.footerLinks.contact, href: `${siteUrl}/contact` },
+        ],
+      }}
+    >
+      <Title>{RESET.title}</Title>
+      <P muted>{RESET.intro}</P>
+      <PrimaryButton href={resetUrl}>{RESET.cta} →</PrimaryButton>
+      <P small muted>
+        <br />
+        {RESET.fallback}
+        <br />
+        <a href={resetUrl} style={{ color: "#553722", wordBreak: "break-all" }}>
+          {resetUrl}
+        </a>
+      </P>
+      <Note icon="🔒" title={RESET.noteTitle}>
+        {RESET.noteBody}
+      </Note>
+      <SignOff line={c.signOff} team={c.team} />
+    </EmailLayout>
+  );
+}
+
+/** "Reset password" template for Supabase: link → our /auth/reset (token_hash, type=recovery). */
+export async function renderSupabaseResetPassword() {
+  const html = compactHtml(
+    await render(
+      <ResetPassword
+        siteUrl={SUPABASE.siteUrl}
+        resetUrl="{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=recovery"
+        email={SUPABASE.email}
+      />,
+    ),
+  );
+  return { subject: RESET.subject, html };
+}

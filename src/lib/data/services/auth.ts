@@ -2,6 +2,7 @@ import "server-only";
 import type { EmailOtpType, User } from "@supabase/supabase-js";
 import { pathForStatus } from "@/lib/auth/owner-status";
 import { isAdminPath, ROUTES, safeNext, tenantDashboard, tenantSlugOf } from "@/lib/auth/routes";
+import { siteUrl } from "@/lib/env";
 import type { AuthResult, LazyDb } from "../types";
 import type { AdminsService } from "./admins";
 import type { OwnersService } from "./owners";
@@ -57,6 +58,40 @@ export class AuthService {
     if (await this.admins.isPlatformAdmin()) return false;
     const me = await this.owners.me();
     return me === null || me.status === "profile_incomplete";
+  }
+
+  /** Sends the reset email (Supabase "Reset password" template → /auth/reset). */
+  async requestPasswordReset(email: string): Promise<AuthResult> {
+    const { error } = await (
+      await this.db()
+    ).auth.resetPasswordForEmail(email, {
+      redirectTo: siteUrl("/auth/reset"),
+    });
+    return error ? { ok: false, code: error.code ?? "unknown" } : { ok: true };
+  }
+
+  /** Recovery link (token_hash + type=recovery, or PKCE code) → recovery session. */
+  async completeRecovery(params: {
+    tokenHash: string | null;
+    code: string | null;
+  }): Promise<boolean> {
+    const db = await this.db();
+    if (params.tokenHash) {
+      return !(await db.auth.verifyOtp({ token_hash: params.tokenHash, type: "recovery" })).error;
+    }
+    if (params.code) return !(await db.auth.exchangeCodeForSession(params.code)).error;
+    return false;
+  }
+
+  /** Change the signed-in user's password. */
+  async updatePassword(password: string): Promise<AuthResult> {
+    const { error } = await (await this.db()).auth.updateUser({ password });
+    return error ? { ok: false, code: error.code ?? "unknown" } : { ok: true };
+  }
+
+  /** Sign out on every device (after a password change). */
+  async signOutEverywhere(): Promise<void> {
+    await (await this.db()).auth.signOut({ scope: "global" });
   }
 
   async signOut(): Promise<void> {

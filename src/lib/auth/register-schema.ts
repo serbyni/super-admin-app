@@ -32,16 +32,27 @@ export const businessProfileSchema = z.object({
   terms: z.literal("on", { error: "You must accept the Terms and Privacy Policy" }),
 });
 
+/** Password rules (register + reset): 10–72 chars with upper-case, digit and symbol. */
+export const passwordSchema = z
+  .string()
+  .min(PASSWORD_MIN_LENGTH, `Use at least ${PASSWORD_MIN_LENGTH} characters`)
+  .max(72, "Use at most 72 characters")
+  .regex(/[A-Z]/, "Add an upper-case letter")
+  .regex(/[0-9]/, "Add a digit")
+  .regex(/[^A-Za-z0-9]/, "Add a symbol");
+
+/** New password + confirmation (reset password). */
+export const newPasswordSchema = z
+  .object({ password: passwordSchema, confirmPassword: z.string() })
+  .refine((d) => d.password === d.confirmPassword, {
+    path: ["confirmPassword"],
+    message: "Passwords do not match",
+  });
+
 export const registerSchema = businessProfileSchema
   .extend({
     email: z.string().trim().toLowerCase().pipe(z.email("Enter a valid email address")),
-    password: z
-      .string()
-      .min(PASSWORD_MIN_LENGTH, `Use at least ${PASSWORD_MIN_LENGTH} characters`)
-      .max(72, "Use at most 72 characters")
-      .regex(/[A-Z]/, "Add an upper-case letter")
-      .regex(/[0-9]/, "Add a digit")
-      .regex(/[^A-Za-z0-9]/, "Add a symbol"),
+    password: passwordSchema,
     confirmPassword: z.string(),
   })
   .refine((d) => d.password === d.confirmPassword, {

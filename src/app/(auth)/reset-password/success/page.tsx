@@ -26,8 +26,8 @@ export default function ResetPasswordSuccessPage() {
               Password updated
             </h1>
             <p className="max-w-card-sm text-on-surface-variant">
-              Your password has been changed. For your security, you have been signed out of your
-              other devices.
+              Your password has been changed. For your security, you have been signed out on all
+              devices. Sign in with your new password.
             </p>
           </div>
 

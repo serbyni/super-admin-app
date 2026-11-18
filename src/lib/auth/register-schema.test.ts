@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { passwordStrength } from "./password-strength";
-import { fieldErrors, registerSchema } from "./register-schema";
+import { fieldErrors, newPasswordSchema, registerSchema } from "./register-schema";
 
 const valid = {
   fullName: "Amira Ben Salah",
@@ -77,5 +77,21 @@ describe("passwordStrength", () => {
     ["Abcdefgh1!", 4, "strong"],
   ])("%s → %i %s", (pw, score, label) => {
     expect(passwordStrength(pw)).toEqual({ score, label });
+  });
+});
+
+describe("newPasswordSchema", () => {
+  it("applies the register password rules and requires a matching confirmation", () => {
+    expect(
+      newPasswordSchema.safeParse({ password: "Espresso#2026", confirmPassword: "Espresso#2026" })
+        .success,
+    ).toBe(true);
+    const weak = newPasswordSchema.safeParse({ password: "short", confirmPassword: "short" });
+    expect(fieldErrors(weak.error!).password).toMatch(/at least 10/);
+    const mismatch = newPasswordSchema.safeParse({
+      password: "Espresso#2026",
+      confirmPassword: "Espresso#2027",
+    });
+    expect(fieldErrors(mismatch.error!).confirmPassword).toBe("Passwords do not match");
   });
 });
