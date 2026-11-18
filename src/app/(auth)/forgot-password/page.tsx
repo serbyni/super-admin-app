@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import Link from "next/link";
 import { AuthShell } from "@/components/auth/auth-shell";
+import { RedirectIfSignedIn } from "@/components/auth/redirect-if-signed-in";
 import { TextField } from "@/components/auth/fields";
 import { StaticForm } from "@/components/auth/static-form";
 import { Icon } from "@/components/ui/icon";
@@ -10,6 +12,9 @@ export const metadata: Metadata = { title: "Forgot password" };
 export default function ForgotPasswordPage() {
   return (
     <AuthShell>
+      <Suspense fallback={null}>
+        <RedirectIfSignedIn />
+      </Suspense>
       <div className="mx-auto w-full max-w-card-sm">
         <div className="relative flex flex-col rounded-xl bg-surface-container-lowest/90 p-8 shadow-card-warm backdrop-blur-xl sm:p-10">
           <div className="mb-8 flex items-center justify-between">

@@ -70,22 +70,44 @@ describe("AuthService.homePath", () => {
     const { lazy } = fakeDb(results);
     return new AuthService(lazy, new AdminsService(lazy), new OwnersService(lazy));
   }
+  const owner = (status: string, cafe_slug: string | null = null) =>
+    auth({
+      is_platform_admin: { data: false, error: null },
+      get_my_owner: { data: [{ status, cafe_slug }], error: null },
+    });
 
-  it("sends super admins to the admin path (or the requested next)", async () => {
+  it("sends super admins to /admin, or to the requested admin page", async () => {
     const a = auth({ is_platform_admin: { data: true, error: null } });
     expect(await a.homePath()).toBe("/admin");
     expect(await a.homePath("/admin/business")).toBe("/admin/business");
+    // next outside the admin area (or unsafe) is ignored
+    expect(await a.homePath("/kafe/dashboard")).toBe("/admin");
+    expect(await a.homePath("//evil.example")).toBe("/admin");
   });
 
-  it("sends owners by status", async () => {
-    const owner = (status: string) =>
-      auth({
-        is_platform_admin: { data: false, error: null },
-        get_my_owner_status: { data: status, error: null },
-      });
+  it("sends owners to the page for their status", async () => {
     expect(await owner("profile_incomplete").homePath()).toBe("/register/complete");
     expect(await owner("email_unverified").homePath()).toBe("/register/check-email");
     expect(await owner("pending_approval").homePath()).toBe("/pending");
-    expect(await owner("something_else").homePath()).toBe("/login");
+    expect(await owner("rejected").homePath()).toBe("/pending");
+    expect(await owner("approved").homePath()).toBe("/onboarding");
+    expect(await owner("onboarding").homePath()).toBe("/onboarding");
+    expect(await owner("active").homePath()).toBe("/onboarding"); // no café slug yet
+  });
+
+  it("sends active owners to their café dashboard (and only their café)", async () => {
+    const o = owner("active", "artisan-brew");
+    expect(await o.homePath()).toBe("/artisan-brew/dashboard");
+    expect(await o.homePath("/artisan-brew/dashboard/menu")).toBe("/artisan-brew/dashboard/menu");
+    expect(await o.homePath("/other-cafe/dashboard")).toBe("/artisan-brew/dashboard");
+    expect(await o.homePath("/admin")).toBe("/artisan-brew/dashboard");
+  });
+
+  it("sends a signed-in user without owner account to complete the profile", async () => {
+    const a = auth({
+      is_platform_admin: { data: false, error: null },
+      get_my_owner: { data: [], error: null },
+    });
+    expect(await a.homePath()).toBe("/register/complete");
   });
 });

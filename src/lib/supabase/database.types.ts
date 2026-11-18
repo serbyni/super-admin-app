@@ -143,6 +143,13 @@ export type Database = {
         };
         Returns: undefined;
       };
+      get_my_owner: {
+        Args: never;
+        Returns: {
+          cafe_slug: string;
+          status: string;
+        }[];
+      };
       get_my_owner_status: { Args: never; Returns: string };
       grant_platform_admin: { Args: { p_user_id: string }; Returns: undefined };
       is_platform_admin: { Args: never; Returns: boolean };

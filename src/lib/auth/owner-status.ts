@@ -15,18 +15,23 @@ export function isOwnerStatus(value: unknown): value is OwnerStatus {
   return typeof value === "string" && (OWNER_STATUSES as readonly string[]).includes(value);
 }
 
-/** Where an owner in this status should land after signing in. */
+/**
+ * Where a signed-in owner in this status belongs (active owners: see AuthService.homePath, which
+ * also needs the café slug). `null` = signed in but no owner account yet → complete the profile.
+ */
 export function pathForStatus(status: OwnerStatus | null): string {
   switch (status) {
+    case null:
     case "profile_incomplete":
       return "/register/complete";
     case "email_unverified":
       return "/register/check-email";
-    case null:
-      return "/login";
+    case "approved":
+    case "onboarding":
+    case "active": // active without a café slug yet → finish onboarding
+      return "/onboarding";
     default:
-      // pending_approval, rejected, approved, onboarding, active, suspended:
-      // /pending explains the state until onboarding and dashboards exist.
+      // pending_approval, rejected, suspended: the status page explains the state.
       return "/pending";
   }
 }

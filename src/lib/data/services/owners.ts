@@ -18,13 +18,12 @@ export type OwnerProfile = {
 export class OwnersService {
   constructor(private readonly db: LazyDb) {}
 
-  /** Owner status of the signed-in user, or null (signed out or not an owner). */
-  async myStatus(): Promise<OwnerStatus | null> {
-    const status = unwrap(
-      "get_my_owner_status",
-      await (await this.db()).rpc("get_my_owner_status"),
-    );
-    return isOwnerStatus(status) ? status : null;
+  /** Signed-in user's owner status + café slug, or null when not an owner. */
+  async me(): Promise<{ status: OwnerStatus; cafeSlug: string | null } | null> {
+    const [row] = unwrap("get_my_owner", await (await this.db()).rpc("get_my_owner"));
+    return row && isOwnerStatus(row.status)
+      ? { status: row.status, cafeSlug: row.cafe_slug }
+      : null;
   }
 
   /** Email sign-up; Supabase sends the verification email. A DB trigger stores the profile. */

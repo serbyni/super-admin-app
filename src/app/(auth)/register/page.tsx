@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AuthShell } from "@/components/auth/auth-shell";
+import { RedirectIfSignedIn } from "@/components/auth/redirect-if-signed-in";
 import { OrDivider, SocialButtons } from "@/components/auth/social-buttons";
 import { connection } from "next/server";
 import { Suspense } from "react";
@@ -31,6 +32,9 @@ async function RegisterFormWithTypes() {
 export default function RegisterPage() {
   return (
     <AuthShell>
+      <Suspense fallback={null}>
+        <RedirectIfSignedIn />
+      </Suspense>
       <div className="relative mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-lg lg:grid-cols-12">
         {/* Brand panel */}
         <aside className="relative hidden flex-col justify-between self-stretch overflow-hidden rounded-xl bg-surface-container-low p-xl shadow-sm lg:col-span-5 lg:flex">

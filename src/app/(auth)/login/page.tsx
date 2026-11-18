@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { AuthShell } from "@/components/auth/auth-shell";
+import { RedirectIfSignedIn } from "@/components/auth/redirect-if-signed-in";
 import { OrDivider, SocialButtons } from "@/components/auth/social-buttons";
 import { Icon } from "@/components/ui/icon";
 import { LoginForm } from "./login-form";
@@ -11,6 +12,9 @@ export const metadata: Metadata = { title: "Login" };
 export default function LoginPage() {
   return (
     <AuthShell>
+      <Suspense fallback={null}>
+        <RedirectIfSignedIn />
+      </Suspense>
       <div className="mx-auto w-full max-w-card-md">
         <div className="relative overflow-hidden rounded-xl bg-surface-container-lowest/90 shadow-xl shadow-surface-container-highest/60 backdrop-blur-xl">
           <div className="relative h-32 w-full overflow-hidden bg-primary-container sm:h-36">

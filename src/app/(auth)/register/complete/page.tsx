@@ -1,10 +1,8 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { Icon } from "@/components/ui/icon";
-import { pathForStatus } from "@/lib/auth/owner-status";
-import { getOwnerSession } from "@/lib/auth/session";
+import { requireOwnerStage } from "@/lib/auth/guards";
 import { serverApi } from "@/lib/data/server-api";
 import { mapsClientConfig } from "@/lib/maps/server";
 import { CompleteProfileForm } from "./complete-form";
@@ -12,9 +10,7 @@ import { CompleteProfileForm } from "./complete-form";
 export const metadata: Metadata = { title: "Complete your profile" };
 
 async function Form() {
-  const { user, status } = await getOwnerSession();
-  if (!user) redirect("/login");
-  if (status !== "profile_incomplete") redirect(pathForStatus(status));
+  const { user } = await requireOwnerStage([null, "profile_incomplete"]);
   const meta = user.user_metadata ?? {};
   const name =
     typeof meta.full_name === "string"

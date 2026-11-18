@@ -12,11 +12,6 @@ const schema = z.object({
   next: z.string().optional(),
 });
 
-/** Only allow same-site relative paths as post-login destinations. */
-function safeNext(next: string | undefined): string | null {
-  return next && next.startsWith("/") && !next.startsWith("//") ? next : null;
-}
-
 export async function signIn(_prev: LoginState, formData: FormData): Promise<LoginState> {
   const parsed = schema.safeParse(Object.fromEntries(formData));
   const email = String(formData.get("email") ?? "");
@@ -36,5 +31,5 @@ export async function signIn(_prev: LoginState, formData: FormData): Promise<Log
       email,
     };
   }
-  redirect(await api.auth.homePath(safeNext(parsed.data.next) ?? undefined));
+  redirect(await api.auth.homePath(parsed.data.next));
 }

@@ -20,5 +20,5 @@ export async function GET(request: NextRequest) {
   if (!ok) return NextResponse.redirect(new URL("/login?error=link_invalid", origin));
   // Confirming the email may have created register_new_user: send its email after responding.
   kickEmailDispatch();
-  return NextResponse.redirect(new URL(await api.auth.homePath(), origin));
+  return NextResponse.redirect(new URL(await api.auth.homePath(searchParams.get("next")), origin));
 }

@@ -1,13 +1,11 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { signOut } from "@/app/auth/actions";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { StatusCard } from "@/components/auth/status-card";
 import { Icon } from "@/components/ui/icon";
 import type { OwnerStatus } from "@/lib/auth/owner-status";
-import { pathForStatus } from "@/lib/auth/owner-status";
-import { getOwnerSession } from "@/lib/auth/session";
+import { requireOwnerStage } from "@/lib/auth/guards";
 import { markAllNotificationsRead } from "@/components/notifications/actions";
 import { describeNotification } from "@/components/notifications/notification-list";
 import { serverApi } from "@/lib/data/server-api";
@@ -56,12 +54,8 @@ const COPY: Partial<
 };
 
 async function Status() {
-  const { user, status } = await getOwnerSession();
-  if (!user) redirect("/login");
-  if (status === null || status === "profile_incomplete" || status === "email_unverified") {
-    redirect(pathForStatus(status));
-  }
-  const c = COPY[status]!;
+  const { user, status } = await requireOwnerStage(["pending_approval", "rejected", "suspended"]);
+  const c = COPY[status as OwnerStatus]!;
   // In-app notifications (e.g. "You're approved!") until the owner dismisses them.
   const unread = (await serverApi().notifications.list(5)).filter((n) => !n.readAt);
   return (

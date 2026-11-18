@@ -1,6 +1,7 @@
 import "server-only";
 import type { EmailOtpType, User } from "@supabase/supabase-js";
 import { pathForStatus } from "@/lib/auth/owner-status";
+import { isAdminPath, ROUTES, safeNext, tenantDashboard, tenantSlugOf } from "@/lib/auth/routes";
 import type { AuthResult, LazyDb } from "../types";
 import type { AdminsService } from "./admins";
 import type { OwnersService } from "./owners";
@@ -48,11 +49,21 @@ export class AuthService {
   }
 
   /**
-   * Where the signed-in user belongs: super admins → `adminPath` (default /admin), owners → by
-   * status (register/complete, check-email, pending…). The single place for this rule.
+   * Where the signed-in user belongs — the single rule used by login, the email/OAuth callback,
+   * /auth/home and the route guards:
+   *   super admin            → `next` when it is an /admin page, else /admin
+   *   active owner with café → `next` when it is inside their café, else /<slug>/dashboard
+   *   any other owner state  → its status page (complete profile, check email, pending, onboarding)
    */
-  async homePath(adminPath = "/admin"): Promise<string> {
-    if (await this.admins.isPlatformAdmin()) return adminPath;
-    return pathForStatus(await this.owners.myStatus());
+  async homePath(next?: string | null): Promise<string> {
+    const target = safeNext(next);
+    if (await this.admins.isPlatformAdmin()) {
+      return target && isAdminPath(target) ? target : ROUTES.adminHome;
+    }
+    const me = await this.owners.me();
+    if (me?.status === "active" && me.cafeSlug) {
+      return target && tenantSlugOf(target) === me.cafeSlug ? target : tenantDashboard(me.cafeSlug);
+    }
+    return pathForStatus(me?.status ?? null);
   }
 }

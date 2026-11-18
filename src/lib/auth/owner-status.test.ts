@@ -7,7 +7,10 @@ describe("pathForStatus", () => {
     ["email_unverified", "/register/check-email"],
     ["pending_approval", "/pending"],
     ["rejected", "/pending"],
-    [null, "/login"],
+    [null, "/register/complete"],
+    ["approved", "/onboarding"],
+    ["onboarding", "/onboarding"],
+    ["suspended", "/pending"],
   ] as const)("%s → %s", (status, path) => {
     expect(pathForStatus(status)).toBe(path);
   });

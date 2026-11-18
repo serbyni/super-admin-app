@@ -21,25 +21,29 @@ Stack: **Next.js 16** (App Router, `cacheComponents`), React 19, TypeScript, Tai
 | `/admin/users`            | User management: owner applications, approve / decline (emails the owner)                    | **working**             |
 | `/admin/notifications`    | Admin notifications (new applications)                                                       | **working**             |
 | `/admin/business`         | Business types CRUD: list, create, edit (EN/FR/AR names, icon, order, active), delete unused | **working**             |
-| `/[tenant]/admin`         | Platform-side management of one café (status, plan, owner); **no café business data** (GDPR) | placeholder             |
+| `/admin/cafes/[slug]`     | Platform-side management of one café (status, plan, owner); **no café business data** (GDPR) | placeholder             |
+| `/onboarding`             | Approved owners: next steps (choose café address, menu, tables)                              | **working** (basic)     |
+| `/[slug]/dashboard`       | Café dashboard of the active owner                                                           | placeholder             |
 
-Route files live in `src/app`:
+Route groups in `src/app` (groups do not change URLs) and who may open them:
 
-```
-src/app/
-├─ page.tsx                     /
-├─ (auth)/                      route group (no URL segment)
-│  ├─ login/page.tsx            /login
-│  ├─ register/page.tsx         /register
-│  └─ forgot-password/page.tsx  /forgot-password
-├─ (public)/                    route group
-│  ├─ about/page.tsx            /about
-│  └─ contact/page.tsx          /contact
-├─ admin/page.tsx               /admin
-└─ [tenant]/admin/page.tsx      /<tenant>/admin
-```
+| Group                 | Pages                                                                    | Access                            | Otherwise                                         |
+| --------------------- | ------------------------------------------------------------------------ | --------------------------------- | ------------------------------------------------- |
+| `(public)`            | `/about`, `/contact`, `/privacy`, `/terms`                               | everyone                          | —                                                 |
+| `(auth)` guest-only   | `/login`, `/register`, `/forgot-password`                                | signed-out visitors               | signed in → their home                            |
+| `(auth)` status pages | `/register/complete`, `/register/check-email`, `/pending`, `/onboarding` | owners in that status             | → the page for their status                       |
+| `(admin)`             | `/admin/**` (incl. `/admin/cafes/[slug]`)                                | super admins                      | signed out → `/login?next=…`; others → their home |
+| `(tenant)`            | `/[slug]/dashboard/**`                                                   | the **active** owner of that café | signed out → `/login?next=…`; others → their home |
 
-Static routes always win over `[tenant]`, so `/login`, `/admin` etc. are never read as a café slug. Every top-level static route name must stay in the **reserved slug list** (`admin, login, register, forgot-password, about, contact, www, app, api, q, …`), so no café can register that name.
+**Home** (one rule, `api.auth.homePath()`): super admin → `/admin`; active owner → `/<slug>/dashboard`; profile incomplete → `/register/complete`; email unverified → `/register/check-email`; approved/onboarding (or active without café yet) → `/onboarding`; pending/declined/suspended → `/pending`. A safe `?next=` is honoured when it belongs to the user's area.
+
+**How the guards work** (three layers, `src/lib/auth/`):
+
+1. `src/proxy.ts` — fast, cookie-only redirects (signed out on admin/tenant pages; signed in on guest-only pages → `/auth/home`).
+2. Group layouts + pages — `requireAdmin()`, `requireTenantOwner(slug)`, `requireOwnerStage([...])`, `<RedirectIfSignedIn />` check role/status on the server (`guards.ts`). Pages repeat the check because layouts are not re-run on every client navigation.
+3. Data — every admin RPC re-checks `is_platform_admin()` in SQL.
+
+Static routes always win over `[tenant]`, so `/login`, `/admin` etc. are never read as a café slug. Every top-level static route name must stay in the **reserved slug list** (`admin, login, register, forgot-password, onboarding, pending, about, contact, www, app, api, auth, q, …`), so no café can register that name.
 
 ## Design system
 

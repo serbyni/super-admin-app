@@ -3,7 +3,10 @@ import { NextResponse, type NextRequest } from "next/server";
 import { publicEnv } from "@/lib/env";
 import type { Database } from "./database.types";
 
-/** Refreshes the Supabase auth session cookie on every matched request. */
+/**
+ * Refreshes the Supabase auth session cookie on every matched request and reports whether the
+ * request is signed in (from the verified JWT claims — no database call).
+ */
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
   const env = publicEnv();
@@ -26,6 +29,6 @@ export async function updateSession(request: NextRequest) {
     },
   );
   // Do not run code between createServerClient and getClaims(): it refreshes the session.
-  await supabase.auth.getClaims();
-  return response;
+  const { data } = await supabase.auth.getClaims();
+  return { response, signedIn: !!data?.claims?.sub };
 }
