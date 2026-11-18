@@ -8,6 +8,7 @@ import type { OwnerStatus } from "@/lib/auth/owner-status";
 import { requireOwnerStage } from "@/lib/auth/guards";
 import { markAllNotificationsRead } from "@/components/notifications/actions";
 import { describeNotification } from "@/components/notifications/notification-list";
+import { LiveNotificationsForUser } from "@/components/notifications/live-notifications-for-user";
 import { serverApi } from "@/lib/data/server-api";
 
 export const metadata: Metadata = { title: "Application status" };
@@ -106,6 +107,9 @@ async function Status() {
 export default function PendingPage() {
   return (
     <AuthShell>
+      <Suspense fallback={null}>
+        <LiveNotificationsForUser />
+      </Suspense>
       <Suspense fallback={<p className="text-on-surface-variant">Loading…</p>}>
         <Status />
       </Suspense>

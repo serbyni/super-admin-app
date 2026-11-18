@@ -168,6 +168,8 @@ Owner status changes are **events**, written by a database trigger in the same t
   2. Supabase → Authentication → Emails → **Templates → Confirm signup**: subject and HTML from `npm run email:supabase` (`supabase/templates/confirm-signup.html`, generated from `src/emails/auth-templates.tsx`).
   3. Authentication → URL Configuration: **Site URL** = `https://dev.serbi.me` (used for the logo and footer links in that email).
 
+**Real-time notifications** (Supabase Realtime, private Broadcast): a trigger on `platform.notifications` broadcasts each new row to the private topic `notifications:<user_id>`; a policy on `realtime.messages` lets only that signed-in user subscribe. `<LiveNotifications>` (admin shell, `/pending`, `/onboarding`) refreshes the page and shows a toast when one arrives. New super admins also get notifications for applications still pending (`grant_platform_admin`).
+
 **User management** (`/admin/users`): pending / approved / declined lists, application details, **Approve** or **Decline with a reason** (emailed to the owner). The sidebar shows pending and unread counts; `/admin/notifications` lists admin notifications.
 
 ### Super admins

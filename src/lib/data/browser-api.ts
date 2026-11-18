@@ -1,6 +1,7 @@
 import type { Provider } from "@supabase/supabase-js";
 import { siteUrl } from "@/lib/env";
 import { createClient } from "@/lib/supabase/client";
+import { toAppNotification, type AppNotification } from "./services/notification-types";
 import type { Db } from "./types";
 
 /** Data calls available in Client Components (browser session). */
@@ -14,6 +15,34 @@ export class BrowserApi {
       options: { redirectTo: siteUrl("/auth/callback") },
     });
     return !error;
+  }
+
+  /**
+   * Live notifications of the signed-in user: private Realtime Broadcast channel
+   * `notifications:<userId>` (the database only lets that user subscribe). A trigger on
+   * platform.notifications publishes each new row. Returns an unsubscribe function.
+   */
+  subscribeToNotifications(
+    userId: string,
+    onNotification: (n: AppNotification) => void,
+  ): () => void {
+    const channel = this.db.channel(`notifications:${userId}`, { config: { private: true } });
+    let cancelled = false;
+    void (async () => {
+      // Private channels authorise with the user's access token.
+      await this.db.realtime.setAuth();
+      if (cancelled) return;
+      channel
+        .on("broadcast", { event: "notification" }, ({ payload }) => {
+          const p = payload as { id: string; type: string; data: unknown; created_at: string };
+          if (p?.id) onNotification(toAppNotification(p));
+        })
+        .subscribe();
+    })();
+    return () => {
+      cancelled = true;
+      void this.db.removeChannel(channel);
+    };
   }
 }
 

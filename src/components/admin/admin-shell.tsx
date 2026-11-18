@@ -3,6 +3,7 @@ import { Suspense, type ReactNode } from "react";
 import { signOut } from "@/app/auth/actions";
 import { BrandMark } from "@/components/ui/brand-mark";
 import { Icon } from "@/components/ui/icon";
+import { LiveNotificationsForUser } from "@/components/notifications/live-notifications-for-user";
 import { serverApi } from "@/lib/data/server-api";
 
 const NAV = [
@@ -77,6 +78,9 @@ export function AdminShell({ active, children }: { active: string; children: Rea
         </form>
       </aside>
       <main className="flex-1 px-gutter py-lg lg:px-container-margin-desktop">{children}</main>
+      <Suspense fallback={null}>
+        <LiveNotificationsForUser />
+      </Suspense>
     </div>
   );
 }

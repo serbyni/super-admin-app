@@ -7,6 +7,7 @@ import { markAllNotificationsRead } from "@/components/notifications/actions";
 import { describeNotification } from "@/components/notifications/notification-list";
 import { Icon } from "@/components/ui/icon";
 import { requireOwnerStage } from "@/lib/auth/guards";
+import { LiveNotificationsForUser } from "@/components/notifications/live-notifications-for-user";
 import { serverApi } from "@/lib/data/server-api";
 
 export const metadata: Metadata = { title: "Set up your café" };
@@ -99,6 +100,9 @@ async function Onboarding() {
 export default function OnboardingPage() {
   return (
     <AuthShell>
+      <Suspense fallback={null}>
+        <LiveNotificationsForUser />
+      </Suspense>
       <Suspense fallback={<p className="text-on-surface-variant">Loading…</p>}>
         <Onboarding />
       </Suspense>
