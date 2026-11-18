@@ -92,4 +92,27 @@ describe("locationFromForm", () => {
       ).success,
     ).toBe(false);
   });
+
+  it("accepts real city names in any script", () => {
+    const base = { source: "map_pin", country_code: "TN", lat: 36.8, lng: 10.18 };
+    for (const city of [
+      "Tunis",
+      "Sidi Bou Saïd",
+      "L'Ariana",
+      "Hammam-Lif",
+      "صفاقس",
+      "St. Julian's",
+    ]) {
+      expect(locationFromForm(form({ ...base, city })).success, city).toBe(true);
+    }
+  });
+
+  it("rejects an email, URL or number autofilled into City", () => {
+    const base = { source: "map_pin", country_code: "TN", lat: 36.8, lng: 10.18 };
+    for (const city of ["raed@example.com", "https://serbi.me", "1000", "@home"]) {
+      const r = locationFromForm(form({ ...base, city }));
+      expect(r.success, city).toBe(false);
+      expect(r.error?.issues[0]?.message).toMatch(/city name/);
+    }
+  });
 });

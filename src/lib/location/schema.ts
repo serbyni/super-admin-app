@@ -8,6 +8,9 @@ const opt = (max: number) =>
     .optional()
     .transform((v) => (v ? v : undefined));
 
+/** Letters/marks of any script, with spaces, hyphens, apostrophes, dots and parentheses. */
+const CITY_NAME = /^\p{L}[\p{L}\p{M}\s'’.()-]*$/u;
+
 /** Location sent by the register form (hidden JSON field + editable street/zip/city). */
 export const locationSchema = z.object({
   source: z.enum(["place_search", "map_pin", "coordinates"], { error: "Choose your location" }),
@@ -15,7 +18,14 @@ export const locationSchema = z.object({
   formatted_address: opt(300),
   street: opt(120),
   postal_code: opt(20),
-  city: z.string().trim().min(1, "City is required").max(80),
+  // A place name in any script (Tunis, Sidi Bou Saïd, L'Ariana, صفاقس) — not an email/URL/number,
+  // which browsers sometimes autofill into this field.
+  city: z
+    .string()
+    .trim()
+    .min(1, "City is required")
+    .max(80)
+    .regex(CITY_NAME, "Enter the city name (letters only, e.g. Tunis)"),
   region: opt(80),
   country: opt(60),
   country_code: z
