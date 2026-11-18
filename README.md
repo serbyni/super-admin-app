@@ -157,6 +157,11 @@ Owner status changes are **events**, written by a database trigger in the same t
 - Without `RESEND_API_KEY` / `SUPABASE_SECRET_KEY`, deliveries stay queued (nothing is lost) and a warning is logged.
 - **Sender domains** (Resend, EU region): `dev.serbi.me` for development, `serbi.me` for production; DNS records at Namecheap.
 
+- **Supabase Auth emails** (the "confirm your email" link) are sent by Supabase, not by the dispatcher. To send them through Resend with our design:
+  1. Supabase → Authentication → Emails → **SMTP Settings** → enable custom SMTP: host `smtp.resend.com`, port `465`, username `resend`, password = a Resend API key (sending access), sender `noreply@dev.serbi.me` (prod: `noreply@serbi.me`), name `Serbi`.
+  2. Supabase → Authentication → Emails → **Templates → Confirm signup**: subject and HTML from `npm run email:supabase` (`supabase/templates/confirm-signup.html`, generated from `src/emails/auth-templates.tsx`).
+  3. Authentication → URL Configuration: **Site URL** = `https://dev.serbi.me` (used for the logo and footer links in that email).
+
 **User management** (`/admin/users`): pending / approved / declined lists, application details, **Approve** or **Decline with a reason** (emailed to the owner). The sidebar shows pending and unread counts; `/admin/notifications` lists admin notifications.
 
 ### Super admins
