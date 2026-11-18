@@ -15,6 +15,9 @@ const SUPABASE = {
   /** Our /auth/callback verifies token_hash server-side (works on any device / email client). */
   confirmUrl: "{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=email",
   email: "{{ .Email }}",
+  /** Sign-up metadata sent by our register form (raw_user_meta_data). */
+  fullName: "{{ .Data.full_name }}",
+  businessName: "{{ .Data.business_name }}",
 } as const;
 
 const COPY = {
@@ -22,9 +25,9 @@ const COPY = {
   preview: "One click to confirm your email and send your café application for review.",
   heroLabel: "Step 1 of 2",
   heroTitle: "Confirm your email address",
-  title: "Almost there!",
-  intro:
-    "Thanks for registering your café on Serbi. Please confirm that this is your email address — then your application goes to our team for review.",
+  title: (name: string) => `Almost there, ${name}!`,
+  intro: (business: string) =>
+    `Thanks for registering ${business} on Serbi. Please confirm that this is your email address — then your application goes to our team for review.`,
   cta: "Confirm my email",
   fallback: "Button not working? Copy this link into your browser:",
   noteTitle: "Didn't sign up for Serbi?",
@@ -35,10 +38,14 @@ export function ConfirmSignup({
   siteUrl,
   confirmUrl,
   email,
+  fullName,
+  businessName,
 }: {
   siteUrl: string;
   confirmUrl: string;
   email: string;
+  fullName: string;
+  businessName: string;
 }) {
   const c = emailCopy("en");
   return (
@@ -47,7 +54,12 @@ export function ConfirmSignup({
       preview={COPY.preview}
       badge={c.headerBadge}
       tagline={c.brandTagline}
-      hero={{ tone: "brand", label: COPY.heroLabel, title: COPY.heroTitle, subtitle: email }}
+      hero={{
+        tone: "brand",
+        label: COPY.heroLabel,
+        title: COPY.heroTitle,
+        subtitle: `${businessName} · ${email}`,
+      }}
       footer={{
         tagline: c.footerTagline,
         why: c.footerWhy,
@@ -58,8 +70,8 @@ export function ConfirmSignup({
         ],
       }}
     >
-      <Title>{COPY.title}</Title>
-      <P muted>{COPY.intro}</P>
+      <Title>{COPY.title(fullName)}</Title>
+      <P muted>{COPY.intro(businessName)}</P>
       <PrimaryButton href={confirmUrl}>{COPY.cta} →</PrimaryButton>
       <P small muted>
         <br />
