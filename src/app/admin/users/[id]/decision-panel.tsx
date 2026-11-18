@@ -1,8 +1,9 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useRef, useState } from "react";
 import { TextAreaField } from "@/components/auth/fields";
 import { FormAlert } from "@/components/auth/form-alert";
+import { ConfirmDialog } from "@/components/ui/dialog";
 import { Icon } from "@/components/ui/icon";
 import { approveOwner, declineOwner, type DecisionState } from "../actions";
 
@@ -18,6 +19,14 @@ export function DecisionPanel({ userId, businessName }: { userId: string; busine
   );
   const [mode, setMode] = useState<"choose" | "decline">(declineState.error ? "decline" : "choose");
   const busy = approving || declining;
+  const approveForm = useRef<HTMLFormElement>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  // Close the dialog when the approve request finishes (on error the message shows on the page).
+  const [wasApproving, setWasApproving] = useState(false);
+  if (approving !== wasApproving) {
+    setWasApproving(approving);
+    if (!approving) setConfirmOpen(false);
+  }
 
   return (
     <section className="rounded-xl bg-surface-container-lowest p-lg shadow-sm">
@@ -26,19 +35,25 @@ export function DecisionPanel({ userId, businessName }: { userId: string; busine
         The owner is emailed automatically. Approving also shows a notification when they sign in.
       </p>
       <FormAlert message={approveState.error} />
+      <ConfirmDialog
+        open={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={() => approveForm.current?.requestSubmit()}
+        pending={approving}
+        tone="success"
+        icon="verified"
+        title={`Approve “${businessName}”?`}
+        description="The owner gets the approval email and a notification when they sign in. This cannot be undone from here."
+        confirmLabel="Approve"
+      />
 
       {mode === "choose" ? (
         <div className="flex flex-col gap-sm sm:flex-row">
-          <form
-            action={approve}
-            onSubmit={(e) => {
-              if (!confirm(`Approve “${businessName}”?`)) e.preventDefault();
-            }}
-            className="flex-1"
-          >
+          <form ref={approveForm} action={approve} className="flex-1">
             <input type="hidden" name="userId" value={userId} />
             <button
-              type="submit"
+              type="button"
+              onClick={() => setConfirmOpen(true)}
               disabled={busy}
               className="flex w-full items-center justify-center gap-xs rounded-xl bg-success px-lg py-sm font-semibold text-on-primary shadow-sm transition-all hover:scale-101 disabled:opacity-60"
             >

@@ -64,6 +64,8 @@ Extra tokens: icon sizes `text-icon-xs…3xl`, small text `text-caption` / `text
 
 **Brand**: the Serbi mark (QR-cup on a leather tile) lives in `public/brand/` — `serbi-mark.png` (UI, via `<BrandMark />`), `serbi-mark-192.png`, `serbi-email-mark.png` (emails, 96 px shown at 44 px), `serbi-logo.jpg` (full logo with lettering, Open Graph). Favicon and Apple touch icon are `src/app/icon.png` / `apple-icon.png`. Emails load the mark from `{SITE_URL}/brand/serbi-email-mark.png`, so the site must be publicly reachable (no Vercel login wall).
 
+**Dialogs**: never use `window.alert/confirm/prompt`. Use `Dialog` / `ConfirmDialog` from `src/components/ui/dialog.tsx` (native `<dialog>`: focus trap, Esc, themed backdrop; tones `primary` / `success` / `danger`; `pending` shows a spinner and blocks closing).
+
 Auth UI building blocks are in `src/components/auth/`: `AuthShell`, `TextField`, `SelectField`, `PasswordField`, `SocialButtons`, `OrDivider`, and `StaticForm` (blocks submit until auth is implemented).
 
 ## Auth & database
