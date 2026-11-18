@@ -4,6 +4,11 @@ const schema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z.url(),
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: z.string().min(20),
   NEXT_PUBLIC_SITE_URL: z.url(),
+  /** Domain under which cafés get their address: <slug>.<root> (e.g. serbi.me). */
+  NEXT_PUBLIC_CAFE_ROOT_DOMAIN: z
+    .string()
+    .regex(/^[a-z0-9.-]+\.[a-z]{2,}$/)
+    .optional(),
 });
 
 export type PublicEnv = z.infer<typeof schema>;
@@ -20,6 +25,7 @@ export function publicEnv(): PublicEnv {
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
     NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
+    NEXT_PUBLIC_CAFE_ROOT_DOMAIN: process.env.NEXT_PUBLIC_CAFE_ROOT_DOMAIN || undefined,
   });
   if (!parsed.success) {
     throw new Error(
@@ -33,4 +39,10 @@ export function publicEnv(): PublicEnv {
 /** Absolute URL on this app, e.g. siteUrl("/auth/confirm"). */
 export function siteUrl(path: string): string {
   return new URL(path, publicEnv().NEXT_PUBLIC_SITE_URL).toString();
+}
+
+/** Root domain for café addresses (<slug>.<root>); falls back to the site's host. */
+export function cafeRootDomain(): string {
+  const env = publicEnv();
+  return env.NEXT_PUBLIC_CAFE_ROOT_DOMAIN ?? new URL(env.NEXT_PUBLIC_SITE_URL).host;
 }
