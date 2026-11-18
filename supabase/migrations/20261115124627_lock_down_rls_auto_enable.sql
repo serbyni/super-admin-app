@@ -1,4 +1,6 @@
--- Applied to the remote project `serbi` (novmcqxfhvpvnjhvzfdm) on 2026-11-15 as version 20261115124627.
+-- Applied to the remote project `serbi` on 2026-11-15 as version 20261115124627.
+-- 2026-11-18: project moved to the new Supabase org (ref cjxlyomshhmnohrthbvm); all migrations
+-- re-applied there with the same version numbers.
 --
 -- Supabase created public.rls_auto_enable() + event trigger `ensure_rls` at project setup
 -- ("auto-enable RLS on new tables"). We keep that safety net, but the function was callable
