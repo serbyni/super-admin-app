@@ -187,7 +187,7 @@ export default function Floor3D({ area, tables, selectedId, onSelect, colors }: 
   ];
   return (
     <Canvas
-      shadows
+      shadows="percentage"
       dpr={[1, 2]}
       frameloop="demand"
       camera={{ position: [size * 0.35, size * 0.55, size * 0.7], fov: 45, near: 0.1, far: 200 }}
