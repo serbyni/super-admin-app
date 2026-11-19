@@ -263,8 +263,11 @@ export type Database = {
           attempts: number;
           business_address: string;
           business_name: string;
+          cafe_name: string;
+          cafe_slug: string;
           decided_at: string;
           delivery_id: string;
+          event_at: string;
           locale: string;
           reason: string;
           recipient_email: string;

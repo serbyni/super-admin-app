@@ -191,15 +191,16 @@ Flags come from `country-flag-icons` and are copied to `public/flags/` by `npm i
 
 ### Emails & notifications (events)
 
-Owner status changes are **events**, written by a database trigger in the same transaction as the change (`platform.events` → `platform.email_deliveries` + `platform.notifications`):
+Owner status changes are **events**, written by a database trigger (or by `provision_cafe` for `cafe_created`) in the same transaction as the change (`platform.events` → `platform.email_deliveries` + `platform.notifications`):
 
 | Event                 | When                                                     | Email (Resend)                   | In-app notification                         |
 | --------------------- | -------------------------------------------------------- | -------------------------------- | ------------------------------------------- |
 | `register_new_user`   | email confirmed / profile completed → `pending_approval` | owner: application received      | every super admin: new application          |
 | `admin_approve_user`  | admin approves                                           | owner: approved + sign-in link   | owner (shown on `/pending` until dismissed) |
 | `admin_declined_user` | admin declines with a reason                             | owner: not approved + the reason | —                                           |
+| `cafe_created`        | owner finishes onboarding (`provision_cafe`) → `active`  | owner: your café is ready        | every super admin: new café (→ its page)    |
 
-- **Templates** (design: Stitch "Email Template" screens): React Email in `src/emails/` — `layout.tsx` (blocks), `templates.tsx` (the 3 emails), `copy.ts` (texts per locale: EN now, FR/AR later), `theme.ts` (brand colours). The **same components** render real values (previews, tests) or `{{{VARIABLES}}}` for Resend.
+- **Templates** (design: Stitch "Email Template" screens): React Email in `src/emails/` — `layout.tsx` (blocks), `templates.tsx` (the 4 emails), `copy.ts` (texts per locale: EN now, FR/AR later), `theme.ts` (brand colours). The **same components** render real values (previews, tests) or `{{{VARIABLES}}}` for Resend.
 - **Resend side** (templates, events, automations) is created from the repo: `RESEND_API_KEY=<full-access key> EMAIL_FROM="Serbi <noreply@dev.serbi.me>" npm run email:sync`. Run it after changing an email and once per environment (prod: `noreply@serbi.me`). Resend only accepts automations for a **verified** sender domain.
 
   | Resend event = template alias | Variables (event payload keys in snake_case)                                   |
@@ -207,6 +208,9 @@ Owner status changes are **events**, written by a database trigger in the same t
   | `register_new_user`           | SITE_URL, OWNER_NAME, BUSINESS_NAME, BUSINESS_ADDRESS, SUBMITTED_AT            |
   | `admin_approve_user`          | SITE_URL, OWNER_NAME, OWNER_EMAIL, BUSINESS_NAME, BUSINESS_ADDRESS, DECIDED_AT |
   | `admin_declined_user`         | SITE_URL, OWNER_NAME, BUSINESS_NAME, DECIDED_AT, REASON                        |
+  | `cafe_created`                | SITE_URL, OWNER_NAME, OWNER_EMAIL, CAFE_NAME, CAFE_HOST, CREATED_AT            |
+
+  `CAFE_HOST` is `<slug>.<NEXT_PUBLIC_CAFE_ROOT_DOMAIN>`; the "Open my dashboard" button links to `/auth/home`, which sends the signed-in owner to their own dashboard (or to sign in first).
 
 - **Dispatching**: `EmailDispatcher` (`src/lib/data/email-dispatcher.ts`) claims due deliveries with the service-role key and sends one **Resend event** per delivery (`resend.events.send`, idempotency key = delivery id). Values are HTML-escaped (Resend inserts `{{{VAR}}}` unescaped); empty values are omitted so the template fallback is used. Failures retry with backoff (1, 2, 4 … min, max 8 attempts).
 - **When**: right after the action that created the event (`kickEmailDispatch()` runs after the response), plus a daily sweep `GET /api/internal/email/dispatch` (Vercel Cron, `Authorization: Bearer $CRON_SECRET`).

@@ -25,6 +25,9 @@ const delivery = (id: string, template: string, extra: Record<string, unknown> =
   reason: template === "admin_declined_user" ? "Could not verify <the> address." : null,
   submitted_at: "2026-11-16T19:14:00Z",
   decided_at: "2026-11-17T08:30:00Z",
+  cafe_name: null as string | null,
+  cafe_slug: null as string | null,
+  event_at: "2026-11-19T10:00:00Z",
   ...extra,
 });
 
@@ -37,6 +40,7 @@ function fakeDb(claimed: ReturnType<typeof delivery>[]) {
 
 const config = { RESEND_API_KEY: "re_test" };
 const SITE = "https://dev.serbi.me/";
+const ROOT = "serbi.me";
 
 beforeEach(() => send.mockReset());
 
@@ -57,7 +61,7 @@ describe("EmailDispatcher (Resend events)", () => {
       delivery("d2", "admin_declined_user"),
     ]);
 
-    const result = await new EmailDispatcher(db, config, SITE).run();
+    const result = await new EmailDispatcher(db, config, SITE, ROOT).run();
 
     expect(result).toEqual({ sent: 1, failed: 1 });
     expect(send).toHaveBeenNthCalledWith(
@@ -101,11 +105,31 @@ describe("EmailDispatcher (Resend events)", () => {
     const { db } = fakeDb([
       delivery("d5", "register_new_user", { recipient_name: null, business_address: null }),
     ]);
-    await new EmailDispatcher(db, config, SITE).run();
+    await new EmailDispatcher(db, config, SITE, ROOT).run();
     const payload = send.mock.calls[0][0].payload;
     expect(payload).not.toHaveProperty("owner_name");
     expect(payload).not.toHaveProperty("business_address");
     expect(payload.submitted_at).toBe("16 Nov 2026, 20:14");
+  });
+
+  it("cafe_created: café name, café address on the root domain, creation date — escaped", async () => {
+    send.mockResolvedValueOnce({ data: { object: "event", event: "cafe_created" }, error: null });
+    const { db } = fakeDb([
+      delivery("d6", "cafe_created", { cafe_name: "Lune <Bleue>", cafe_slug: "lune-bleue" }),
+    ]);
+    await new EmailDispatcher(db, config, SITE, ROOT).run();
+    expect(send.mock.calls[0][0]).toEqual({
+      event: "cafe_created",
+      email: "d6@example.com",
+      payload: {
+        site_url: "https://dev.serbi.me",
+        owner_name: "Amira",
+        owner_email: "d6@example.com",
+        cafe_name: "Lune &lt;Bleue&gt;",
+        cafe_host: "lune-bleue.serbi.me",
+        created_at: "19 Nov 2026, 11:00",
+      },
+    });
   });
 
   it("records an error for an unknown template and survives a thrown send", async () => {
@@ -113,7 +137,7 @@ describe("EmailDispatcher (Resend events)", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     const { db, rpc } = fakeDb([delivery("d3", "nope"), delivery("d4", "register_new_user")]);
 
-    const result = await new EmailDispatcher(db, config, SITE).run();
+    const result = await new EmailDispatcher(db, config, SITE, ROOT).run();
 
     expect(result).toEqual({ sent: 0, failed: 2 });
     expect(send).toHaveBeenCalledTimes(1);

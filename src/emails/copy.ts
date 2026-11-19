@@ -47,6 +47,24 @@ type Copy = {
     supportBody: string;
     supportCta: string;
   };
+  ready: {
+    subject: string;
+    preview: string;
+    heroLabel: string;
+    heroTitle: string;
+    title: (name: string) => string;
+    intro: (cafe: string, host: string) => string;
+    cta: string;
+    recordTitle: string;
+    fields: { cafe: string; address: string; email: string; created: string };
+    stepsTitle: string;
+    steps: Step[];
+    qrTitle: string;
+    qrBody: string;
+    supportTitle: string;
+    supportBody: string;
+    supportCta: string;
+  };
   declined: {
     subject: string;
     preview: string;
@@ -154,6 +172,43 @@ const en: Copy = {
     },
     supportTitle: "Need help getting started?",
     supportBody: "Reply to this email and our team will help you set up your menu and QR codes.",
+    supportCta: "Contact us",
+  },
+  ready: {
+    subject: "Your café is ready on Serbi",
+    preview: "Your café is set up. Open your dashboard to add your menu.",
+    heroLabel: "Café created",
+    heroTitle: "Your café is ready",
+    title: (n) => `Well done ${n}!`,
+    intro: (cafe, host) =>
+      `${cafe} is set up on Serbi. Your customers will open your menu at ${host}. Next, add your menu and print a QR code for each table.`,
+    cta: "Open my dashboard",
+    recordTitle: "Your café",
+    fields: {
+      cafe: "Café",
+      address: "Café address",
+      email: "Sign-in email",
+      created: "Created on",
+    },
+    stepsTitle: "Next steps",
+    steps: [
+      {
+        title: "Add your menu",
+        body: "Categories, drinks and food, prices, photos and options.",
+      },
+      {
+        title: "Create tables & print QR codes",
+        body: "One QR code per table or zone — customers scan it to see your menu and order.",
+      },
+      {
+        title: "Invite your staff",
+        body: "Give your team access to receive and manage orders.",
+      },
+    ],
+    qrTitle: "Your QR codes never change",
+    qrBody: "Printed QR codes keep working, even if you change your café address later.",
+    supportTitle: "Need help setting up?",
+    supportBody: "Reply to this email and our team will help you build your menu and QR codes.",
     supportCta: "Contact us",
   },
   declined: {

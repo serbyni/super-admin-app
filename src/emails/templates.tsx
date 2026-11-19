@@ -26,6 +26,7 @@ export const EMAIL_TEMPLATES = [
   "register_new_user",
   "admin_approve_user",
   "admin_declined_user",
+  "cafe_created",
 ] as const;
 export type EmailTemplate = (typeof EMAIL_TEMPLATES)[number];
 
@@ -43,6 +44,9 @@ export const EMAIL_VARIABLES = {
   SUBMITTED_AT: "—",
   DECIDED_AT: "—",
   REASON: "Our team could not verify your application details.",
+  CAFE_NAME: "your café",
+  CAFE_HOST: "your café address",
+  CREATED_AT: "—",
 } as const;
 export type EmailVariable = keyof typeof EMAIL_VARIABLES;
 export type EmailVars = Record<EmailVariable, string>;
@@ -65,6 +69,7 @@ export const TEMPLATE_VARIABLES: Record<EmailTemplate, EmailVariable[]> = {
     "DECIDED_AT",
   ],
   admin_declined_user: ["SITE_URL", "OWNER_NAME", "BUSINESS_NAME", "DECIDED_AT", "REASON"],
+  cafe_created: ["SITE_URL", "OWNER_NAME", "OWNER_EMAIL", "CAFE_NAME", "CAFE_HOST", "CREATED_AT"],
 };
 
 function footer(v: EmailVars, locale?: string | null) {
@@ -232,6 +237,56 @@ function AdminDeclinedUser({ v, locale }: { v: EmailVars; locale?: string | null
   );
 }
 
+function CafeCreated({ v, locale }: { v: EmailVars; locale?: string | null }) {
+  const c = emailCopy(locale);
+  const r = c.ready;
+  return (
+    <EmailLayout
+      logoUrl={`${v.SITE_URL}/brand/serbi-email-mark.png`}
+      preview={r.preview}
+      badge={c.headerBadge}
+      tagline={c.brandTagline}
+      hero={{
+        tone: "success",
+        label: `✓ ${r.heroLabel}`,
+        title: r.heroTitle,
+        subtitle: v.CAFE_NAME,
+      }}
+      footer={footer(v, locale)}
+    >
+      <Title>{r.title(v.OWNER_NAME)}</Title>
+      <P muted>{r.intro(v.CAFE_NAME, v.CAFE_HOST)}</P>
+      {/* /auth/home sends a signed-in owner to their own dashboard (or to sign in first). */}
+      <PrimaryButton href={`${v.SITE_URL}/auth/home`}>{r.cta} →</PrimaryButton>
+      <div style={{ height: "20px" }} />
+      <Card title={r.recordTitle} tint="mid">
+        <Fields
+          items={[
+            { label: r.fields.cafe, value: v.CAFE_NAME },
+            { label: r.fields.address, value: v.CAFE_HOST },
+            { label: r.fields.email, value: v.OWNER_EMAIL },
+            { label: r.fields.created, value: v.CREATED_AT },
+          ]}
+        />
+      </Card>
+      <H2>{r.stepsTitle}</H2>
+      <div style={{ height: "6px" }} />
+      {r.steps.map((s, i) => (
+        <Step key={s.title} marker={String(i + 1)} state="number" title={s.title} body={s.body} />
+      ))}
+      <div style={{ height: "12px" }} />
+      <Note icon="🔗" title={r.qrTitle}>
+        {r.qrBody}
+      </Note>
+      <Note icon="🤝" title={r.supportTitle}>
+        {r.supportBody}
+      </Note>
+      <SecondaryButton href={`${v.SITE_URL}/contact`}>{r.supportCta}</SecondaryButton>
+      <SignOff line={c.signOff} team={c.team} />
+    </EmailLayout>
+  );
+}
+
 function Email({
   template,
   v,
@@ -248,6 +303,8 @@ function Email({
       return <AdminApproveUser v={v} locale={locale} />;
     case "admin_declined_user":
       return <AdminDeclinedUser v={v} locale={locale} />;
+    case "cafe_created":
+      return <CafeCreated v={v} locale={locale} />;
   }
 }
 
@@ -255,6 +312,7 @@ const SUBJECTS: Record<EmailTemplate, (c: ReturnType<typeof emailCopy>) => strin
   register_new_user: (c) => c.received.subject,
   admin_approve_user: (c) => c.approved.subject,
   admin_declined_user: (c) => c.declined.subject,
+  cafe_created: (c) => c.ready.subject,
 };
 
 export function emailSubject(template: EmailTemplate, locale?: string | null): string {

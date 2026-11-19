@@ -46,6 +46,21 @@ describe("email templates (real values)", () => {
     expect(e.html).toContain("&lt;script&gt;");
   });
 
+  it("cafe_created: café, address, dashboard link via /auth/home", async () => {
+    const e = await renderEmail("cafe_created", {
+      ...vars,
+      CAFE_NAME: "Lune Bleue",
+      CAFE_HOST: "lune-bleue.serbi.me",
+      CREATED_AT: "19 Nov 2026, 11:00",
+    });
+    expect(e.subject).toBe("Your café is ready on Serbi");
+    expect(e.html).toContain("Well done Amira!");
+    expect(e.html).toContain("lune-bleue.serbi.me");
+    expect(e.html).toContain("https://dev.serbi.me/auth/home");
+    expect(e.html).toContain("amira@example.com");
+    expect(e.text.toLowerCase()).toContain("next steps");
+  });
+
   it("uses defaults for missing values and falls back to English", async () => {
     const e = await renderEmail("register_new_user", { BUSINESS_NAME: " " }, "fr");
     expect(e.subject).toBe("We received your Serbi application");

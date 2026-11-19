@@ -3,7 +3,8 @@ import { Resend } from "resend";
 import { formatDateTime } from "@/config/locale";
 import { isEmailTemplate, TEMPLATE_VARIABLES, type EmailVariable } from "@/emails/templates";
 import { emailConfig, type EmailConfig } from "@/lib/email/config";
-import { publicEnv } from "@/lib/env";
+import { cafeHost } from "@/lib/cafes/slug";
+import { cafeRootDomain, publicEnv } from "@/lib/env";
 import { createServiceClient } from "@/lib/supabase/service";
 import { unwrap } from "./errors";
 
@@ -28,7 +29,11 @@ export function escapeHtml(value: string): string {
  * Event payload for a delivery: snake_case keys (Resend event schema), one per template variable
  * the template uses. Automations map them to the template's {{{UPPER_CASE}}} variables.
  */
-export function eventPayload(d: Delivery, siteUrl: string): Record<string, string> {
+export function eventPayload(
+  d: Delivery,
+  siteUrl: string,
+  rootDomain: string,
+): Record<string, string> {
   const all: Record<EmailVariable, string | null | undefined> = {
     SITE_URL: siteUrl.replace(/\/$/, ""),
     OWNER_NAME: d.recipient_name?.trim().split(/\s+/)[0],
@@ -38,6 +43,9 @@ export function eventPayload(d: Delivery, siteUrl: string): Record<string, strin
     SUBMITTED_AT: d.submitted_at ? formatDateTime(d.submitted_at) : null,
     DECIDED_AT: d.decided_at ? formatDateTime(d.decided_at) : null,
     REASON: d.reason,
+    CAFE_NAME: d.cafe_name ?? d.business_name,
+    CAFE_HOST: d.cafe_slug ? cafeHost(d.cafe_slug, rootDomain) : null,
+    CREATED_AT: d.event_at ? formatDateTime(d.event_at) : null,
   };
   const keys = isEmailTemplate(d.template) ? TEMPLATE_VARIABLES[d.template] : [];
   const payload: Record<string, string> = {};
@@ -64,6 +72,7 @@ export class EmailDispatcher {
     private readonly db: Db,
     config: EmailConfig,
     private readonly siteUrl: string,
+    private readonly rootDomain: string,
   ) {
     this.resend = new Resend(config.RESEND_API_KEY);
   }
@@ -74,7 +83,7 @@ export class EmailDispatcher {
     const config = emailConfig();
     const missing = [...(db ? [] : ["SUPABASE_SECRET_KEY"]), ...(config ? [] : ["RESEND_API_KEY"])];
     return db && config
-      ? new EmailDispatcher(db, config, publicEnv().NEXT_PUBLIC_SITE_URL)
+      ? new EmailDispatcher(db, config, publicEnv().NEXT_PUBLIC_SITE_URL, cafeRootDomain())
       : { missing };
   }
 
@@ -99,7 +108,11 @@ export class EmailDispatcher {
   private async sendOne(d: Delivery): Promise<{ messageId?: string; error?: string }> {
     if (!isEmailTemplate(d.template)) return { error: `unknown template ${d.template}` };
     const { data, error } = await this.resend.events.send(
-      { event: d.template, email: d.recipient_email, payload: eventPayload(d, this.siteUrl) },
+      {
+        event: d.template,
+        email: d.recipient_email,
+        payload: eventPayload(d, this.siteUrl, this.rootDomain),
+      },
       // Same key on every retry of this delivery (standard Resend Idempotency-Key header).
       { headers: { "Idempotency-Key": `delivery-${d.delivery_id}` } },
     );

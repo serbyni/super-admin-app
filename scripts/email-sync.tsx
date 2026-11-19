@@ -1,7 +1,8 @@
 /**
  * Sets up the whole Resend side of Serbi emails from the repo (idempotent — safe to re-run):
  *   1. templates  — rendered from src/emails, created/updated by alias, then published
- *   2. events     — register_new_user, admin_approve_user, admin_declined_user (+ payload schema)
+ *   2. events     — one per EMAIL_TEMPLATES entry (register_new_user, admin_approve_user,
+ *                   admin_declined_user, cafe_created) + payload schema
  *   3. automations — one per event: trigger → send the template from EMAIL_FROM
  *
  *   RESEND_API_KEY=re_... EMAIL_FROM="Serbi <noreply@dev.serbi.me>" npm run email:sync
