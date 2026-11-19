@@ -301,6 +301,26 @@ export type Database = {
         Returns: undefined;
       };
       get_my_onboarding: { Args: never; Returns: Json };
+      get_public_cafe: {
+        Args: { p_slug: string };
+        Returns: {
+          address: string;
+          city: string;
+          contact_email: string;
+          country_code: string;
+          currency: string;
+          default_locale: string;
+          facebook_url: string;
+          instagram_url: string;
+          latitude: number;
+          longitude: number;
+          name: string;
+          phone: string;
+          slug: string;
+          status: string;
+          theme: Json;
+        }[];
+      };
       get_my_owner: {
         Args: never;
         Returns: {
