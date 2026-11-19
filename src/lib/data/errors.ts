@@ -14,6 +14,7 @@ export const DATA_ERROR_CODES = [
   "invalid_location",
   "invalid_status", // e.g. approving an application that is no longer pending
   "invalid_reason",
+  "invalid_state", // e.g. publishing a website that has no saved draft
   "invalid_input", // bad field value — the field name is in the Postgres DETAIL (inputField())
   "unknown",
 ] as const;

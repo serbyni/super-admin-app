@@ -9,6 +9,7 @@ import { NotificationsService } from "./services/notifications";
 import { OnboardingService } from "./services/onboarding";
 import { OwnersService } from "./services/owners";
 import { UsersService } from "./services/users";
+import { WebsiteService } from "./services/website";
 import type { Db, LazyDb } from "./types";
 
 /** All server-side data services, sharing one Supabase client (one user session). */
@@ -23,6 +24,8 @@ export class ServerApi {
   readonly onboarding: OnboardingService;
   /** Cafés (tenants): own café via RLS; super-admin list/detail. */
   readonly cafes: CafesService;
+  /** Café website (draft/publish), owner only. */
+  readonly website: WebsiteService;
 
   constructor(createDb: () => Promise<Db>) {
     // One client per ServerApi, created on first use: pages that only need cached public data
@@ -37,6 +40,7 @@ export class ServerApi {
     this.notifications = new NotificationsService(db);
     this.onboarding = new OnboardingService(db);
     this.cafes = new CafesService(db);
+    this.website = new WebsiteService(db);
   }
 }
 

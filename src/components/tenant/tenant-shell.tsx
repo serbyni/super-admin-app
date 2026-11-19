@@ -15,6 +15,7 @@ function cafeNav(slug: string): ShellNavItem[] {
   const base = tenantDashboard(slug).replace(/\/$/, "");
   return [
     { href: base, icon: "dashboard", label: "Dashboard" },
+    { href: `${base}/website`, icon: "web", label: "Website" },
     { href: `${base}/menu`, icon: "restaurant_menu", label: "Menu", soon: true },
     { href: `${base}/tables`, icon: "table_restaurant", label: "Tables & QR", soon: true },
     { href: `${base}/orders`, icon: "receipt_long", label: "Orders", soon: true },
