@@ -1,11 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { serverApi } from "@/lib/data/server-api";
+import { ROUTES, tenantSettings } from "@/lib/auth/routes";
+import { serverApi, type ServerApi } from "@/lib/data/server-api";
 
 /**
  * Landing point of the "Change email address" link (token_hash + type=email_change).
  * With Supabase "Secure email change", the current AND the new address each get a link: after
  * the first one the change is still pending (`new_email` set), after both it is done.
- * Café owners go back to Settings → Profile with the result; others go home.
+ * Super admins and café owners go back to their Settings → Profile with the result.
  */
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
@@ -15,10 +16,15 @@ export async function GET(request: NextRequest) {
 
   const user = await api.auth.currentUser();
   const result = user?.new_email ? "pending" : "confirmed";
-  const me = await api.owners.me();
-  const target =
-    me?.status === "active" && me.cafeSlug
-      ? `/${me.cafeSlug}/dashboard/settings?tab=profile&email=${result}`
-      : await api.auth.homePath();
+  const target = (await api.admins.isPlatformAdmin())
+    ? `${ROUTES.adminSettings}?email=${result}`
+    : await ownerSettingsOrHome(api, result);
   return NextResponse.redirect(new URL(target, origin));
+}
+
+async function ownerSettingsOrHome(api: ServerApi, result: string): Promise<string> {
+  const me = await api.owners.me();
+  return me?.status === "active" && me.cafeSlug
+    ? `${tenantSettings(me.cafeSlug)}?tab=profile&email=${result}`
+    : api.auth.homePath();
 }

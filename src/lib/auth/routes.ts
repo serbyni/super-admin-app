@@ -6,6 +6,7 @@
 export const ROUTES = {
   login: "/login",
   adminHome: "/admin",
+  adminSettings: "/admin/settings",
   onboarding: "/onboarding",
   /** Resolves the signed-in user's home and redirects there. */
   home: "/auth/home",
@@ -25,6 +26,11 @@ export function isAdminPath(pathname: string): boolean {
 /** Owner dashboard of one café: /<slug>/dashboard[/…]. */
 export function tenantDashboard(slug: string): string {
   return `/${slug}/dashboard`;
+}
+
+/** Café owner's settings page (Café + Profile tabs). */
+export function tenantSettings(slug: string): string {
+  return `${tenantDashboard(slug)}/settings`;
 }
 
 // Café address format: same as SLUG_PATTERN in src/lib/cafes/slug.ts (kept inline: this file

@@ -39,6 +39,7 @@ const NAV: ShellNavItem[] = [
     badge: badge("unread"),
   },
   { href: "/admin/business", icon: "category", label: "Business types" },
+  { href: "/admin/settings", icon: "settings", label: "Settings" },
 ];
 
 /** Super-admin frame (Stitch "Admin Dashboard"): Serbi brand + platform navigation. */

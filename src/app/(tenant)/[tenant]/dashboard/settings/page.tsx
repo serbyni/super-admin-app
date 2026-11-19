@@ -6,18 +6,15 @@ import { PageHeader, TenantShell } from "@/components/tenant/tenant-shell";
 import { Icon } from "@/components/ui/icon";
 import { cafeFieldOptions } from "@/config/cafe-options";
 import { requireTenantOwner } from "@/lib/auth/guards";
-import { tenantDashboard } from "@/lib/auth/routes";
+import { tenantSettings } from "@/lib/auth/routes";
 import { socialHandle } from "@/lib/cafes/contact";
 import { cafeHost } from "@/lib/cafes/slug";
 import { serverApi } from "@/lib/data/server-api";
 import { cafeRootDomain } from "@/lib/env";
-import {
-  changeEmailAction,
-  changePasswordAction,
-  saveCafeAction,
-  saveProfileAction,
-} from "./actions";
-import { CafeSettingsForm, EmailForm, PasswordForm, ProfileForm, Section } from "./forms";
+import { ProfileTab } from "@/components/settings/profile-tab";
+import { Section } from "@/components/settings/form-kit";
+import { saveCafeAction } from "./actions";
+import { CafeSettingsForm } from "./forms";
 
 export const metadata: Metadata = { title: "Settings" };
 
@@ -25,14 +22,6 @@ const TABS = [
   { key: "cafe", label: "Café", icon: "storefront" },
   { key: "profile", label: "Profile", icon: "person" },
 ] as const;
-
-const EMAIL_NOTICE: Record<string, { tone: "success" | "info"; text: string }> = {
-  confirmed: { tone: "success", text: "Your sign-in email was changed." },
-  pending: {
-    tone: "info",
-    text: "Confirmed. Now open the link we sent to your other address to finish the change.",
-  },
-};
 
 async function Settings({
   params,
@@ -49,8 +38,7 @@ async function Settings({
   const cafe = await api.cafes.mine(tenant);
   if (!cafe) notFound();
   const host = cafeHost(cafe.slug, cafeRootDomain());
-  const base = `${tenantDashboard(tenant)}/settings`;
-  const notice = typeof emailResult === "string" ? EMAIL_NOTICE[emailResult] : undefined;
+  const base = tenantSettings(tenant);
 
   return (
     <TenantShell cafe={cafe} email={user.email} active="settings">
@@ -115,52 +103,9 @@ async function Settings({
           />
         </div>
       ) : (
-        <ProfileTab slug={tenant} notice={notice} pendingEmail={user.new_email ?? null} />
+        <ProfileTab emailResult={emailResult} pendingEmail={user.new_email ?? null} />
       )}
     </TenantShell>
-  );
-}
-
-async function ProfileTab({
-  slug,
-  notice,
-  pendingEmail,
-}: {
-  slug: string;
-  notice?: { tone: "success" | "info"; text: string };
-  pendingEmail: string | null;
-}) {
-  const profile = await serverApi().owners.profile();
-  return (
-    <div className="flex flex-col gap-lg">
-      {notice ? (
-        <p
-          role="status"
-          className={`flex items-start gap-xs rounded-lg p-md text-body-sm font-semibold ${
-            notice.tone === "success"
-              ? "bg-success-container text-success"
-              : "bg-secondary-container text-on-secondary-container"
-          }`}
-        >
-          <Icon
-            name={notice.tone === "success" ? "check_circle" : "info"}
-            className="text-icon-lg"
-          />
-          {notice.text}
-        </p>
-      ) : null}
-      <ProfileForm
-        action={saveProfileAction.bind(null, slug)}
-        fullName={profile.fullName ?? ""}
-        phone={profile.phone ?? ""}
-      />
-      <EmailForm
-        action={changeEmailAction.bind(null, slug)}
-        email={profile.email ?? ""}
-        pendingEmail={pendingEmail}
-      />
-      <PasswordForm action={changePasswordAction.bind(null, slug)} />
-    </div>
   );
 }
 
