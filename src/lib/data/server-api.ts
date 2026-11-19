@@ -8,6 +8,7 @@ import { CafesService } from "./services/cafes";
 import { NotificationsService } from "./services/notifications";
 import { OnboardingService } from "./services/onboarding";
 import { OwnersService } from "./services/owners";
+import { TablesService } from "./services/tables";
 import { UsersService } from "./services/users";
 import { WebsiteService } from "./services/website";
 import type { Db, LazyDb } from "./types";
@@ -26,6 +27,8 @@ export class ServerApi {
   readonly cafes: CafesService;
   /** Café website (draft/publish), owner only. */
   readonly website: WebsiteService;
+  /** Areas, tables and QR codes of the owner's café. */
+  readonly tables: TablesService;
 
   constructor(createDb: () => Promise<Db>) {
     // One client per ServerApi, created on first use: pages that only need cached public data
@@ -41,6 +44,7 @@ export class ServerApi {
     this.onboarding = new OnboardingService(db);
     this.cafes = new CafesService(db);
     this.website = new WebsiteService(db);
+    this.tables = new TablesService(db);
   }
 }
 
