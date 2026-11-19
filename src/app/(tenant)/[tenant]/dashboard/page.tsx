@@ -1,15 +1,12 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { signOut } from "@/app/auth/actions";
-import { BrandMark } from "@/components/ui/brand-mark";
+import { PageHeader, TenantShell } from "@/components/tenant/tenant-shell";
 import { Icon } from "@/components/ui/icon";
 import { CAFE_LOCALES } from "@/config/cafe-defaults";
 import { requireTenantOwner } from "@/lib/auth/guards";
-import { cafeHost } from "@/lib/cafes/slug";
 import { cafePalette } from "@/lib/cafes/theme";
 import { serverApi } from "@/lib/data/server-api";
-import { cafeRootDomain } from "@/lib/env";
 
 export const metadata: Metadata = { title: "Café dashboard" };
 
@@ -36,51 +33,22 @@ async function Dashboard({ params }: { params: PageProps<"/[tenant]/dashboard">[
   const { user } = await requireTenantOwner(tenant);
   const cafe = await serverApi().cafes.mine(tenant);
   if (!cafe) notFound();
-  // The café's own colours (generated from its brand colour) — the rest of the UI stays Serbi's.
   const c = cafePalette(cafe.seed);
-  const host = cafeHost(cafe.slug, cafeRootDomain());
 
   return (
-    <div className="min-h-screen bg-background">
-      <header style={{ backgroundColor: c.primary, color: c.onPrimary }}>
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-md px-gutter py-md lg:px-container-margin-desktop">
-          <div className="flex min-w-0 items-center gap-sm">
-            <span
-              aria-hidden="true"
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-headline-md font-bold"
-              style={{ backgroundColor: c.container, color: c.onContainer }}
-            >
-              {cafe.name.trim().charAt(0).toUpperCase()}
-            </span>
-            <div className="min-w-0">
-              <p className="truncate text-headline-md font-bold">{cafe.name}</p>
-              <p className="truncate text-caption opacity-80">{host}</p>
-            </div>
-          </div>
-          <form action={signOut}>
-            <button
-              type="submit"
-              className="inline-flex items-center gap-xs rounded-lg px-sm py-xs text-body-sm font-semibold opacity-90 hover:opacity-100"
-            >
-              <Icon name="logout" className="text-icon-md" flipRtl />
-              <span className="hidden sm:inline">Sign out</span>
-            </button>
-          </form>
-        </div>
-      </header>
-      <main className="mx-auto flex max-w-5xl flex-col gap-lg px-gutter py-lg lg:px-container-margin-desktop">
-        <div className="flex flex-col gap-xs sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h1 className="text-display-lg text-primary">Dashboard</h1>
-            <p className="mt-xs text-on-surface-variant">Signed in as {user.email}</p>
-          </div>
-          {cafe.status === "suspended" ? (
+    <TenantShell cafe={cafe} email={user.email} active="dashboard">
+      <PageHeader
+        title="Dashboard"
+        description={`Welcome back to ${cafe.name}.`}
+        actions={
+          cafe.status === "suspended" ? (
             <p className="w-fit rounded-full bg-error-container px-md py-xs text-body-sm font-semibold text-on-error-container">
               Suspended — contact Serbi support
             </p>
-          ) : null}
-        </div>
-
+          ) : null
+        }
+      />
+      <div className="flex flex-col gap-lg">
         <section className="rounded-xl bg-surface-container-lowest p-lg shadow-sm">
           <h2 className="mb-sm flex items-center gap-sm text-headline-md text-on-surface">
             <Icon name="storefront" className="text-icon-xl text-primary" />
@@ -122,12 +90,8 @@ async function Dashboard({ params }: { params: PageProps<"/[tenant]/dashboard">[
             </div>
           ))}
         </div>
-
-        <p className="flex items-center justify-center gap-xs text-caption text-outline">
-          <BrandMark className="h-5 w-5" /> Powered by Serbi
-        </p>
-      </main>
-    </div>
+      </div>
+    </TenantShell>
   );
 }
 
