@@ -4,11 +4,19 @@ import dynamic from "next/dynamic";
 import { useMemo, useState, useTransition, type FormEvent, type ReactNode } from "react";
 import { TextField } from "@/components/auth/fields";
 import { FloorEditor } from "@/components/floor/floor-editor";
+import { QrDownloadMenu, type QrDownloadKind } from "@/components/qr/download-menu";
 import { downloadPng, downloadSvg, fileName } from "@/components/qr/qr-download";
 import { ConfirmDialog, Dialog } from "@/components/ui/dialog";
 import { Icon } from "@/components/ui/icon";
 import { useToast } from "@/components/ui/toast";
-import { qrCardSvg, svgDataUrl, type QrCardInput } from "@/lib/qr/card";
+import {
+  CARD,
+  STICKER,
+  qrCardSvg,
+  qrStickerSvg,
+  svgDataUrl,
+  type QrCardInput,
+} from "@/lib/qr/card";
 import {
   LIMITS,
   TABLE_SHAPES,
@@ -128,14 +136,38 @@ export function TablesManager({
     );
   };
 
-  const download = async (svg: string, name: string, kind: "svg" | "png") => {
+  /** Downloads a QR code as the big card or the small table sticker, PNG or SVG. */
+  const download = async (
+    kind: QrDownloadKind,
+    q: { title: string; subtitle: string; label: string; code: string; file: string },
+  ) => {
+    const url = `${qrBase}${q.code}`;
+    const sticker = kind.startsWith("sticker");
+    const svg = sticker
+      ? qrStickerSvg({ url, label: q.label, code: q.code, colors })
+      : qrCardSvg({ url, cafeName, title: q.title, subtitle: q.subtitle, code: q.code, colors });
+    const name = `${q.file}${sticker ? "-sticker" : ""}`;
     try {
-      if (kind === "svg") downloadSvg(svg, name);
-      else await downloadPng(svg, name);
+      if (kind.endsWith("svg")) downloadSvg(svg, name);
+      else await downloadPng(svg, name, sticker ? STICKER : CARD);
     } catch {
       toast.show({ variant: "error", title: "Download failed. Please try again." });
     }
   };
+  const menuQr = {
+    title: "Menu",
+    subtitle: "Scan to see our menu",
+    label: "Menu",
+    code: floor.menu.code,
+    file: fileName(cafeName, "menu-qr"),
+  };
+  const tableQr = (t: CafeTable) => ({
+    title: `Table ${t.label}`,
+    subtitle: "Scan to order",
+    label: t.label,
+    code: t.code ?? "",
+    file: fileName(cafeName, t.label),
+  });
 
   return (
     <div className="flex flex-col gap-lg">
@@ -156,18 +188,7 @@ export function TablesManager({
             code <span className="font-mono font-semibold">{floor.menu.code}</span>
           </p>
           <div className="mt-xs flex flex-wrap gap-sm">
-            <ActionButton
-              icon="download"
-              onClick={() => download(menuSvg, fileName(cafeName, "menu-qr"), "png")}
-            >
-              PNG
-            </ActionButton>
-            <ActionButton
-              icon="download"
-              onClick={() => download(menuSvg, fileName(cafeName, "menu-qr"), "svg")}
-            >
-              SVG
-            </ActionButton>
+            <QrDownloadMenu onPick={(k) => download(k, menuQr)} />
             <ActionButton
               icon="autorenew"
               onClick={() => setConfirm({ kind: "new-code", table: null })}
@@ -356,14 +377,7 @@ export function TablesManager({
                         <ActionButton icon="edit" onClick={() => setTableForm(t)}>
                           Edit
                         </ActionButton>
-                        {svg ? (
-                          <ActionButton
-                            icon="download"
-                            onClick={() => download(svg, fileName(cafeName, t.label), "png")}
-                          >
-                            PNG
-                          </ActionButton>
-                        ) : null}
+                        {t.code ? <QrDownloadMenu onPick={(k) => download(k, tableQr(t))} /> : null}
                       </div>
                     </div>
                   );
@@ -421,19 +435,12 @@ export function TablesManager({
                             label={`Edit ${t.label}`}
                             onClick={() => setTableForm(t)}
                           />
-                          {svg ? (
-                            <>
-                              <IconButton
-                                icon="image"
-                                label={`Download PNG of ${t.label}`}
-                                onClick={() => download(svg, fileName(cafeName, t.label), "png")}
-                              />
-                              <IconButton
-                                icon="draw"
-                                label={`Download SVG of ${t.label}`}
-                                onClick={() => download(svg, fileName(cafeName, t.label), "svg")}
-                              />
-                            </>
+                          {t.code ? (
+                            <QrDownloadMenu
+                              iconOnly
+                              name={t.label}
+                              onPick={(k) => download(k, tableQr(t))}
+                            />
                           ) : null}
                           <IconButton
                             icon="autorenew"
