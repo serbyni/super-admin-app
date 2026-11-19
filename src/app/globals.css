@@ -148,6 +148,9 @@
   --color-success-container: var(--sb-success-container);
   --color-info: var(--sb-info);
   --color-info-container: var(--sb-info-container);
+
+  /* Background behind floating field labels (cuts the outline); = card surface */
+  --color-field-notch: var(--sb-surface-container-lowest);
 }
 
 @theme {
@@ -202,6 +205,9 @@
   --shadow-card-warm: 0 12px 40px rgb(85 55 34 / 0.08);
   --shadow-button-warm: 0 4px 16px rgb(85 55 34 / 0.2);
 
+  /* Aspect ratios — aspect-map matches the 640×320 static map */
+  --aspect-map: 2 / 1;
+
   /* Third-party brand colors */
   --color-facebook: #1877f2;
 
@@ -238,6 +244,15 @@
     radial-gradient(circle at 85% 30%, var(--color-tertiary-fixed-dim) 0, transparent 40%);
 }
 
+/* Filled Material Symbol (for HTML strings, e.g. map markers; React uses <Icon filled>). */
+@utility icon-filled {
+  font-variation-settings:
+    "FILL" 1,
+    "wght" 400,
+    "GRAD" 0,
+    "opsz" 24;
+}
+
 /* Material Symbols icon font (loaded in layout.tsx) */
 .material-symbols-outlined {
   font-family: "Material Symbols Outlined";
@@ -256,4 +271,12 @@
     "wght" 400,
     "GRAD" 0,
     "opsz" 24;
+}
+
+/* <summary> used as a button (phone menu): no native disclosure triangle (Safari/Chrome). */
+@utility no-marker {
+  list-style: none;
+  &::-webkit-details-marker {
+    display: none;
+  }
 }

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { BrandMark } from "@/components/ui/brand-mark";
 import { Icon } from "@/components/ui/icon";
 
 // Evaluated once when the module loads (Cache Components forbid new Date() during prerender).
@@ -12,9 +13,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
       <header className="z-50 w-full bg-surface/70 shadow-header backdrop-blur-xl">
         <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-gutter lg:px-container-margin-desktop">
           <Link href="/" className="group flex items-center gap-sm">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-container text-on-primary-container transition-transform group-hover:scale-105">
-              <Icon name="coffee" className="text-icon-lg" />
-            </span>
+            <BrandMark className="h-9 w-9 transition-transform group-hover:scale-105" priority />
             <span className="font-headline-md text-headline-md tracking-tight text-primary">
               Serbi
             </span>

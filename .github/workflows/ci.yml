@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   quality:
-    name: Lint · Prettier · Typecheck
+    name: Lint · Prettier · Typecheck · Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -30,6 +30,8 @@ jobs:
         run: npm run format:check
       - name: TypeScript
         run: npm run typecheck
+      - name: Unit tests
+        run: npm test
 
   build:
     name: Build

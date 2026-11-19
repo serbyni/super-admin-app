@@ -1,15 +1,19 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import Link from "next/link";
 import { AuthShell } from "@/components/auth/auth-shell";
-import { TextField } from "@/components/auth/fields";
-import { StaticForm } from "@/components/auth/static-form";
+import { RedirectIfSignedIn } from "@/components/auth/redirect-if-signed-in";
 import { Icon } from "@/components/ui/icon";
+import { ForgotPasswordForm } from "./forgot-form";
 
 export const metadata: Metadata = { title: "Forgot password" };
 
 export default function ForgotPasswordPage() {
   return (
     <AuthShell>
+      <Suspense fallback={null}>
+        <RedirectIfSignedIn />
+      </Suspense>
       <div className="mx-auto w-full max-w-card-sm">
         <div className="relative flex flex-col rounded-xl bg-surface-container-lowest/90 p-8 shadow-card-warm backdrop-blur-xl sm:p-10">
           <div className="mb-8 flex items-center justify-between">
@@ -34,30 +38,9 @@ export default function ForgotPasswordPage() {
             </p>
           </div>
 
-          <StaticForm className="space-y-5">
-            <TextField
-              id="email"
-              label="Email address"
-              icon="mail"
-              type="email"
-              autoComplete="email"
-              placeholder="owner@yourcafe.com"
-              required
-            />
-            <button
-              type="submit"
-              className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3.5 font-semibold tracking-wide text-on-primary shadow-button-warm transition-all duration-200 hover:bg-primary-container active:scale-99"
-            >
-              <span>Send reset link</span>
-              <Icon name="send" className="text-icon-lg" flipRtl />
-            </button>
-            <div className="flex items-center justify-center gap-2 py-1 text-center">
-              <Icon name="schedule" className="text-icon-sm text-tertiary" />
-              <p className="font-label-sm text-label-sm font-normal text-on-surface-variant">
-                For security, the link expires after a short time.
-              </p>
-            </div>
-          </StaticForm>
+          <Suspense fallback={null}>
+            <ForgotPasswordForm />
+          </Suspense>
 
           <div className="mt-8 flex justify-center pt-6">
             <Link
