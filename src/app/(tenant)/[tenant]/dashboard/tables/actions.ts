@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
 import { requireTenantOwner } from "@/lib/auth/guards";
 import { tenantDashboard } from "@/lib/auth/routes";
 import { inputField, isDataError } from "@/lib/data/errors";
@@ -124,5 +125,31 @@ export async function regenerateCodeAction(
     return { ok: true, message: "New QR code created — print and replace the old one" };
   } catch (e) {
     return failure(e, "Could not create a new code.");
+  }
+}
+
+const layoutSchema = z
+  .array(
+    z.object({
+      id: z.uuid(),
+      x: z.number().finite().min(0).max(60),
+      y: z.number().finite().min(0).max(60),
+      rotation: z.number().finite(),
+    }),
+  )
+  .max(200);
+
+/** Saves table positions from the floor editor (clamped to each table's area in SQL). */
+export async function saveLayoutAction(slug: string, layout: unknown): Promise<TablesResult> {
+  await requireTenantOwner(slug);
+  const parsed = layoutSchema.safeParse(layout);
+  if (!parsed.success)
+    return { ok: false, message: "Could not save the layout. Reload and try again." };
+  try {
+    await serverApi().tables.saveLayout(slug, parsed.data);
+    refresh(slug);
+    return { ok: true, message: "Floor plan saved" };
+  } catch (e) {
+    return failure(e, "Could not save the layout.");
   }
 }

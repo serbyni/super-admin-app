@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition, type FormEvent, type ReactNode } from "react";
 import { TextField } from "@/components/auth/fields";
+import { FloorEditor } from "@/components/floor/floor-editor";
 import { downloadPng, downloadSvg, fileName } from "@/components/qr/qr-download";
 import { ConfirmDialog, Dialog } from "@/components/ui/dialog";
 import { Icon } from "@/components/ui/icon";
@@ -20,6 +21,7 @@ import {
   deleteTableAction,
   regenerateCodeAction,
   saveAreaAction,
+  saveLayoutAction,
   saveTableAction,
   type TablesResult,
 } from "./actions";
@@ -58,6 +60,7 @@ export function TablesManager({
   const [tableForm, setTableForm] = useState<CafeTable | "new" | null>(null);
   const [confirm, setConfirm] = useState<Confirm | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [view, setView] = useState<"list" | "plan">("list");
 
   const area = floor.areas.find((a) => a.id === areaId) ?? null;
   const tables = useMemo(
@@ -246,7 +249,44 @@ export function TablesManager({
               </div>
             </div>
 
-            {tables.length === 0 ? (
+            <div
+              role="tablist"
+              aria-label="View"
+              className="flex w-fit rounded-xl bg-surface-container p-xs"
+            >
+              {(
+                [
+                  ["list", "view_list", "List"],
+                  ["plan", "floor", "Floor plan"],
+                ] as const
+              ).map(([v, icon, label]) => (
+                <button
+                  key={v}
+                  type="button"
+                  role="tab"
+                  aria-selected={view === v}
+                  onClick={() => setView(v)}
+                  className={`inline-flex items-center gap-xs rounded-lg px-md py-xs text-body-sm font-semibold ${
+                    view === v
+                      ? "bg-surface-container-lowest text-primary shadow-sm"
+                      : "text-on-surface-variant"
+                  }`}
+                >
+                  <Icon name={icon} className="text-icon-md" /> {label}
+                </button>
+              ))}
+            </div>
+
+            {view === "plan" && tables.length > 0 ? (
+              <FloorEditor
+                key={`${area.id}:${area.widthM}x${area.depthM}:${tables.map((t) => `${t.id}@${t.x},${t.y},${t.rotation},${t.shape},${t.seats}`).join("|")}`}
+                area={area}
+                tables={tables}
+                saving={pending}
+                onOpen={(t) => setTableForm(t)}
+                onSave={(layout) => run(() => saveLayoutAction(slug, layout))}
+              />
+            ) : tables.length === 0 ? (
               <EmptyState
                 icon="table_restaurant"
                 title="No tables yet"
