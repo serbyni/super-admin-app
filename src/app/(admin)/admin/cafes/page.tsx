@@ -6,6 +6,7 @@ import { CafeStatusChip } from "@/components/admin/cafe-status-chip";
 import { Icon } from "@/components/ui/icon";
 import { formatDateTime } from "@/config/locale";
 import { requireAdmin } from "@/lib/auth/admin";
+import { CafePageLink } from "@/components/cafe/cafe-page-link";
 import { cafeHost } from "@/lib/cafes/slug";
 import { serverApi } from "@/lib/data/server-api";
 import { cafeRootDomain } from "@/lib/env";
@@ -87,7 +88,9 @@ async function Cafes({
                 >
                   <td className="px-md py-sm">
                     <p className="font-semibold text-on-surface">{c.name}</p>
-                    <p className="text-caption text-on-surface-variant">{cafeHost(c.slug, root)}</p>
+                    <CafePageLink slug={c.slug} variant="inline" className="text-caption">
+                      {cafeHost(c.slug, root)}
+                    </CafePageLink>
                   </td>
                   <td className="px-md py-sm">
                     <p className="text-on-surface">{c.ownerName ?? "—"}</p>

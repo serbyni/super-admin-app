@@ -9,6 +9,7 @@ import { cafeFieldOptions } from "@/config/cafe-options";
 import { DPA_VERSION, TERMS_VERSION } from "@/config/legal";
 import { requireOwnerStage } from "@/lib/auth/guards";
 import { tenantDashboard } from "@/lib/auth/routes";
+import { CafePageLink } from "@/components/cafe/cafe-page-link";
 import { cafeHost } from "@/lib/cafes/slug";
 import { serverApi } from "@/lib/data/server-api";
 import { cafeRootDomain } from "@/lib/env";
@@ -48,6 +49,9 @@ function Done({ slug, rootDomain }: { slug: string; rootDomain: string }) {
         Open my dashboard
         <Icon name="arrow_forward" className="text-icon-lg" flipRtl />
       </Link>
+      <CafePageLink slug={slug} className="mt-sm w-full">
+        View my café page
+      </CafePageLink>
       <ol className="mt-lg flex flex-col gap-sm text-start">
         {NEXT_STEPS.map((s) => (
           <li

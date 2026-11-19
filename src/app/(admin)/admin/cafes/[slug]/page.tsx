@@ -10,6 +10,7 @@ import { CAFE_LOCALES } from "@/config/cafe-defaults";
 import { formatDateTime } from "@/config/locale";
 import { requireAdmin } from "@/lib/auth/guards";
 import { socialHandle } from "@/lib/cafes/contact";
+import { CafePageLink } from "@/components/cafe/cafe-page-link";
 import { cafeHost, isValidSlugFormat } from "@/lib/cafes/slug";
 import { serverApi } from "@/lib/data/server-api";
 import { cafeRootDomain } from "@/lib/env";
@@ -39,12 +40,21 @@ async function Cafe({ params }: { params: PageProps<"/admin/cafes/[slug]">["para
       <PageHeader
         title={c.name}
         description={cafeHost(c.slug, cafeRootDomain())}
-        actions={<CafeStatusChip status={c.status} />}
+        actions={
+          <div className="flex flex-wrap items-center gap-sm">
+            <CafeStatusChip status={c.status} />
+            <CafePageLink slug={c.slug} />
+          </div>
+        }
       />
       <div className="grid grid-cols-1 gap-md lg:grid-cols-2">
         <Card title="Café" icon="storefront">
           <Row label="Name">{c.name}</Row>
-          <Row label="Address">{cafeHost(c.slug, cafeRootDomain())}</Row>
+          <Row label="Address">
+            <CafePageLink slug={c.slug} variant="inline">
+              {cafeHost(c.slug, cafeRootDomain())}
+            </CafePageLink>
+          </Row>
           <Row label="Created">{formatDateTime(c.createdAt)}</Row>
           <Row label="Last updated">{formatDateTime(c.updatedAt)}</Row>
           <Row label="Members">{c.membersCount}</Row>

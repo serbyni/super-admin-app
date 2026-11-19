@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { AppShell, type ShellNavItem } from "@/components/shell/app-shell";
 import { BrandMark } from "@/components/ui/brand-mark";
 import { tenantDashboard } from "@/lib/auth/routes";
+import { CafePageLink } from "@/components/cafe/cafe-page-link";
 import { cafeHost } from "@/lib/cafes/slug";
 import { cafePalette } from "@/lib/cafes/theme";
 import type { Cafe } from "@/lib/data/services/cafes";
@@ -67,6 +68,9 @@ export function TenantShell({
       }
       footer={
         <div className="flex flex-col gap-xs border-t border-surface-container-high px-sm pt-sm">
+          <CafePageLink slug={cafe.slug} variant="inline" className="text-body-sm">
+            View café page
+          </CafePageLink>
           {email ? (
             <span className="truncate text-caption text-on-surface-variant">{email}</span>
           ) : null}

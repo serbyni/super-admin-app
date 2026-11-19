@@ -11,6 +11,7 @@ import { socialHandle } from "@/lib/cafes/contact";
 import { cafeHost } from "@/lib/cafes/slug";
 import { serverApi } from "@/lib/data/server-api";
 import { cafeRootDomain } from "@/lib/env";
+import { CafePageLink } from "@/components/cafe/cafe-page-link";
 import { ProfileTab } from "@/components/settings/profile-tab";
 import { Section } from "@/components/settings/form-kit";
 import { saveCafeAction } from "./actions";
@@ -74,9 +75,11 @@ async function Settings({
             icon="language"
             description="Customers open your menu at this address. Your printed QR codes keep working even if it changes later."
           >
-            <p className="flex items-center gap-xs text-body-md font-semibold text-on-surface">
+            <p className="flex items-center gap-xs text-body-md">
               <Icon name="link" className="text-icon-lg text-primary" />
-              {host}
+              <CafePageLink slug={cafe.slug} variant="inline">
+                {host}
+              </CafePageLink>
             </p>
             <p className="mt-xs text-caption text-on-surface-variant">
               Changing the café address is not available yet — contact us if you need it.

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { CafePageLink } from "@/components/cafe/cafe-page-link";
 import { PageHeader, TenantShell } from "@/components/tenant/tenant-shell";
 import { Icon } from "@/components/ui/icon";
 import { CAFE_LOCALES } from "@/config/cafe-defaults";
@@ -45,7 +46,9 @@ async function Dashboard({ params }: { params: PageProps<"/[tenant]/dashboard">[
             <p className="w-fit rounded-full bg-error-container px-md py-xs text-body-sm font-semibold text-on-error-container">
               Suspended — contact Serbi support
             </p>
-          ) : null
+          ) : (
+            <CafePageLink slug={cafe.slug} />
+          )
         }
       />
       <div className="flex flex-col gap-lg">
