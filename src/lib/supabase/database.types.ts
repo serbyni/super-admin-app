@@ -40,6 +40,41 @@ export type Database = {
           },
         ];
       };
+      cafe_websites: {
+        Row: {
+          cafe_id: string;
+          draft: Json;
+          draft_updated_at: string;
+          published: Json | null;
+          published_at: string | null;
+          updated_by: string | null;
+        };
+        Insert: {
+          cafe_id: string;
+          draft: Json;
+          draft_updated_at?: string;
+          published?: Json | null;
+          published_at?: string | null;
+          updated_by?: string | null;
+        };
+        Update: {
+          cafe_id?: string;
+          draft?: Json;
+          draft_updated_at?: string;
+          published?: Json | null;
+          published_at?: string | null;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "cafe_websites_cafe_id_fkey";
+            columns: ["cafe_id"];
+            isOneToOne: true;
+            referencedRelation: "cafes";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       cafes: {
         Row: {
           address: string | null;
@@ -319,8 +354,17 @@ export type Database = {
           slug: string;
           status: string;
           theme: Json;
+          website: Json;
         }[];
       };
+      get_my_website: {
+        Args: { p_slug: string };
+        Returns: { draft: Json; draft_updated_at: string; published: Json; published_at: string }[];
+      };
+      save_my_website: { Args: { p_draft: Json; p_slug: string }; Returns: string };
+      publish_my_website: { Args: { p_slug: string }; Returns: string };
+      discard_my_website_draft: { Args: { p_slug: string }; Returns: undefined };
+      owns_cafe_folder: { Args: { p_name: string }; Returns: boolean };
       get_my_owner: {
         Args: never;
         Returns: {
