@@ -147,6 +147,34 @@ export type Database = {
           user_id: string;
         }[];
       };
+      admin_get_cafe: {
+        Args: { p_slug: string };
+        Returns: {
+          address: string;
+          agreed_at: string;
+          city: string;
+          country_code: string;
+          created_at: string;
+          currency: string;
+          default_locale: string;
+          dpa_version: string;
+          id: string;
+          latitude: number;
+          longitude: number;
+          members_count: number;
+          name: string;
+          owner_email: string;
+          owner_name: string;
+          owner_phone: string;
+          owner_user_id: string;
+          slug: string;
+          status: string;
+          terms_version: string;
+          theme: Json;
+          timezone: string;
+          updated_at: string;
+        }[];
+      };
       admin_list_business_types: {
         Args: never;
         Returns: {

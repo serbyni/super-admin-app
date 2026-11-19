@@ -23,6 +23,13 @@ export function describeNotification(n: AppNotification): {
         body: `${business} is approved on Serbi. Café setup is coming next.`,
         href: "/pending",
       };
+    case "cafe_created":
+      return {
+        icon: "storefront",
+        title: "New café created",
+        body: `${business} finished onboarding and is live.`,
+        href: n.data.cafeSlug ? `/admin/cafes/${n.data.cafeSlug}` : "/admin/cafes",
+      };
     default:
       return { icon: "notifications", title: "Update", body: business, href: "/pending" };
   }

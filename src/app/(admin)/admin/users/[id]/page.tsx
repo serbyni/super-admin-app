@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Suspense, type ReactNode } from "react";
+import { Suspense } from "react";
 import { AdminShell, PageHeader } from "@/components/admin/admin-shell";
+import { Card, Row } from "@/components/admin/detail-card";
 import { OwnerStatusChip } from "@/components/admin/owner-status-chip";
 import { Icon } from "@/components/ui/icon";
 import { formatDateTime } from "@/config/locale";
@@ -11,27 +12,6 @@ import { serverApi } from "@/lib/data/server-api";
 import { DecisionPanel } from "./decision-panel";
 
 export const metadata: Metadata = { title: "Application" };
-
-function Row({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className="grid grid-cols-1 gap-xs py-sm sm:grid-cols-3">
-      <dt className="text-body-sm text-on-surface-variant">{label}</dt>
-      <dd className="text-body-sm text-on-surface sm:col-span-2">{children ?? "—"}</dd>
-    </div>
-  );
-}
-
-function Card({ title, icon, children }: { title: string; icon: string; children: ReactNode }) {
-  return (
-    <section className="rounded-xl bg-surface-container-lowest p-lg shadow-sm">
-      <h2 className="mb-sm flex items-center gap-sm text-headline-md text-on-surface">
-        <Icon name={icon} className="text-icon-xl text-primary" />
-        {title}
-      </h2>
-      <dl className="divide-y divide-surface-container-high">{children}</dl>
-    </section>
-  );
-}
 
 async function Application({
   params,

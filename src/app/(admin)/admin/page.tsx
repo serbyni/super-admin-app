@@ -11,10 +11,13 @@ export const metadata: Metadata = { title: "Admin" };
 
 async function Welcome() {
   const { user } = await requireAdmin();
-  const [types, owners] = await Promise.all([
+  const api = serverApi();
+  const [types, owners, cafes] = await Promise.all([
     listBusinessTypesForAdmin(),
-    serverApi().users.stats(),
+    api.users.stats(),
+    api.cafes.adminList(),
   ]);
+  const suspendedCafes = cafes.filter((c) => c.status === "suspended").length;
   const active = types.filter((t) => t.is_active).length;
   return (
     <>
@@ -41,6 +44,24 @@ async function Welcome() {
           <p className="text-headline-md text-on-surface">Users</p>
           <p className="mt-xs text-body-sm text-on-surface-variant">
             {owners.approved} approved · {owners.rejected} declined · {owners.total} total
+          </p>
+        </Link>
+        <Link
+          href="/admin/cafes"
+          className="group rounded-xl bg-surface-container-lowest p-lg shadow-sm transition-all hover:scale-101 hover:shadow-md"
+        >
+          <div className="mb-md flex items-start justify-between gap-sm">
+            <span className="flex h-12 w-12 items-center justify-center rounded-lg bg-secondary-container text-primary">
+              <Icon name="storefront" className="text-icon-xl" />
+            </span>
+            <span className="rounded-full bg-success-container px-sm py-xs font-label-sm text-label-sm text-success">
+              {cafes.length - suspendedCafes} active
+            </span>
+          </div>
+          <p className="text-headline-md text-on-surface">Cafés</p>
+          <p className="mt-xs text-body-sm text-on-surface-variant">
+            {cafes.length} total{suspendedCafes ? ` · ${suspendedCafes} suspended` : ""}
+            {cafes[0] ? ` · newest: ${cafes[0].name}` : ""}
           </p>
         </Link>
         <Link

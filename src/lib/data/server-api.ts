@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { AdminsService } from "./services/admins";
 import { AuthService } from "./services/auth";
 import { BusinessTypesService } from "./services/business-types";
+import { CafesService } from "./services/cafes";
 import { NotificationsService } from "./services/notifications";
 import { OnboardingService } from "./services/onboarding";
 import { OwnersService } from "./services/owners";
@@ -20,6 +21,8 @@ export class ServerApi {
   readonly users: UsersService;
   readonly notifications: NotificationsService;
   readonly onboarding: OnboardingService;
+  /** Cafés (tenants): own café via RLS; super-admin list/detail. */
+  readonly cafes: CafesService;
 
   constructor(createDb: () => Promise<Db>) {
     // One client per ServerApi, created on first use: pages that only need cached public data
@@ -33,6 +36,7 @@ export class ServerApi {
     this.users = new UsersService(db);
     this.notifications = new NotificationsService(db);
     this.onboarding = new OnboardingService(db);
+    this.cafes = new CafesService(db);
   }
 }
 

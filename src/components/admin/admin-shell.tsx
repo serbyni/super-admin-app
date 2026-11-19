@@ -9,6 +9,7 @@ import { serverApi } from "@/lib/data/server-api";
 const NAV = [
   { href: "/admin", icon: "dashboard", label: "Dashboard" },
   { href: "/admin/users", icon: "group", label: "Users", badge: "pending" },
+  { href: "/admin/cafes", icon: "storefront", label: "Cafés" },
   { href: "/admin/notifications", icon: "notifications", label: "Notifications", badge: "unread" },
   { href: "/admin/business", icon: "category", label: "Business types" },
 ] as const;

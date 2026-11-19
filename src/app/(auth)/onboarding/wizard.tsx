@@ -1,6 +1,5 @@
 "use client";
 
-import { argbFromHex, hexFromArgb, themeFromSourceColor } from "@material/material-color-utilities";
 import { getCountries } from "libphonenumber-js";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, useTransition, type FormEvent } from "react";
@@ -19,6 +18,7 @@ import {
   TIMEZONE_BY_COUNTRY,
 } from "@/config/cafe-defaults";
 import { cafeHost, localSlugProblem, normalizeSlug, SLUG_MESSAGES } from "@/lib/cafes/slug";
+import { cafePalette } from "@/lib/cafes/theme";
 import type { OnboardingState, SlugCheck } from "@/lib/data/services/onboarding";
 import { WIZARD_STEPS, type WizardDraft, type WizardStep } from "@/lib/onboarding/schema";
 import {
@@ -536,22 +536,6 @@ function AddressStep({
 
 /* ── 3 · Look (brand colour + live preview) ───────────────────────────────── */
 
-function usePalette(seed: string) {
-  return useMemo(() => {
-    const scheme = themeFromSourceColor(argbFromHex(seed)).schemes.light;
-    return {
-      primary: hexFromArgb(scheme.primary),
-      onPrimary: hexFromArgb(scheme.onPrimary),
-      container: hexFromArgb(scheme.primaryContainer),
-      onContainer: hexFromArgb(scheme.onPrimaryContainer),
-      surface: hexFromArgb(scheme.surface),
-      onSurface: hexFromArgb(scheme.onSurface),
-      variant: hexFromArgb(scheme.surfaceVariant),
-      onVariant: hexFromArgb(scheme.onSurfaceVariant),
-    };
-  }, [seed]);
-}
-
 function LookStep({
   draft,
   rootDomain,
@@ -636,7 +620,7 @@ function MenuPreview({
   seed: string;
   currency: string;
 }) {
-  const c = usePalette(seed);
+  const c = useMemo(() => cafePalette(seed), [seed]);
   const price = new Intl.NumberFormat("en", { style: "currency", currency }).format;
   return (
     <div

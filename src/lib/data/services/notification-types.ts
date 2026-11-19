@@ -1,9 +1,10 @@
-export type NotificationType = "register_new_user" | "admin_approve_user" | "admin_declined_user";
+export type NotificationType =
+  "register_new_user" | "admin_approve_user" | "admin_declined_user" | "cafe_created";
 
 export type AppNotification = {
   id: string;
   type: NotificationType;
-  data: { businessName?: string; ownerUserId?: string };
+  data: { businessName?: string; ownerUserId?: string; cafeSlug?: string };
   createdAt: string;
   readAt: string | null;
 };
@@ -23,6 +24,7 @@ export function toAppNotification(r: {
     data: {
       businessName: typeof d.business_name === "string" ? d.business_name : undefined,
       ownerUserId: typeof d.owner_user_id === "string" ? d.owner_user_id : undefined,
+      cafeSlug: typeof d.cafe_slug === "string" ? d.cafe_slug : undefined,
     },
     createdAt: r.created_at,
     readAt: r.read_at ?? null,
