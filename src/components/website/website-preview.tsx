@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 import { Icon } from "@/components/ui/icon";
 import type { CafePalette } from "@/lib/cafes/theme";
-import { mediaUrl } from "@/lib/website/media";
+import { mediaUrl } from "@/lib/media/config";
 import { groupHours, type Website, type WebsiteImage } from "@/lib/website/schema";
 
 /*

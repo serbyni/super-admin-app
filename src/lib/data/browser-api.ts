@@ -1,13 +1,18 @@
 import type { Provider } from "@supabase/supabase-js";
 import { siteUrl } from "@/lib/env";
 import { createClient } from "@/lib/supabase/client";
-import { MEDIA_BUCKET } from "@/lib/website/schema";
+import { MediaService } from "./services/media";
 import { toAppNotification, type AppNotification } from "./services/notification-types";
 import type { Db } from "./types";
 
 /** Data calls available in Client Components (browser session). */
 export class BrowserApi {
-  constructor(private readonly db: Db) {}
+  /** Café media uploads (website, menu, branding) with duplicate reuse. */
+  readonly media: MediaService;
+
+  constructor(private readonly db: Db) {
+    this.media = new MediaService(db);
+  }
 
   /** Start Google/Facebook sign-in (redirects away on success). False when it could not start. */
   async startOAuthSignIn(provider: Provider): Promise<boolean> {
@@ -15,17 +20,6 @@ export class BrowserApi {
       provider,
       options: { redirectTo: siteUrl("/auth/callback") },
     });
-    return !error;
-  }
-
-  /**
-   * Upload a file to the café media bucket (public read). Storage policies only allow the café's
-   * owner to write in <cafe_id>/. False when the upload failed.
-   */
-  async uploadCafeMedia(path: string, file: Blob): Promise<boolean> {
-    const { error } = await this.db.storage
-      .from(MEDIA_BUCKET)
-      .upload(path, file, { contentType: file.type, cacheControl: "31536000", upsert: false });
     return !error;
   }
 

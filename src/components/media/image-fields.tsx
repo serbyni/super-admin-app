@@ -1,32 +1,13 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import { Icon } from "@/components/ui/icon";
-import { useToast } from "@/components/ui/toast";
-import { mediaUrl } from "@/lib/website/media";
-import type { WebsiteImage } from "@/lib/website/schema";
-import { UploadError, uploadWebsiteImage } from "./upload";
+import { ACCEPTED_IMAGE_TYPES } from "@/lib/media/image";
+import { mediaUrl } from "@/lib/media/config";
+import { useMediaUpload, type MediaImage } from "./use-media-upload";
 
-function useUpload(cafeId: string) {
-  const toast = useToast();
-  const [busy, setBusy] = useState(false);
-  const upload = async (files: File[]): Promise<WebsiteImage[]> => {
-    setBusy(true);
-    const out: WebsiteImage[] = [];
-    try {
-      for (const f of files) out.push(await uploadWebsiteImage(cafeId, f));
-    } catch (e) {
-      toast.show({
-        variant: "error",
-        title: e instanceof UploadError ? e.message : "Upload failed. Please try again.",
-      });
-    } finally {
-      setBusy(false);
-    }
-    return out;
-  };
-  return { busy, upload };
-}
+/* Photo fields shared by every feature (website, menu, branding). Uploads go through the media
+   service: resized on the device, stored once per café, reused when uploaded again. */
 
 function Picker({
   label,
@@ -47,7 +28,7 @@ function Picker({
       <input
         ref={input}
         type="file"
-        accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+        accept={ACCEPTED_IMAGE_TYPES.join(",")}
         multiple={multiple}
         className="sr-only"
         tabIndex={-1}
@@ -73,7 +54,7 @@ function Picker({
   );
 }
 
-function Thumb({ image, onRemove }: { image: WebsiteImage; onRemove: () => void }) {
+function Thumb({ image, onRemove }: { image: MediaImage; onRemove: () => void }) {
   return (
     <div className="group relative aspect-video overflow-hidden rounded-lg bg-surface-container">
       {/* eslint-disable-next-line @next/next/no-img-element -- user photo from Supabase Storage */}
@@ -100,11 +81,11 @@ export function ImageField({
 }: {
   cafeId: string;
   label: string;
-  value: WebsiteImage | null;
-  onChange: (v: WebsiteImage | null) => void;
+  value: MediaImage | null;
+  onChange: (v: MediaImage | null) => void;
   error?: string;
 }) {
-  const { busy, upload } = useUpload(cafeId);
+  const { busy, upload } = useMediaUpload(cafeId);
   return (
     <div className="flex flex-col gap-sm">
       <p className="text-body-sm font-semibold text-on-surface">{label}</p>
@@ -140,12 +121,12 @@ export function GalleryField({
   error,
 }: {
   cafeId: string;
-  value: WebsiteImage[];
+  value: MediaImage[];
   max: number;
-  onChange: (v: WebsiteImage[]) => void;
+  onChange: (v: MediaImage[]) => void;
   error?: string;
 }) {
-  const { busy, upload } = useUpload(cafeId);
+  const { busy, upload } = useMediaUpload(cafeId);
   const left = max - value.length;
   return (
     <div className="flex flex-col gap-sm">
@@ -167,7 +148,9 @@ export function GalleryField({
           busy={busy}
           disabled={left <= 0}
           onFiles={async (files) => {
-            const imgs = await upload(files.slice(0, left));
+            const imgs = (await upload(files.slice(0, left))).filter(
+              (img) => !value.some((v) => v.path === img.path),
+            );
             if (imgs.length) onChange([...value, ...imgs]);
           }}
         />

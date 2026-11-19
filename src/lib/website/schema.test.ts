@@ -43,7 +43,9 @@ describe("websiteSchema", () => {
     const x: Website = base();
     x.hero.image = { path: "../../etc/passwd", alt: "" };
     expect(errorsOf(x)["hero.image.path"]).toBeDefined();
-    x.hero.image = { path: `${CAFE}/website/abc_1.webp`, alt: "Latte" };
+    x.hero.image = { path: `${CAFE}/media/${"a".repeat(64)}.webp`, alt: "Latte" };
+    expect(errorsOf(x)).toEqual({});
+    x.hero.image = { path: `${CAFE}/website/abc_1.webp`, alt: "Older upload" };
     expect(errorsOf(x)).toEqual({});
   });
 

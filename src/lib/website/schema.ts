@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { MEDIA_PATH } from "@/lib/media/config";
 
 /*
  * Café website document (draft + published, table cafe_websites). Full validation lives here;
@@ -7,10 +8,6 @@ import { z } from "zod";
  */
 
 export const WEBSITE_VERSION = 1;
-
-/** Storage bucket for café media; website images live in <cafe_id>/website/. */
-export const MEDIA_BUCKET = "cafe-media";
-export const IMAGE_PATH = /^[0-9a-f-]{36}\/website\/[A-Za-z0-9_-]{1,64}\.(webp|jpe?g|png)$/;
 
 /** Icons offered for hero highlights (Material Symbols names). */
 export const HIGHLIGHT_ICONS = [
@@ -49,7 +46,7 @@ const required = (min: number, max: number, what: string) =>
 const time = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Use HH:MM");
 
 export const imageSchema = z.object({
-  path: z.string().regex(IMAGE_PATH, "Upload the photo again"),
+  path: z.string().regex(MEDIA_PATH, "Upload the photo again"),
   alt: text(150),
 });
 

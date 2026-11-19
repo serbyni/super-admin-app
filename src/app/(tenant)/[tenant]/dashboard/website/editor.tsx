@@ -5,7 +5,7 @@ import { TextAreaField, TextField } from "@/components/auth/fields";
 import { ConfirmDialog } from "@/components/ui/dialog";
 import { Icon } from "@/components/ui/icon";
 import { useToast } from "@/components/ui/toast";
-import { GalleryField, ImageField } from "@/components/website/image-fields";
+import { GalleryField, ImageField } from "@/components/media/image-fields";
 import { WebsitePreview } from "@/components/website/website-preview";
 import type { CafePalette } from "@/lib/cafes/theme";
 import {
