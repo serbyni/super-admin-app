@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useMemo, useState, useTransition, type FormEvent, type ReactNode } from "react";
 import { TextField } from "@/components/auth/fields";
 import { FloorEditor } from "@/components/floor/floor-editor";
@@ -25,6 +26,16 @@ import {
   saveTableAction,
   type TablesResult,
 } from "./actions";
+
+/** three.js is loaded only when the 3D view is opened (and never on the server). */
+const Floor3D = dynamic(() => import("@/components/floor/floor-3d"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-full items-center justify-center gap-xs text-body-sm text-on-surface-variant">
+      <Icon name="progress_activity" className="animate-spin text-icon-lg" /> Loading 3D view…
+    </div>
+  ),
+});
 
 type Props = {
   slug: string;
@@ -60,7 +71,8 @@ export function TablesManager({
   const [tableForm, setTableForm] = useState<CafeTable | "new" | null>(null);
   const [confirm, setConfirm] = useState<Confirm | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [view, setView] = useState<"list" | "plan">("list");
+  const [view, setView] = useState<"list" | "plan" | "3d">("list");
+  const [picked, setPicked] = useState<string | null>(null);
 
   const area = floor.areas.find((a) => a.id === areaId) ?? null;
   const tables = useMemo(
@@ -258,6 +270,7 @@ export function TablesManager({
                 [
                   ["list", "view_list", "List"],
                   ["plan", "floor", "Floor plan"],
+                  ["3d", "view_in_ar", "3D"],
                 ] as const
               ).map(([v, icon, label]) => (
                 <button
@@ -277,7 +290,86 @@ export function TablesManager({
               ))}
             </div>
 
-            {view === "plan" && tables.length > 0 ? (
+            {view === "3d" && tables.length > 0 ? (
+              <div className="grid grid-cols-1 gap-md lg:grid-cols-3">
+                <div className="flex flex-col gap-xs lg:col-span-2">
+                  <div className="aspect-video overflow-hidden rounded-xl border border-outline-variant bg-surface-container-low">
+                    <Floor3D
+                      area={area}
+                      tables={tables}
+                      selectedId={picked}
+                      onSelect={(t) => setPicked(t?.id ?? null)}
+                      colors={{ primary: colors.primary, container: colors.container }}
+                    />
+                  </div>
+                  <p className="text-caption text-on-surface-variant">
+                    Drag to turn around · scroll or pinch to zoom · click a table for its QR code.
+                    Arrange tables in the Floor plan.
+                  </p>
+                  {/* Same choice without the canvas (keyboard, screen readers). */}
+                  <div className="flex flex-wrap gap-xs" aria-label="Tables">
+                    {tables.map((t) => (
+                      <button
+                        key={t.id}
+                        type="button"
+                        aria-pressed={picked === t.id}
+                        onClick={() => setPicked(t.id)}
+                        className={`rounded-full px-sm py-xs text-caption font-semibold ${
+                          picked === t.id
+                            ? "bg-primary text-on-primary"
+                            : "bg-surface-container text-on-surface-variant"
+                        }`}
+                      >
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {(() => {
+                  const t = tables.find((x) => x.id === picked);
+                  const svg = t ? tableSvg(t) : null;
+                  if (!t)
+                    return (
+                      <EmptyState
+                        icon="touch_app"
+                        title="Pick a table"
+                        body="Click a table in the 3D view to see its QR code."
+                      />
+                    );
+                  const shape = TABLE_SHAPES.find((s) => s.value === t.shape);
+                  return (
+                    <div className="flex flex-col gap-sm rounded-xl border border-surface-container-high p-md">
+                      {svg ? <QrImage svg={svg} alt={`QR code of table ${t.label}`} /> : null}
+                      <p className="text-body-lg font-bold text-on-surface">
+                        {t.label}{" "}
+                        {!t.isActive ? (
+                          <span className="text-caption font-semibold text-on-surface-variant">
+                            (off)
+                          </span>
+                        ) : null}
+                      </p>
+                      <p className="text-body-sm text-on-surface-variant">
+                        {shape?.label} · {t.seats} seat{t.seats === 1 ? "" : "s"} · {t.scans30d}{" "}
+                        scans in 30 days
+                      </p>
+                      <div className="flex flex-wrap gap-xs">
+                        <ActionButton icon="edit" onClick={() => setTableForm(t)}>
+                          Edit
+                        </ActionButton>
+                        {svg ? (
+                          <ActionButton
+                            icon="download"
+                            onClick={() => download(svg, fileName(cafeName, t.label), "png")}
+                          >
+                            PNG
+                          </ActionButton>
+                        ) : null}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            ) : view === "plan" && tables.length > 0 ? (
               <FloorEditor
                 key={`${area.id}:${area.widthM}x${area.depthM}:${tables.map((t) => `${t.id}@${t.x},${t.y},${t.rotation},${t.shape},${t.seats}`).join("|")}`}
                 area={area}
