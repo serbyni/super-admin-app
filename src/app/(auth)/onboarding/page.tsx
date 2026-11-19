@@ -73,7 +73,7 @@ async function Onboarding() {
 
   const state = await serverApi().onboarding.state();
   return (
-    <>
+    <div className="flex w-full flex-col items-center">
       <OnboardingWizard
         initial={state}
         rootDomain={rootDomain}
@@ -95,7 +95,7 @@ async function Onboarding() {
           </button>
         </form>
       </div>
-    </>
+    </div>
   );
 }
 
