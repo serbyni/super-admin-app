@@ -15,14 +15,22 @@ export function downloadSvg(svg: string, name: string) {
   save(new Blob([svg], { type: "image/svg+xml" }), `${name}.svg`);
 }
 
-/** PNG at 3× (1200×1680 px): sharp when printed around 10×14 cm. */
-export async function downloadPng(svg: string, name: string, scale = 3): Promise<void> {
+/**
+ * PNG at 3× the design size — card 1200×1680 px (sharp at ~10×14 cm), sticker 720×870 px
+ * (sharp at ~5×6 cm).
+ */
+export async function downloadPng(
+  svg: string,
+  name: string,
+  size: { width: number; height: number } = CARD,
+  scale = 3,
+): Promise<void> {
   const img = new Image();
   img.src = svgDataUrl(svg);
   await img.decode();
   const canvas = Object.assign(document.createElement("canvas"), {
-    width: CARD.width * scale,
-    height: CARD.height * scale,
+    width: size.width * scale,
+    height: size.height * scale,
   });
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Canvas not available");
