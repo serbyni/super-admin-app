@@ -11,6 +11,36 @@ export type Database = {
   };
   public: {
     Tables: {
+      cafe_areas: {
+        Row: {
+          cafe_id: string;
+          created_at: string;
+          depth_m: number;
+          id: string;
+          name: string;
+          sort_order: number;
+          width_m: number;
+        };
+        Insert: {
+          cafe_id: string;
+          created_at?: string;
+          depth_m?: number;
+          id?: string;
+          name: string;
+          sort_order?: number;
+          width_m?: number;
+        };
+        Update: {
+          cafe_id?: string;
+          created_at?: string;
+          depth_m?: number;
+          id?: string;
+          name?: string;
+          sort_order?: number;
+          width_m?: number;
+        };
+        Relationships: [];
+      };
       cafe_members: {
         Row: {
           cafe_id: string;
@@ -39,6 +69,51 @@ export type Database = {
             referencedColumns: ["id"];
           },
         ];
+      };
+      cafe_tables: {
+        Row: {
+          area_id: string;
+          cafe_id: string;
+          created_at: string;
+          id: string;
+          is_active: boolean;
+          label: string;
+          rotation: number;
+          seats: number;
+          shape: string;
+          updated_at: string;
+          x: number;
+          y: number;
+        };
+        Insert: {
+          area_id: string;
+          cafe_id: string;
+          created_at?: string;
+          id?: string;
+          is_active?: boolean;
+          label: string;
+          rotation?: number;
+          seats?: number;
+          shape?: string;
+          updated_at?: string;
+          x?: number;
+          y?: number;
+        };
+        Update: {
+          area_id?: string;
+          cafe_id?: string;
+          created_at?: string;
+          id?: string;
+          is_active?: boolean;
+          label?: string;
+          rotation?: number;
+          seats?: number;
+          shape?: string;
+          updated_at?: string;
+          x?: number;
+          y?: number;
+        };
+        Relationships: [];
       };
       cafe_websites: {
         Row: {
@@ -150,6 +225,51 @@ export type Database = {
           theme?: Json;
           timezone?: string;
           updated_at?: string;
+        };
+        Relationships: [];
+      };
+      qr_codes: {
+        Row: {
+          cafe_id: string;
+          code: string;
+          created_at: string;
+          retired_at: string | null;
+          table_id: string | null;
+        };
+        Insert: {
+          cafe_id: string;
+          code: string;
+          created_at?: string;
+          retired_at?: string | null;
+          table_id?: string | null;
+        };
+        Update: {
+          cafe_id?: string;
+          code?: string;
+          created_at?: string;
+          retired_at?: string | null;
+          table_id?: string | null;
+        };
+        Relationships: [];
+      };
+      qr_scans: {
+        Row: {
+          cafe_id: string;
+          code: string;
+          day: string;
+          scans: number;
+        };
+        Insert: {
+          cafe_id: string;
+          code: string;
+          day: string;
+          scans?: number;
+        };
+        Update: {
+          cafe_id?: string;
+          code?: string;
+          day?: string;
+          scans?: number;
         };
         Relationships: [];
       };
@@ -365,6 +485,42 @@ export type Database = {
       publish_my_website: { Args: { p_slug: string }; Returns: string };
       discard_my_website_draft: { Args: { p_slug: string }; Returns: undefined };
       owns_cafe_folder: { Args: { p_name: string }; Returns: boolean };
+      get_my_floor: { Args: { p_slug: string }; Returns: Json };
+      save_my_area: {
+        Args: {
+          p_depth_m: number;
+          p_id: string | null;
+          p_name: string;
+          p_slug: string;
+          p_width_m: number;
+        };
+        Returns: string;
+      };
+      delete_my_area: { Args: { p_id: string; p_slug: string }; Returns: undefined };
+      reorder_my_areas: { Args: { p_ids: string[]; p_slug: string }; Returns: undefined };
+      save_my_table: {
+        Args: {
+          p_area_id: string;
+          p_id: string | null;
+          p_is_active: boolean;
+          p_label: string;
+          p_seats: number;
+          p_shape: string;
+          p_slug: string;
+        };
+        Returns: string;
+      };
+      save_my_layout: { Args: { p_layout: Json; p_slug: string }; Returns: undefined };
+      delete_my_table: { Args: { p_id: string; p_slug: string }; Returns: undefined };
+      regenerate_my_qr_code: {
+        Args: { p_slug: string; p_table_id: string | null };
+        Returns: string;
+      };
+      resolve_qr: {
+        Args: { p_code: string };
+        Returns: { cafe_slug: string; table_code: string; table_label: string }[];
+      };
+      get_public_table: { Args: { p_code: string; p_slug: string }; Returns: { label: string }[] };
       get_my_owner: {
         Args: never;
         Returns: {
