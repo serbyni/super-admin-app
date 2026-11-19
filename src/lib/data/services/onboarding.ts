@@ -16,6 +16,8 @@ export type OnboardingState = {
     latitude?: number;
     longitude?: number;
     locale?: string;
+    phone?: string;
+    email?: string;
   };
   reservation: { slug: string; expires_at: string } | null;
 };
@@ -34,6 +36,10 @@ export type ProvisionInput = {
   timezone: string;
   locale: string;
   seed: string;
+  phone: string;
+  email: string;
+  facebook?: string;
+  instagram?: string;
   termsVersion: string;
   dpaVersion: string;
 };
@@ -92,6 +98,10 @@ export class OnboardingService {
         p_theme: { seed: i.seed },
         p_terms_version: i.termsVersion,
         p_dpa_version: i.dpaVersion,
+        p_phone: i.phone,
+        p_email: i.email,
+        p_facebook: i.facebook,
+        p_instagram: i.instagram,
       }),
     );
   }

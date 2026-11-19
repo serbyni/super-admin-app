@@ -171,3 +171,88 @@ export async function renderSupabaseResetPassword() {
   );
   return { subject: RESET.subject, html };
 }
+
+const CHANGE = {
+  subject: "Confirm your new email for Serbi",
+  preview: "Confirm the change of your Serbi sign-in email.",
+  heroLabel: "Account security",
+  heroTitle: "Confirm your email change",
+  title: "Change your sign-in email",
+  intro: (from: string, to: string) =>
+    `You asked to change the email you use to sign in to Serbi from ${from} to ${to}. Confirm it with the button below.`,
+  both: "For your security we sent a link to both addresses — open both to finish the change.",
+  cta: "Confirm email change",
+  fallback: "Button not working? Copy this link into your browser:",
+  noteTitle: "Didn't ask for this?",
+  noteBody:
+    "Don't click the link — your sign-in email stays the same. Then change your password and contact us.",
+};
+
+export function ChangeEmail({
+  siteUrl,
+  confirmUrl,
+  email,
+  newEmail,
+}: {
+  siteUrl: string;
+  confirmUrl: string;
+  email: string;
+  newEmail: string;
+}) {
+  const c = emailCopy("en");
+  return (
+    <EmailLayout
+      logoUrl={`${siteUrl}/brand/serbi-email-mark.png`}
+      preview={CHANGE.preview}
+      badge={CHANGE.heroLabel}
+      tagline={c.brandTagline}
+      hero={{ tone: "brand", label: CHANGE.heroLabel, title: CHANGE.heroTitle, subtitle: newEmail }}
+      footer={{
+        tagline: c.footerTagline,
+        why: "You receive this email because an email change was requested for a Serbi account.",
+        links: [
+          { label: c.footerLinks.privacy, href: `${siteUrl}/privacy` },
+          { label: c.footerLinks.terms, href: `${siteUrl}/terms` },
+          { label: c.footerLinks.contact, href: `${siteUrl}/contact` },
+        ],
+      }}
+    >
+      <Title>{CHANGE.title}</Title>
+      <P muted>{CHANGE.intro(email, newEmail)}</P>
+      <P small muted>
+        {CHANGE.both}
+      </P>
+      <PrimaryButton href={confirmUrl}>{CHANGE.cta} →</PrimaryButton>
+      <P small muted>
+        <br />
+        {CHANGE.fallback}
+        <br />
+        <a href={confirmUrl} style={{ color: "#553722", wordBreak: "break-all" }}>
+          {confirmUrl}
+        </a>
+      </P>
+      <Note icon="🔒" title={CHANGE.noteTitle}>
+        {CHANGE.noteBody}
+      </Note>
+      <SignOff line={c.signOff} team={c.team} />
+    </EmailLayout>
+  );
+}
+
+/**
+ * "Change email address" template for Supabase: link → our /auth/email-change
+ * (token_hash, type=email_change). With Secure email change, each address gets its own token.
+ */
+export async function renderSupabaseChangeEmail() {
+  const html = compactHtml(
+    await render(
+      <ChangeEmail
+        siteUrl={SUPABASE.siteUrl}
+        confirmUrl="{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=email_change"
+        email={SUPABASE.email}
+        newEmail="{{ .NewEmail }}"
+      />,
+    ),
+  );
+  return { subject: CHANGE.subject, html };
+}

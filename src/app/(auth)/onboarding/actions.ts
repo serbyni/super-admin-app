@@ -5,16 +5,19 @@ import type { z } from "zod";
 import { DPA_VERSION, TERMS_VERSION } from "@/config/legal";
 import { SLUG_MESSAGES, type SlugProblem } from "@/lib/cafes/slug";
 import { requireOwnerStage } from "@/lib/auth/guards";
-import { isDataError } from "@/lib/data/errors";
+import { inputField, isDataError } from "@/lib/data/errors";
 import { kickEmailDispatch } from "@/lib/data/kick-email";
 import { serverApi } from "@/lib/data/server-api";
 import type { SlugCheck } from "@/lib/data/services/onboarding";
 import {
   addressSchema,
   agreementSchema,
+  contactSchema,
   createCafeSchema,
   detailsSchema,
+  FIELD_STEP,
   lookSchema,
+  REVIEW_STEP,
   type WizardDraft,
 } from "@/lib/onboarding/schema";
 
@@ -45,15 +48,22 @@ export async function checkSlugAction(slug: string): Promise<SlugCheck> {
 }
 
 /** Validate + save one step and move to the next one. */
-export async function saveStepAction(step: 1 | 2 | 3 | 4, input: unknown): Promise<StepResult> {
+export async function saveStepAction(step: 1 | 2 | 3 | 4 | 5, input: unknown): Promise<StepResult> {
   await requireOwnerStage(ONBOARDING);
   const api = serverApi();
-  const schema = { 1: detailsSchema, 2: addressSchema, 3: lookSchema, 4: agreementSchema }[step];
+  const schema = {
+    1: detailsSchema,
+    2: contactSchema,
+    3: addressSchema,
+    4: lookSchema,
+    5: agreementSchema,
+  }[step];
+  if (!schema) return { ok: false, errors: { form: "Unknown step" } };
   const parsed = schema.safeParse(input);
   if (!parsed.success) return { ok: false, errors: issues(parsed.error) };
   const data = parsed.data as WizardDraft;
 
-  if (step === 2) {
+  if (step === 3) {
     // Hold the address for 30 minutes while the owner finishes the wizard.
     try {
       await api.onboarding.reserveSlug(data.slug!);
@@ -71,7 +81,7 @@ export async function saveStepAction(step: 1 | 2 | 3 | 4, input: unknown): Promi
 /** Go back to a step (keeps the draft). */
 export async function goToStepAction(step: number): Promise<void> {
   await requireOwnerStage(ONBOARDING);
-  await serverApi().onboarding.save(Math.min(Math.max(step, 1), 5), {});
+  await serverApi().onboarding.save(Math.min(Math.max(step, 1), REVIEW_STEP), {});
 }
 
 /** Review → create the café, then show the Done screen. */
@@ -82,19 +92,7 @@ export async function createCafeAction(): Promise<StepResult> {
   const parsed = createCafeSchema.safeParse(draft);
   if (!parsed.success) {
     const errors = issues(parsed.error);
-    const firstStep =
-      errors.name ||
-      errors.country_code ||
-      errors.city ||
-      errors.currency ||
-      errors.timezone ||
-      errors.locale
-        ? 1
-        : errors.slug
-          ? 2
-          : errors.seed
-            ? 3
-            : 4;
+    const firstStep = Math.min(...Object.keys(errors).map((k) => FIELD_STEP[k] ?? REVIEW_STEP));
     return { ok: false, errors, step: firstStep };
   }
   const d = parsed.data;
@@ -109,12 +107,24 @@ export async function createCafeAction(): Promise<StepResult> {
       timezone: d.timezone,
       locale: d.locale,
       seed: d.seed,
+      phone: d.phone,
+      email: d.email,
+      facebook: d.facebook,
+      instagram: d.instagram,
       termsVersion: TERMS_VERSION,
       dpaVersion: DPA_VERSION,
     });
   } catch (e) {
     const message = slugErrorMessage(e);
-    if (message) return { ok: false, errors: { slug: message }, step: 2 };
+    if (message) return { ok: false, errors: { slug: message }, step: FIELD_STEP.slug };
+    const field = inputField(e);
+    if (field) {
+      return {
+        ok: false,
+        errors: { [field]: "Please check this value." },
+        step: FIELD_STEP[field] ?? 1,
+      };
+    }
     if (isDataError(e))
       return { ok: false, errors: { form: "Could not create your café. Please try again." } };
     throw e;

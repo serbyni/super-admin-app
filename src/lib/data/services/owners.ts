@@ -15,8 +15,26 @@ export type OwnerProfile = {
   locale: string;
 };
 
+export type MyProfile = { fullName: string | null; phone: string | null; email: string | null };
+
 export class OwnersService {
   constructor(private readonly db: LazyDb) {}
+
+  /** Signed-in owner's name, phone and sign-in email. */
+  async profile(): Promise<MyProfile> {
+    const [r] = unwrap("get_my_profile", await (await this.db()).rpc("get_my_profile"));
+    return { fullName: r?.full_name ?? null, phone: r?.phone ?? null, email: r?.email ?? null };
+  }
+
+  /** Throws DataError "forbidden" (no owner account) | "invalid_input" (field via inputField()). */
+  async updateProfile(input: { fullName: string; phone: string }): Promise<void> {
+    unwrap(
+      "update_my_profile",
+      await (
+        await this.db()
+      ).rpc("update_my_profile", { p_full_name: input.fullName, p_phone: input.phone }),
+    );
+  }
 
   /** Signed-in user's owner status + café slug, or null when not an owner. */
   async me(): Promise<{ status: OwnerStatus; cafeSlug: string | null } | null> {

@@ -121,12 +121,15 @@ Enable custom SMTP: host `smtp.resend.com`, port `465`, username `resend`, passw
 
 Generated from `src/emails/auth-templates.tsx` with `npm run email:supabase` (files in `supabase/templates/`, excluded from Prettier — paste them as generated, e.g. `wl-copy < supabase/templates/reset-password.html`).
 
-| Template       | Subject                        | Body                  | Link goes to                                                                  |
-| -------------- | ------------------------------ | --------------------- | ----------------------------------------------------------------------------- |
-| Confirm signup | `Confirm your email for Serbi` | `confirm-signup.html` | `{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=email` → `/auth/callback` |
-| Reset password | `Reset your Serbi password`    | `reset-password.html` | `{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=recovery` → `/auth/reset` |
+| Template             | Subject                            | Body                  | Link goes to                                                                             |
+| -------------------- | ---------------------------------- | --------------------- | ---------------------------------------------------------------------------------------- |
+| Confirm signup       | `Confirm your email for Serbi`     | `confirm-signup.html` | `{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=email` → `/auth/callback`            |
+| Reset password       | `Reset your Serbi password`        | `reset-password.html` | `{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=recovery` → `/auth/reset`            |
+| Change email address | `Confirm your new email for Serbi` | `change-email.html`   | `{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=email_change` → `/auth/email-change` |
 
 We use `token_hash` links (verified server-side) instead of `{{ .ConfirmationURL }}`, so links also work when opened on another device. `/auth/reset` also accepts Supabase's default `?code=` link.
+
+**Email change** (Settings → Profile): keep **Secure email change** on (Authentication → Sign In / Providers → Email). Supabase then emails a link to the current **and** the new address; each has its own `{{ .TokenHash }}` and both must be opened. `/auth/email-change` verifies each link and sends the owner back to Settings → Profile ("one more step" after the first link, "email changed" after the second). Password change asks for the current password, then signs out the other devices.
 
 ### 4. Password rules — Authentication → Sign In / Providers → Email
 

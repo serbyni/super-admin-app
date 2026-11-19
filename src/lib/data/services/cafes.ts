@@ -17,7 +17,27 @@ export type Cafe = {
   timezone: string;
   locale: string;
   seed: string;
+  phone: string | null;
+  contactEmail: string | null;
+  facebook: string | null;
+  instagram: string | null;
   createdAt: string;
+};
+
+/** Editable café settings (the address/slug is not changed here). */
+export type CafeSettingsInput = {
+  name: string;
+  countryCode: string;
+  city: string;
+  address?: string;
+  currency: string;
+  timezone: string;
+  locale: string;
+  seed: string;
+  phone: string;
+  email: string;
+  facebook?: string;
+  instagram?: string;
 };
 
 export type CafeListItem = Pick<
@@ -55,7 +75,7 @@ export class CafesService {
     )
       .from("cafes")
       .select(
-        "id, slug, name, status, country_code, city, address, currency, timezone, default_locale, theme, created_at",
+        "id, slug, name, status, country_code, city, address, currency, timezone, default_locale, theme, phone, contact_email, facebook_url, instagram_url, created_at",
       )
       .eq("slug", slug)
       .maybeSingle();
@@ -73,8 +93,39 @@ export class CafesService {
       timezone: data.timezone,
       locale: data.default_locale,
       seed: themeSeed(data.theme),
+      phone: data.phone,
+      contactEmail: data.contact_email,
+      facebook: data.facebook_url,
+      instagram: data.instagram_url,
       createdAt: data.created_at,
     };
+  }
+
+  /**
+   * Save the settings of the caller's café (owner only — checked by update_my_cafe).
+   * Throws DataError "forbidden" | "invalid_input" (field via inputField()).
+   */
+  async updateMine(slug: string, i: CafeSettingsInput): Promise<void> {
+    unwrap(
+      "update_my_cafe",
+      await (
+        await this.db()
+      ).rpc("update_my_cafe", {
+        p_slug: slug,
+        p_name: i.name,
+        p_country_code: i.countryCode,
+        p_city: i.city,
+        p_address: i.address ?? "",
+        p_currency: i.currency,
+        p_timezone: i.timezone,
+        p_locale: i.locale,
+        p_seed: i.seed,
+        p_phone: i.phone,
+        p_email: i.email,
+        p_facebook: i.facebook,
+        p_instagram: i.instagram,
+      }),
+    );
   }
 
   /** Super admin: every café (newest first, max 500). */
@@ -115,6 +166,10 @@ export class CafesService {
       timezone: r.timezone,
       locale: r.default_locale,
       seed: themeSeed(r.theme),
+      phone: r.phone,
+      contactEmail: r.contact_email,
+      facebook: r.facebook_url,
+      instagram: r.instagram_url,
       termsVersion: r.terms_version,
       dpaVersion: r.dpa_version,
       agreedAt: r.agreed_at,

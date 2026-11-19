@@ -14,6 +14,7 @@ export const DATA_ERROR_CODES = [
   "invalid_location",
   "invalid_status", // e.g. approving an application that is no longer pending
   "invalid_reason",
+  "invalid_input", // bad field value — the field name is in the Postgres DETAIL (inputField())
   "unknown",
 ] as const;
 
@@ -61,4 +62,11 @@ export function unwrap<T>(
     throw new DataError(code, operation, { cause: result.error });
   }
   return result.data as T;
+}
+
+/** Field rejected by the database for a DataError("invalid_input") (Postgres DETAIL), or null. */
+export function inputField(e: unknown): string | null {
+  if (!isDataError(e, "invalid_input")) return null;
+  const details = (e.cause as { details?: unknown } | undefined)?.details;
+  return typeof details === "string" && /^[a-z_]{1,40}$/.test(details) ? details : null;
 }

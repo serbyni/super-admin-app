@@ -11,6 +11,8 @@ const details = {
   locale: "fr",
 };
 
+const contact = { phone: "+216 71 123 456", email: "hello@cafelune.tn" };
+
 describe("onboarding schemas", () => {
   it("normalises details (upper-case codes) and rejects unknown time zones", () => {
     const r = detailsSchema.safeParse(details);
@@ -30,23 +32,19 @@ describe("onboarding schemas", () => {
   });
 
   it("validates the whole draft before creating, normalising the address", () => {
-    const r = createCafeSchema.safeParse({
+    const draft = {
       ...details,
+      ...contact,
       slug: " Café Lune ",
       seed: "#6f4e37",
       terms: true,
       dpa: true,
-    });
+    };
+    const r = createCafeSchema.safeParse(draft);
     expect(r.success).toBe(true);
     expect(r.data?.slug).toBe("cafe-lune");
-    expect(
-      createCafeSchema.safeParse({
-        ...details,
-        slug: "admin",
-        seed: "#6f4e37",
-        terms: true,
-        dpa: true,
-      }).success,
-    ).toBe(false);
+    expect(r.data?.phone).toBe("+21671123456");
+    expect(createCafeSchema.safeParse({ ...draft, slug: "admin" }).success).toBe(false);
+    expect(createCafeSchema.safeParse({ ...draft, phone: undefined }).success).toBe(false); // contact required
   });
 });

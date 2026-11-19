@@ -9,6 +9,7 @@ import { Icon } from "@/components/ui/icon";
 import { CAFE_LOCALES } from "@/config/cafe-defaults";
 import { formatDateTime } from "@/config/locale";
 import { requireAdmin } from "@/lib/auth/guards";
+import { socialHandle } from "@/lib/cafes/contact";
 import { cafeHost, isValidSlugFormat } from "@/lib/cafes/slug";
 import { serverApi } from "@/lib/data/server-api";
 import { cafeRootDomain } from "@/lib/env";
@@ -61,6 +62,34 @@ async function Cafe({ params }: { params: PageProps<"/admin/cafes/[slug]">["para
                 Open application
                 <Icon name="chevron_right" className="text-icon-md" flipRtl />
               </Link>
+            ) : null}
+          </Row>
+        </Card>
+        <Card title="Contact" icon="call">
+          <Row label="Phone">{c.phone}</Row>
+          <Row label="Email">{c.contactEmail}</Row>
+          <Row label="Facebook">
+            {c.facebook ? (
+              <a
+                href={c.facebook}
+                target="_blank"
+                rel="noreferrer"
+                className="font-semibold text-primary hover:text-primary-container"
+              >
+                {socialHandle(c.facebook)}
+              </a>
+            ) : null}
+          </Row>
+          <Row label="Instagram">
+            {c.instagram ? (
+              <a
+                href={c.instagram}
+                target="_blank"
+                rel="noreferrer"
+                className="font-semibold text-primary hover:text-primary-container"
+              >
+                {socialHandle(c.instagram)}
+              </a>
             ) : null}
           </Row>
         </Card>

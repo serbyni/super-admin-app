@@ -1,26 +1,30 @@
 "use client";
 
-import { getCountries } from "libphonenumber-js";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState, useTransition, type FormEvent } from "react";
+import { useEffect, useRef, useState, useTransition, type FormEvent } from "react";
 import { FormAlert } from "@/components/auth/form-alert";
-import { SelectField, TextField } from "@/components/auth/fields";
 import { Icon } from "@/components/ui/icon";
 import { useToast } from "@/components/ui/toast";
+import { countryLabel, type CafeFieldOptions } from "@/config/cafe-options";
+import { BrandColourPicker } from "@/components/cafe/brand-colour-picker";
+import { MenuPreview } from "@/components/cafe/menu-preview";
+import { CafeContactFields, CafeDetailsFields } from "@/components/cafe/cafe-fields";
 import {
-  BRAND_PRESETS,
   CAFE_LOCALES,
-  CURRENCIES,
   CURRENCY_BY_COUNTRY,
   DEFAULT_BRAND_SEED,
   FALLBACK_CURRENCY,
-  FALLBACK_TIMEZONE,
   TIMEZONE_BY_COUNTRY,
 } from "@/config/cafe-defaults";
 import { cafeHost, localSlugProblem, normalizeSlug, SLUG_MESSAGES } from "@/lib/cafes/slug";
-import { cafePalette } from "@/lib/cafes/theme";
 import type { OnboardingState, SlugCheck } from "@/lib/data/services/onboarding";
-import { WIZARD_STEPS, type WizardDraft, type WizardStep } from "@/lib/onboarding/schema";
+import {
+  REVIEW_STEP,
+  WIZARD_STEPS,
+  type WizardDraft,
+  type WizardStep,
+} from "@/lib/onboarding/schema";
+import { socialHandle } from "@/lib/cafes/contact";
 import {
   checkSlugAction,
   createCafeAction,
@@ -34,26 +38,20 @@ type Props = {
   rootDomain: string;
   termsVersion: string;
   dpaVersion: string;
+  /** Select options built on the server (identical labels on server + client). */
+  options: CafeFieldOptions;
 };
 
-const COUNTRY_NAMES = new Intl.DisplayNames(["en"], { type: "region" });
-const COUNTRY_OPTIONS = getCountries()
-  .map((c) => ({ value: c, label: COUNTRY_NAMES.of(c) ?? c }))
-  .sort((a, b) => a.label.localeCompare(b.label));
-const TIMEZONE_OPTIONS = Intl.supportedValuesOf("timeZone").map((tz) => ({
-  value: tz,
-  label: tz.replaceAll("_", " "),
-}));
-const CURRENCY_NAMES = new Intl.DisplayNames(["en"], { type: "currency" });
-const CURRENCY_OPTIONS = CURRENCIES.map((c) => ({
-  value: c,
-  label: `${c} — ${CURRENCY_NAMES.of(c) ?? c}`,
-}));
-
-export function OnboardingWizard({ initial, rootDomain, termsVersion, dpaVersion }: Props) {
+export function OnboardingWizard({
+  initial,
+  rootDomain,
+  termsVersion,
+  dpaVersion,
+  options,
+}: Props) {
   const toast = useToast();
   const [step, setStep] = useState<WizardStep>(
-    Math.min(Math.max(initial.step, 1), 5) as WizardStep,
+    Math.min(Math.max(initial.step, 1), REVIEW_STEP) as WizardStep,
   );
   // Draft = saved draft over registration prefill.
   const [draft, setDraft] = useState<WizardDraft>(() => {
@@ -67,6 +65,8 @@ export function OnboardingWizard({ initial, rootDomain, termsVersion, dpaVersion
       currency: cc ? CURRENCY_BY_COUNTRY[cc] : undefined,
       timezone: cc ? TIMEZONE_BY_COUNTRY[cc] : undefined,
       locale: (p.locale as WizardDraft["locale"]) ?? "en",
+      phone: p.phone,
+      email: p.email,
       slug: initial.reservation?.slug,
       seed: DEFAULT_BRAND_SEED,
       ...initial.draft,
@@ -82,7 +82,7 @@ export function OnboardingWizard({ initial, rootDomain, termsVersion, dpaVersion
     top.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  function submitStep(s: 1 | 2 | 3 | 4, input: Record<string, unknown>) {
+  function submitStep(s: 1 | 2 | 3 | 4 | 5, input: Record<string, unknown>) {
     startTransition(async () => {
       const r: StepResult = await saveStepAction(s, input);
       if (!r.ok) {
@@ -122,40 +122,50 @@ export function OnboardingWizard({ initial, rootDomain, termsVersion, dpaVersion
       <section className="rounded-xl bg-surface-container-lowest p-lg shadow-card-warm sm:p-xl">
         {step === 1 ? (
           <DetailsStep
+            options={options}
             draft={draft}
             errors={errors}
             pending={pending}
             onSubmit={(v) => submitStep(1, v)}
           />
         ) : step === 2 ? (
+          <ContactStep
+            draft={draft}
+            errors={errors}
+            pending={pending}
+            onBack={() => back(1)}
+            onSubmit={(v) => submitStep(2, v)}
+          />
+        ) : step === 3 ? (
           <AddressStep
             draft={draft}
             errors={errors}
             pending={pending}
             rootDomain={rootDomain}
-            onBack={() => back(1)}
-            onSubmit={(v) => submitStep(2, v)}
-          />
-        ) : step === 3 ? (
-          <LookStep
-            draft={draft}
-            rootDomain={rootDomain}
-            pending={pending}
             onBack={() => back(2)}
             onSubmit={(v) => submitStep(3, v)}
           />
         ) : step === 4 ? (
+          <LookStep
+            draft={draft}
+            rootDomain={rootDomain}
+            pending={pending}
+            onBack={() => back(3)}
+            onSubmit={(v) => submitStep(4, v)}
+          />
+        ) : step === 5 ? (
           <AgreementStep
             draft={draft}
             errors={errors}
             pending={pending}
             termsVersion={termsVersion}
             dpaVersion={dpaVersion}
-            onBack={() => back(3)}
-            onSubmit={(v) => submitStep(4, v)}
+            onBack={() => back(4)}
+            onSubmit={(v) => submitStep(5, v)}
           />
         ) : (
           <ReviewStep
+            options={options}
             draft={draft}
             errors={errors}
             pending={pending}
@@ -273,20 +283,18 @@ const formValues = (e: FormEvent<HTMLFormElement>) =>
 /* ── 1 · Café details ─────────────────────────────────────────────────────── */
 
 function DetailsStep({
+  options,
   draft,
   errors,
   pending,
   onSubmit,
 }: {
+  options: CafeFieldOptions;
   draft: WizardDraft;
   errors: Record<string, string>;
   pending: boolean;
   onSubmit: (v: Record<string, string>) => void;
 }) {
-  const [country, setCountry] = useState(draft.country_code ?? "");
-  // Country change → suggest its currency + time zone (re-mounts those selects).
-  const currency = country === draft.country_code ? draft.currency : CURRENCY_BY_COUNTRY[country];
-  const timezone = country === draft.country_code ? draft.timezone : TIMEZONE_BY_COUNTRY[country];
   return (
     <form
       noValidate
@@ -300,97 +308,47 @@ function DetailsStep({
         description="These details appear on your menu. We filled them in from your registration — check and adjust."
       />
       <FormAlert message={errors.form} />
-      <div className="flex flex-col gap-md">
-        <TextField
-          id="name"
-          label="Café name"
-          icon="storefront"
-          required
-          defaultValue={draft.name}
-          error={errors.name}
-        />
-        <div className="grid grid-cols-1 gap-md sm:grid-cols-2">
-          <SelectField
-            id="country_code"
-            label="Country"
-            icon="public"
-            placeholder="Select country"
-            options={COUNTRY_OPTIONS}
-            required
-            defaultValue={draft.country_code}
-            onChange={(e) => setCountry(e.target.value)}
-            error={errors.country_code}
-          />
-          <TextField
-            id="city"
-            label="City"
-            icon="location_city"
-            required
-            defaultValue={draft.city}
-            error={errors.city}
-          />
-        </div>
-        <TextField
-          id="address"
-          label="Address"
-          icon="signpost"
-          defaultValue={draft.address}
-          error={errors.address}
-        />
-        <div className="grid grid-cols-1 gap-md sm:grid-cols-2">
-          <SelectField
-            key={`cur-${country}`}
-            id="currency"
-            label="Currency"
-            icon="payments"
-            placeholder="Select currency"
-            options={CURRENCY_OPTIONS}
-            required
-            defaultValue={currency ?? FALLBACK_CURRENCY}
-            error={errors.currency}
-          />
-          <SelectField
-            key={`tz-${country}`}
-            id="timezone"
-            label="Time zone"
-            icon="schedule"
-            placeholder="Select time zone"
-            options={TIMEZONE_OPTIONS}
-            required
-            defaultValue={timezone ?? FALLBACK_TIMEZONE}
-            error={errors.timezone}
-          />
-        </div>
-        <fieldset>
-          <legend className="mb-xs text-body-sm font-semibold text-on-surface">
-            Default menu language
-          </legend>
-          <div className="flex flex-wrap gap-sm">
-            {CAFE_LOCALES.map((l) => (
-              <label
-                key={l.value}
-                className="flex cursor-pointer items-center gap-xs rounded-lg border border-outline-variant px-md py-sm has-checked:border-primary has-checked:bg-secondary-container"
-              >
-                <input
-                  type="radio"
-                  name="locale"
-                  value={l.value}
-                  defaultChecked={(draft.locale ?? "en") === l.value}
-                  className="accent-primary"
-                />
-                <span className="text-body-sm font-semibold text-on-surface">{l.label}</span>
-              </label>
-            ))}
-          </div>
-          {errors.locale ? <p className="mt-1 text-body-xs text-error">{errors.locale}</p> : null}
-        </fieldset>
-      </div>
+      <CafeDetailsFields values={draft} errors={errors} options={options} />
       <Actions pending={pending} />
     </form>
   );
 }
 
-/* ── 2 · Café address (slug) ─────────────────────────────────────────────── */
+/* ── 2 · Contact ──────────────────────────────────────────────────────────── */
+
+function ContactStep({
+  draft,
+  errors,
+  pending,
+  onBack,
+  onSubmit,
+}: {
+  draft: WizardDraft;
+  errors: Record<string, string>;
+  pending: boolean;
+  onBack: () => void;
+  onSubmit: (v: Record<string, string>) => void;
+}) {
+  return (
+    <form
+      noValidate
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSubmit(formValues(e));
+      }}
+    >
+      <StepHeader
+        title="Contact"
+        description="How customers reach your café. Shown on your menu — we filled in your registration details, change them if the café has its own."
+      />
+      <FormAlert message={errors.form} />
+      <CafeContactFields values={draft} errors={errors} />
+      <Actions pending={pending} onBack={onBack} />
+    </form>
+  );
+}
+
+/* ── 3 · Café address (slug) ─────────────────────────────────────────────── */
 
 function AddressStep({
   draft,
@@ -534,7 +492,7 @@ function AddressStep({
   );
 }
 
-/* ── 3 · Look (brand colour + live preview) ───────────────────────────────── */
+/* ── 4 · Look (brand colour + live preview) ───────────────────────────────── */
 
 function LookStep({
   draft,
@@ -563,40 +521,7 @@ function LookStep({
         description="We build your menu's colours from one brand colour. You can change it later; logo upload comes with your dashboard settings."
       />
       <div className="grid grid-cols-1 gap-lg md:grid-cols-2">
-        <div className="flex flex-col gap-md">
-          <div className="grid grid-cols-4 gap-sm">
-            {BRAND_PRESETS.map((p) => (
-              <button
-                key={p.seed}
-                type="button"
-                onClick={() => setSeed(p.seed)}
-                aria-pressed={seed === p.seed}
-                className={`flex flex-col items-center gap-xs rounded-lg p-xs ${seed === p.seed ? "bg-secondary-container" : "hover:bg-surface-container-low"}`}
-              >
-                <span
-                  className={`h-10 w-10 rounded-full shadow-sm ${seed === p.seed ? "ring-2 ring-primary ring-offset-2" : ""}`}
-                  style={{ backgroundColor: p.seed }}
-                />
-                <span className="text-caption text-on-surface-variant">{p.name}</span>
-              </button>
-            ))}
-          </div>
-          <label className="flex items-center gap-sm rounded-lg border border-outline-variant p-sm">
-            <input
-              type="color"
-              value={seed}
-              onChange={(e) => setSeed(e.target.value.toLowerCase())}
-              className="h-10 w-14 cursor-pointer rounded border-0 bg-transparent"
-              aria-label="Custom colour"
-            />
-            <span>
-              <span className="block text-body-sm font-semibold text-on-surface">
-                Custom colour
-              </span>
-              <span className="block font-mono text-caption text-on-surface-variant">{seed}</span>
-            </span>
-          </label>
-        </div>
+        <BrandColourPicker value={seed} onChange={setSeed} />
         <MenuPreview
           name={draft.name ?? "Your café"}
           host={cafeHost(draft.slug ?? "", rootDomain)}
@@ -609,74 +534,7 @@ function LookStep({
   );
 }
 
-function MenuPreview({
-  name,
-  host,
-  seed,
-  currency,
-}: {
-  name: string;
-  host: string;
-  seed: string;
-  currency: string;
-}) {
-  const c = useMemo(() => cafePalette(seed), [seed]);
-  const price = new Intl.NumberFormat("en", { style: "currency", currency }).format;
-  return (
-    <div
-      aria-label="Menu preview"
-      className="mx-auto w-full max-w-64 overflow-hidden rounded-2xl border-4 border-inverse-surface shadow-card-warm"
-      style={{ backgroundColor: c.surface }}
-    >
-      <div className="px-md pt-md pb-lg" style={{ backgroundColor: c.primary, color: c.onPrimary }}>
-        <p className="text-caption opacity-80">{host}</p>
-        <p className="text-headline-md font-bold">{name}</p>
-      </div>
-      <div className="-mt-sm flex gap-xs px-md">
-        {["Coffee", "Tea", "Pastries"].map((cat, i) => (
-          <span
-            key={cat}
-            className="rounded-full px-sm py-xs text-caption font-semibold shadow-sm"
-            style={
-              i === 0
-                ? { backgroundColor: c.container, color: c.onContainer }
-                : { backgroundColor: c.variant, color: c.onVariant }
-            }
-          >
-            {cat}
-          </span>
-        ))}
-      </div>
-      <div className="flex flex-col gap-sm p-md">
-        {[
-          ["Espresso", 4.5],
-          ["Cappuccino", 6],
-        ].map(([item, p]) => (
-          <div
-            key={item as string}
-            className="flex items-center justify-between rounded-lg p-sm"
-            style={{ backgroundColor: c.variant, color: c.onSurface }}
-          >
-            <span>
-              <span className="block text-body-sm font-semibold">{item}</span>
-              <span className="block text-caption" style={{ color: c.onVariant }}>
-                {price(p as number)}
-              </span>
-            </span>
-            <span
-              className="rounded-lg px-sm py-xs text-caption font-bold"
-              style={{ backgroundColor: c.primary, color: c.onPrimary }}
-            >
-              Add
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/* ── 4 · Agreement ────────────────────────────────────────────────────────── */
+/* ── 5 · Agreement ────────────────────────────────────────────────────────── */
 
 function AgreementStep({
   draft,
@@ -756,9 +614,10 @@ function AgreementStep({
   );
 }
 
-/* ── 5 · Review & create ──────────────────────────────────────────────────── */
+/* ── 6 · Review & create ──────────────────────────────────────────────────── */
 
 function ReviewStep({
+  options,
   draft,
   errors,
   pending,
@@ -766,6 +625,7 @@ function ReviewStep({
   onEdit,
   onCreate,
 }: {
+  options: CafeFieldOptions;
   draft: WizardDraft;
   errors: Record<string, string>;
   pending: boolean;
@@ -779,7 +639,7 @@ function ReviewStep({
       step: 1,
       label: "Location",
       value:
-        [draft.address, draft.city, draft.country_code && COUNTRY_NAMES.of(draft.country_code)]
+        [draft.address, draft.city, draft.country_code && countryLabel(options, draft.country_code)]
           .filter(Boolean)
           .join(", ") || "—",
     },
@@ -788,9 +648,25 @@ function ReviewStep({
       label: "Currency · time zone · language",
       value: `${draft.currency ?? "—"} · ${draft.timezone ?? "—"} · ${CAFE_LOCALES.find((l) => l.value === draft.locale)?.label ?? "—"}`,
     },
-    { step: 2, label: "Address", value: draft.slug ? cafeHost(draft.slug, rootDomain) : "—" },
-    { step: 3, label: "Brand colour", value: draft.seed ?? "—" },
-    { step: 4, label: "Agreements", value: draft.terms && draft.dpa ? "Accepted" : "Not accepted" },
+    {
+      step: 2,
+      label: "Phone · email",
+      value: [draft.phone, draft.email].filter(Boolean).join(" · ") || "—",
+    },
+    {
+      step: 2,
+      label: "Social pages",
+      value:
+        [
+          draft.facebook && `Facebook ${socialHandle(draft.facebook)}`,
+          draft.instagram && `Instagram ${socialHandle(draft.instagram)}`,
+        ]
+          .filter(Boolean)
+          .join(" · ") || "None",
+    },
+    { step: 3, label: "Address", value: draft.slug ? cafeHost(draft.slug, rootDomain) : "—" },
+    { step: 4, label: "Brand colour", value: draft.seed ?? "—" },
+    { step: 5, label: "Agreements", value: draft.terms && draft.dpa ? "Accepted" : "Not accepted" },
   ];
   return (
     <form
@@ -810,7 +686,7 @@ function ReviewStep({
           <div key={r.label} className="flex items-center gap-md px-md py-sm">
             <dt className="w-2/5 shrink-0 text-body-sm text-on-surface-variant">{r.label}</dt>
             <dd className="flex min-w-0 flex-1 items-center gap-xs text-body-sm font-semibold text-on-surface">
-              {r.step === 3 && draft.seed ? (
+              {r.step === 4 && draft.seed ? (
                 <span
                   className="h-4 w-4 shrink-0 rounded-full"
                   style={{ backgroundColor: draft.seed }}
@@ -830,7 +706,7 @@ function ReviewStep({
       </dl>
       <Actions
         pending={pending}
-        onBack={() => onEdit(4)}
+        onBack={() => onEdit(5)}
         nextLabel="Create my café"
         nextIcon="rocket_launch"
       />

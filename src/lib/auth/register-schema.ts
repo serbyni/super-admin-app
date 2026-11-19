@@ -9,7 +9,7 @@ const trimmed = (min: number, max: number, message: string) =>
  * International number (the form submits E.164 from the country picker). Validated with the full
  * libphonenumber rules for that country and normalised to E.164, e.g. "+216 20 123 456" → "+21620123456".
  */
-const phone = z.string().transform((v, ctx) => {
+export const phoneSchema = z.string().transform((v, ctx) => {
   const parsed = parsePhoneNumberFromString(v.replace(/[\s().-]/g, ""));
   if (!v.trim().startsWith("+") || !parsed) {
     ctx.addIssue({ code: "custom", message: "Choose your country and enter your phone number" });
@@ -25,7 +25,7 @@ const phone = z.string().transform((v, ctx) => {
 /** Business details (shared by email sign-up and the social "complete profile" step). */
 export const businessProfileSchema = z.object({
   fullName: trimmed(2, 80, "Enter your full name (2–80 characters)"),
-  phone,
+  phone: phoneSchema,
   businessName: trimmed(2, 80, "Enter your business name (2–80 characters)"),
   // Checked against the active list (managed by super admins) in the server action.
   businessType: z.string().regex(/^[a-z][a-z0-9_]{1,30}$/, "Choose a business type"),

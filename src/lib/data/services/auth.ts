@@ -83,6 +83,45 @@ export class AuthService {
     return false;
   }
 
+  /**
+   * Start an email change. Supabase emails a confirmation link ("Change email address"
+   * template → /auth/email-change); with Secure email change on, BOTH the current and the new
+   * address get a link and both must be opened. The email changes only after confirmation.
+   */
+  async requestEmailChange(newEmail: string): Promise<AuthResult> {
+    const { error } = await (
+      await this.db()
+    ).auth.updateUser({ email: newEmail }, { emailRedirectTo: siteUrl("/auth/email-change") });
+    return error ? { ok: false, code: error.code ?? "unknown" } : { ok: true };
+  }
+
+  /** Email-change confirmation link (token_hash + type=email_change). False when invalid. */
+  async completeEmailChange(tokenHash: string | null): Promise<boolean> {
+    if (!tokenHash) return false;
+    const { error } = await (
+      await this.db()
+    ).auth.verifyOtp({ token_hash: tokenHash, type: "email_change" });
+    return !error;
+  }
+
+  /**
+   * Change the password of a signed-in user who knows the current one. The current password is
+   * checked by signing in again (also gives a fresh session, which Supabase's "secure password
+   * change" accepts); then the other devices are signed out.
+   */
+  async changePassword(current: string, next: string): Promise<AuthResult> {
+    const db = await this.db();
+    const { data } = await db.auth.getUser();
+    const email = data.user?.email;
+    if (!email) return { ok: false, code: "not_authenticated" };
+    const check = await db.auth.signInWithPassword({ email, password: current });
+    if (check.error) return { ok: false, code: "invalid_current_password" };
+    const { error } = await db.auth.updateUser({ password: next });
+    if (error) return { ok: false, code: error.code ?? "unknown" };
+    await db.auth.signOut({ scope: "others" });
+    return { ok: true };
+  }
+
   /** Change the signed-in user's password. */
   async updatePassword(password: string): Promise<AuthResult> {
     const { error } = await (await this.db()).auth.updateUser({ password });

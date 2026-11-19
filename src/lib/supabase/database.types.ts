@@ -45,16 +45,20 @@ export type Database = {
           address: string | null;
           agreed_at: string;
           city: string | null;
+          contact_email: string | null;
           country_code: string;
           created_at: string;
           created_by: string | null;
           currency: string;
           default_locale: string;
           dpa_version: string;
+          facebook_url: string | null;
           id: string;
+          instagram_url: string | null;
           latitude: number | null;
           longitude: number | null;
           name: string;
+          phone: string | null;
           slug: string;
           status: string;
           terms_version: string;
@@ -66,16 +70,20 @@ export type Database = {
           address?: string | null;
           agreed_at: string;
           city?: string | null;
+          contact_email?: string | null;
           country_code: string;
           created_at?: string;
           created_by?: string | null;
           currency: string;
           default_locale?: string;
           dpa_version: string;
+          facebook_url?: string | null;
           id?: string;
+          instagram_url?: string | null;
           latitude?: number | null;
           longitude?: number | null;
           name: string;
+          phone?: string | null;
           slug: string;
           status?: string;
           terms_version: string;
@@ -87,16 +95,20 @@ export type Database = {
           address?: string | null;
           agreed_at?: string;
           city?: string | null;
+          contact_email?: string | null;
           country_code?: string;
           created_at?: string;
           created_by?: string | null;
           currency?: string;
           default_locale?: string;
           dpa_version?: string;
+          facebook_url?: string | null;
           id?: string;
+          instagram_url?: string | null;
           latitude?: number | null;
           longitude?: number | null;
           name?: string;
+          phone?: string | null;
           slug?: string;
           status?: string;
           terms_version?: string;
@@ -153,12 +165,15 @@ export type Database = {
           address: string;
           agreed_at: string;
           city: string;
+          contact_email: string;
           country_code: string;
           created_at: string;
           currency: string;
           default_locale: string;
           dpa_version: string;
+          facebook_url: string;
           id: string;
+          instagram_url: string;
           latitude: number;
           longitude: number;
           members_count: number;
@@ -167,6 +182,7 @@ export type Database = {
           owner_name: string;
           owner_phone: string;
           owner_user_id: string;
+          phone: string;
           slug: string;
           status: string;
           terms_version: string;
@@ -293,6 +309,14 @@ export type Database = {
         }[];
       };
       get_my_owner_status: { Args: never; Returns: string };
+      get_my_profile: {
+        Args: never;
+        Returns: {
+          email: string;
+          full_name: string;
+          phone: string;
+        }[];
+      };
       grant_platform_admin: { Args: { p_user_id: string }; Returns: undefined };
       is_cafe_member: { Args: { p_cafe_id: string }; Returns: boolean };
       is_platform_admin: { Args: never; Returns: boolean };
@@ -326,8 +350,12 @@ export type Database = {
           p_country_code: string;
           p_currency: string;
           p_dpa_version: string;
+          p_email: string;
+          p_facebook?: string;
+          p_instagram?: string;
           p_locale: string;
           p_name: string;
+          p_phone: string;
           p_slug: string;
           p_terms_version: string;
           p_theme: Json;
@@ -338,6 +366,28 @@ export type Database = {
       reserve_slug: { Args: { p_slug: string }; Returns: Json };
       save_onboarding: {
         Args: { p_data: Json; p_step: number };
+        Returns: undefined;
+      };
+      update_my_cafe: {
+        Args: {
+          p_address: string;
+          p_city: string;
+          p_country_code: string;
+          p_currency: string;
+          p_email: string;
+          p_facebook?: string;
+          p_instagram?: string;
+          p_locale: string;
+          p_name: string;
+          p_phone: string;
+          p_seed: string;
+          p_slug: string;
+          p_timezone: string;
+        };
+        Returns: undefined;
+      };
+      update_my_profile: {
+        Args: { p_full_name: string; p_phone: string };
         Returns: undefined;
       };
     };

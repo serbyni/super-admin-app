@@ -5,6 +5,7 @@ import { signOut } from "@/app/auth/actions";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { LiveNotificationsForUser } from "@/components/notifications/live-notifications-for-user";
 import { Icon } from "@/components/ui/icon";
+import { cafeFieldOptions } from "@/config/cafe-options";
 import { DPA_VERSION, TERMS_VERSION } from "@/config/legal";
 import { requireOwnerStage } from "@/lib/auth/guards";
 import { tenantDashboard } from "@/lib/auth/routes";
@@ -75,6 +76,7 @@ async function Onboarding() {
   return (
     <div className="flex w-full flex-col items-center">
       <OnboardingWizard
+        options={cafeFieldOptions()}
         initial={state}
         rootDomain={rootDomain}
         termsVersion={TERMS_VERSION}
