@@ -13,6 +13,8 @@ export type TableInput = {
   isActive: boolean;
 };
 export type LayoutItem = { id: string; x: number; y: number; rotation: number };
+/** Where a scanned QR code leads: the café, and the table for a live table code. */
+export type QrTarget = { cafeSlug: string; tableCode: string | null };
 
 /**
  * Tables & QR codes of the owner's café (every SQL function checks ownership).
@@ -101,5 +103,15 @@ export class TablesService {
       "regenerate_my_qr_code",
       await (await this.db()).rpc("regenerate_my_qr_code", { p_slug: slug, p_table_id: tableId }),
     );
+  }
+
+  /**
+   * Public (anyone, no session): resolves a printed QR code and counts the scan.
+   * null = unknown code.
+   */
+  async resolveQr(code: string): Promise<QrTarget | null> {
+    const rows = unwrap("resolve_qr", await (await this.db()).rpc("resolve_qr", { p_code: code }));
+    const r = rows[0];
+    return r ? { cafeSlug: r.cafe_slug, tableCode: r.table_code ?? null } : null;
   }
 }

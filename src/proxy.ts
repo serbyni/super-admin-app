@@ -39,6 +39,7 @@ export async function proxy(request: NextRequest) {
 export const config = {
   // Skip static assets and image optimisation.
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    // QR scans (/q/<code>) need no session: skip the auth refresh so they redirect fast.
+    "/((?!_next/static|_next/image|favicon.ico|q/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };
