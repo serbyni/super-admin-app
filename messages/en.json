@@ -148,7 +148,8 @@
     "slugTaken": "Another café already uses this address.",
     "slugHeld": "Another café owner is setting up this address right now. Try another one.",
     "unknownStep": "Unknown step",
-    "cafeCreateFailed": "Could not create your café. Please try again."
+    "cafeCreateFailed": "Could not create your café. Please try again.",
+    "menuOptions": "Please check the options: each needs a name and a valid price."
   },
   "common": {
     "save": "Save",
@@ -383,7 +384,29 @@
     "addCategory": "Add category",
     "language": "Language",
     "main": "· main",
-    "save": "Save"
+    "save": "Save",
+    "optionsCount": "{count, plural, one {# option} other {# options}}",
+    "options": {
+      "title": "Options",
+      "hint": "Sizes, milk, extras… Customers choose them when ordering; a choice can add to the price.",
+      "groupName": "Option name (e.g. Size)",
+      "required": "Required",
+      "choose": "Customers choose",
+      "one": "1",
+      "upTo": "up to {count}",
+      "choiceName": "Choice (e.g. Large)",
+      "choicePrice": "Extra price ({currency})",
+      "choicePricePlaceholder": "+0 {currency}",
+      "available": "Available",
+      "removeChoice": "Remove choice",
+      "removeGroup": "Remove option",
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "addChoice": "Add a choice",
+      "addGroup": "Add an option (size, milk, extras…)",
+      "translationTitle": "Options in {language}",
+      "translationOf": "Translation of {name}"
+    }
   },
   "qrCard": {
     "menu": "Menu",

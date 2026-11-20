@@ -1,4 +1,5 @@
 import "server-only";
+import type { OptionGroup } from "@/lib/menu/schema";
 import type { Json } from "@/lib/supabase/database.types";
 import { menuSchema, type Menu, type MenuTag } from "@/lib/menu/schema";
 import { unwrap } from "../errors";
@@ -16,6 +17,8 @@ export type MenuItemInput = {
   isFeatured: boolean;
   /** Translations by language (empty texts already removed). */
   i18n: Record<string, Record<string, string>>;
+  /** Option groups (size, milk, extras…), see OptionGroup. */
+  options?: OptionGroup[];
 };
 
 /**
@@ -84,6 +87,7 @@ export class MenuService {
         p_is_visible: i.isVisible,
         p_is_featured: i.isFeatured,
         p_i18n: i.i18n as unknown as Json,
+        p_options: (i.options ?? []) as unknown as Json,
       }),
     );
   }

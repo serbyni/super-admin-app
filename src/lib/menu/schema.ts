@@ -82,9 +82,83 @@ export function itemSchema(currency: string) {
     is_visible: z.boolean(),
     is_featured: z.boolean(),
     i18n: itemI18nSchema,
+    options: z
+      .array(
+        optionGroupSchema.extend({
+          choices: z
+            .array(
+              optionChoiceSchema.refine(
+                (c) => Math.round(c.price * 10 ** digits) === c.price * 10 ** digits,
+                { message: "Check the option prices" },
+              ),
+            )
+            .min(1)
+            .max(OPTION_LIMITS.choices),
+        }),
+      )
+      .max(OPTION_LIMITS.groups)
+      .refine((gs) => gs.every((g) => g.max <= g.choices.length), {
+        message: "Check the option groups",
+      })
+      .default([]),
   });
 }
 export type ItemForm = z.infer<ReturnType<typeof itemSchema>>;
+
+/* ── Item options (size, milk, extras…) ── */
+
+export const OPTION_LIMITS = { groups: 6, choices: 12 } as const;
+
+const nameI18n = z
+  .record(z.string().regex(/^[a-z]{2}$/), z.object({ name: z.string().trim().max(40).optional() }))
+  .default({});
+
+/** A choice of an option group; `price` is added to the item price. */
+export const optionChoiceSchema = z.object({
+  id: z.string().min(1).max(40),
+  name: z.string().trim().min(1, "Enter a name").max(40),
+  i18n: nameI18n,
+  price: z.number().min(0).max(99999),
+  isAvailable: z.boolean(),
+});
+/** Option group: min 1 = required; max = how many choices a customer may pick. */
+export const optionGroupSchema = z.object({
+  id: z.string().min(1).max(40),
+  name: z.string().trim().min(1, "Enter a name").max(40),
+  i18n: nameI18n,
+  min: z.number().int().min(0).max(1),
+  max: z.number().int().min(1).max(OPTION_LIMITS.choices),
+  choices: z.array(optionChoiceSchema).min(1).max(OPTION_LIMITS.choices),
+});
+export type OptionGroup = z.infer<typeof optionGroupSchema>;
+export type OptionChoice = OptionGroup["choices"][number];
+
+/** Options as stored (bad shape → none). */
+export const optionsSchema = z.array(optionGroupSchema).catch([]);
+
+/**
+ * Checks a customer's choices against the item's groups (same rules as place_order): known,
+ * available, each group between min and max. Returns the first invalid group id, or null.
+ */
+export function invalidOptionGroup(groups: OptionGroup[], choiceIds: string[]): string | null {
+  const known = new Set(groups.flatMap((g) => g.choices.map((c) => c.id)));
+  if (choiceIds.some((id) => !known.has(id))) return groups[0]?.id ?? "options";
+  for (const g of groups) {
+    const picked = g.choices.filter((c) => choiceIds.includes(c.id));
+    if (picked.some((c) => !c.isAvailable) || picked.length < g.min || picked.length > g.max)
+      return g.id;
+  }
+  return null;
+}
+
+/** Item price + chosen options (rounded to 3 decimals like the database). */
+export function unitPrice(base: number, groups: OptionGroup[], choiceIds: string[]): number {
+  const extra = groups
+    .flatMap((g) => g.choices)
+    .filter((c) => choiceIds.includes(c.id))
+    .reduce((n, c) => n + c.price, 0);
+  return Math.round((base + extra) * 1000) / 1000;
+}
 
 export const categorySchema = z.object({
   name: z.string().trim().min(1, "Enter a name").max(60, "At most 60 characters"),
@@ -132,6 +206,7 @@ export const menuSchema = z.object({
       isFeatured: z.boolean(),
       sortOrder: num,
       i18n: i18nSchema,
+      options: optionsSchema.default([]),
     }),
   ),
 });

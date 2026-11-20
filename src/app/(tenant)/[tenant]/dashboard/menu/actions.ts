@@ -27,6 +27,7 @@ const FIELD_LABELS: Record<string, string> = {
   i18n: msg("menuTranslations"),
   category_id: msg("menuCategory"),
   tags: msg("menuTags"),
+  options: msg("menuOptions"),
 };
 
 /** Schema errors → translatable messages per field (price: with an example in the café's currency). */
@@ -165,6 +166,14 @@ export async function saveItemAction(
       isVisible: d.is_visible,
       isFeatured: d.is_featured,
       i18n: cleanI18n(d.i18n) as Record<string, Record<string, string>>,
+      options: d.options.map((g) => ({
+        ...g,
+        i18n: cleanI18n(g.i18n) as Record<string, { name: string }>,
+        choices: g.choices.map((c) => ({
+          ...c,
+          i18n: cleanI18n(c.i18n) as Record<string, { name: string }>,
+        })),
+      })),
     });
     refresh(slug);
     return {

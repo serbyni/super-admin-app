@@ -148,7 +148,8 @@
     "slugTaken": "يستخدم مقهى آخر هذا العنوان بالفعل.",
     "slugHeld": "يقوم صاحب مقهى آخر بإعداد هذا العنوان الآن. جرّب عنوانًا آخر.",
     "unknownStep": "خطوة غير معروفة",
-    "cafeCreateFailed": "تعذّر إنشاء مقهاك. يرجى المحاولة مرة أخرى."
+    "cafeCreateFailed": "تعذّر إنشاء مقهاك. يرجى المحاولة مرة أخرى.",
+    "menuOptions": "يرجى التحقق من الخيارات: يحتاج كل خيار إلى اسم وسعر صالح."
   },
   "common": {
     "save": "حفظ",
@@ -383,7 +384,29 @@
     "addCategory": "إضافة الفئة",
     "language": "اللغة",
     "main": "· الرئيسية",
-    "save": "حفظ"
+    "save": "حفظ",
+    "optionsCount": "الخيارات: {count}",
+    "options": {
+      "title": "الخيارات",
+      "hint": "الأحجام والحليب والإضافات… يختارها الزبائن عند الطلب؛ ويمكن أن يضيف الاختيار إلى السعر.",
+      "groupName": "اسم الخيار (مثل الحجم)",
+      "required": "إلزامي",
+      "choose": "يختار الزبائن",
+      "one": "1",
+      "upTo": "حتى {count}",
+      "choiceName": "الاختيار (مثل كبير)",
+      "choicePrice": "السعر الإضافي ({currency})",
+      "choicePricePlaceholder": "+0 {currency}",
+      "available": "متوفر",
+      "removeChoice": "إزالة الاختيار",
+      "removeGroup": "إزالة الخيار",
+      "moveUp": "نقل للأعلى",
+      "moveDown": "نقل للأسفل",
+      "addChoice": "إضافة اختيار",
+      "addGroup": "إضافة خيار (الحجم، الحليب، الإضافات…)",
+      "translationTitle": "الخيارات بـ{language}",
+      "translationOf": "ترجمة {name}"
+    }
   },
   "qrCard": {
     "menu": "القائمة",

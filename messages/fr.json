@@ -148,7 +148,8 @@
     "slugTaken": "Un autre café utilise déjà cette adresse.",
     "slugHeld": "Un autre propriétaire configure cette adresse en ce moment. Essayez-en une autre.",
     "unknownStep": "Étape inconnue",
-    "cafeCreateFailed": "Impossible de créer votre café. Réessayez."
+    "cafeCreateFailed": "Impossible de créer votre café. Réessayez.",
+    "menuOptions": "Vérifiez les options : chacune a besoin d'un nom et d'un prix valide."
   },
   "common": {
     "save": "Enregistrer",
@@ -383,7 +384,29 @@
     "addCategory": "Ajouter la catégorie",
     "language": "Langue",
     "main": "· principale",
-    "save": "Enregistrer"
+    "save": "Enregistrer",
+    "optionsCount": "{count, plural, one {# option} other {# options}}",
+    "options": {
+      "title": "Options",
+      "hint": "Tailles, lait, suppléments… Les clients les choisissent en commandant ; un choix peut s'ajouter au prix.",
+      "groupName": "Nom de l'option (ex. Taille)",
+      "required": "Obligatoire",
+      "choose": "Les clients choisissent",
+      "one": "1",
+      "upTo": "jusqu'à {count}",
+      "choiceName": "Choix (ex. Grand)",
+      "choicePrice": "Supplément ({currency})",
+      "choicePricePlaceholder": "+0 {currency}",
+      "available": "Disponible",
+      "removeChoice": "Retirer le choix",
+      "removeGroup": "Retirer l'option",
+      "moveUp": "Monter",
+      "moveDown": "Descendre",
+      "addChoice": "Ajouter un choix",
+      "addGroup": "Ajouter une option (taille, lait, suppléments…)",
+      "translationTitle": "Options en {language}",
+      "translationOf": "Traduction de {name}"
+    }
   },
   "qrCard": {
     "menu": "Menu",
