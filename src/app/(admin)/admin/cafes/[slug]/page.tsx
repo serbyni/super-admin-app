@@ -13,6 +13,7 @@ import { socialHandle } from "@/lib/cafes/contact";
 import { CafePageLink } from "@/components/cafe/cafe-page-link";
 import { cafeHost, isValidSlugFormat } from "@/lib/cafes/slug";
 import { serverApi } from "@/lib/data/server-api";
+import { CafeLanguagesCard } from "./languages-card";
 import { cafeRootDomain } from "@/lib/env";
 
 export const metadata: Metadata = { title: "Café" };
@@ -24,7 +25,10 @@ async function Cafe({ params }: { params: PageProps<"/admin/cafes/[slug]">["para
   await requireAdmin();
   const { slug } = await params;
   if (!isValidSlugFormat(slug)) notFound();
-  const c = await serverApi().cafes.adminGet(slug);
+  const [c, languages] = await Promise.all([
+    serverApi().cafes.adminGet(slug),
+    serverApi().languages.adminCafe(slug),
+  ]);
   if (!c) notFound();
   const hasPin = c.latitude !== null && c.longitude !== null;
 
@@ -144,6 +148,7 @@ async function Cafe({ params }: { params: PageProps<"/admin/cafes/[slug]">["para
           <Row label="Data Processing Agreement">Version {c.dpaVersion}</Row>
           <Row label="Accepted">{formatDateTime(c.agreedAt)}</Row>
         </Card>
+        {languages ? <CafeLanguagesCard slug={c.slug} languages={languages} /> : null}
       </div>
       <p className="mt-lg flex items-start gap-xs text-caption text-on-surface-variant">
         <Icon name="lock" className="text-icon-sm" />

@@ -2,7 +2,10 @@ import "server-only";
 import { Resend } from "resend";
 import { formatDateTime } from "@/config/locale";
 import { isEmailTemplate, TEMPLATE_VARIABLES, type EmailVariable } from "@/emails/templates";
+import { emailCopy } from "@/emails/copy";
+import { tenantSettings } from "@/lib/auth/routes";
 import { emailConfig, type EmailConfig } from "@/lib/email/config";
+import { languageLabel } from "@/lib/i18n/languages";
 import { cafeHost } from "@/lib/cafes/slug";
 import { cafeRootDomain, publicEnv } from "@/lib/env";
 import { createServiceClient } from "@/lib/supabase/service";
@@ -25,6 +28,32 @@ export function escapeHtml(value: string): string {
     .replace(/'/g, "&#39;");
 }
 
+/** Approved/declined texts of the language-request e-mail (from the event payload). */
+function languageDecision(
+  d: Delivery,
+  siteUrl: string,
+): Partial<Record<EmailVariable, string | null>> {
+  if (d.template !== "language_request_decided") return {};
+  const p = (d.payload ?? {}) as {
+    locale?: string;
+    approved?: boolean;
+    note?: string;
+    cafe_slug?: string;
+  };
+  const l = emailCopy(d.locale).language;
+  const lang = p.locale ? languageLabel(p.locale) : null;
+  const name = lang ?? "Your language";
+  return {
+    LANGUAGE: lang,
+    DECISION_TITLE: p.approved ? l.approvedTitle(name) : l.declinedTitle(name),
+    DECISION_MESSAGE: p.approved ? l.approvedMessage(name) : l.declinedMessage,
+    NOTE: p.note ?? null,
+    SETTINGS_URL: p.cafe_slug
+      ? `${siteUrl.replace(/\/$/, "")}${tenantSettings(p.cafe_slug)}?tab=languages`
+      : `${siteUrl.replace(/\/$/, "")}/auth/home`,
+  };
+}
+
 /**
  * Event payload for a delivery: snake_case keys (Resend event schema), one per template variable
  * the template uses. Automations map them to the template's {{{UPPER_CASE}}} variables.
@@ -34,7 +63,7 @@ export function eventPayload(
   siteUrl: string,
   rootDomain: string,
 ): Record<string, string> {
-  const all: Record<EmailVariable, string | null | undefined> = {
+  const all: Partial<Record<EmailVariable, string | null>> = {
     SITE_URL: siteUrl.replace(/\/$/, ""),
     OWNER_NAME: d.recipient_name?.trim().split(/\s+/)[0],
     OWNER_EMAIL: d.recipient_email,
@@ -46,13 +75,14 @@ export function eventPayload(
     CAFE_NAME: d.cafe_name ?? d.business_name,
     CAFE_HOST: d.cafe_slug ? cafeHost(d.cafe_slug, rootDomain) : null,
     CREATED_AT: d.event_at ? formatDateTime(d.event_at) : null,
+    ...languageDecision(d, siteUrl),
   };
   const keys = isEmailTemplate(d.template) ? TEMPLATE_VARIABLES[d.template] : [];
   const payload: Record<string, string> = {};
   for (const k of keys) {
     const v = all[k]?.trim();
     // Empty → omitted, so the Resend template's fallback value is used.
-    if (v) payload[k.toLowerCase()] = k === "SITE_URL" ? v : escapeHtml(v);
+    if (v) payload[k.toLowerCase()] = k === "SITE_URL" || k === "SETTINGS_URL" ? v : escapeHtml(v);
   }
   return payload;
 }

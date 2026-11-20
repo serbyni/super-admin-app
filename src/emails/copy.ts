@@ -47,6 +47,20 @@ type Copy = {
     supportBody: string;
     supportCta: string;
   };
+  language: {
+    subject: string;
+    preview: string;
+    heroLabel: string;
+    hi: (name: string) => string;
+    cafeLabel: string;
+    languageLabel: string;
+    noteTitle: string;
+    cta: string;
+    approvedTitle: (lang: string) => string;
+    approvedMessage: (lang: string) => string;
+    declinedTitle: (lang: string) => string;
+    declinedMessage: string;
+  };
   ready: {
     subject: string;
     preview: string;
@@ -173,6 +187,22 @@ const en: Copy = {
     supportTitle: "Need help getting started?",
     supportBody: "Reply to this email and our team will help you set up your menu and QR codes.",
     supportCta: "Contact us",
+  },
+  language: {
+    subject: "Update on your language request",
+    preview: "Serbi reviewed your request for an extra menu language.",
+    heroLabel: "Languages",
+    hi: (name) => `Hi ${name},`,
+    cafeLabel: "Café",
+    languageLabel: "Language",
+    noteTitle: "Note from Serbi",
+    cta: "Open your languages",
+    approvedTitle: (lang) => `${lang} is now available`,
+    approvedMessage: (lang) =>
+      `Good news — your café can now offer ${lang}. It is switched on: add your ${lang} translations in Menu and Website, and customers whose phones use ${lang} will see it automatically.`,
+    declinedTitle: (lang) => `${lang} request declined`,
+    declinedMessage:
+      "We can't add this language to your café for now. If you have questions, reply to this email and we'll get back to you.",
   },
   ready: {
     subject: "Your café is ready on Serbi",

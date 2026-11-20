@@ -27,6 +27,7 @@ export const EMAIL_TEMPLATES = [
   "admin_approve_user",
   "admin_declined_user",
   "cafe_created",
+  "language_request_decided",
 ] as const;
 export type EmailTemplate = (typeof EMAIL_TEMPLATES)[number];
 
@@ -47,6 +48,11 @@ export const EMAIL_VARIABLES = {
   CAFE_NAME: "your café",
   CAFE_HOST: "your café address",
   CREATED_AT: "—",
+  LANGUAGE: "your language",
+  DECISION_TITLE: "Your language request was reviewed",
+  DECISION_MESSAGE: "Open your café's languages to see the decision.",
+  NOTE: "—",
+  SETTINGS_URL: "https://serbi.me/auth/home",
 } as const;
 export type EmailVariable = keyof typeof EMAIL_VARIABLES;
 export type EmailVars = Record<EmailVariable, string>;
@@ -70,6 +76,16 @@ export const TEMPLATE_VARIABLES: Record<EmailTemplate, EmailVariable[]> = {
   ],
   admin_declined_user: ["SITE_URL", "OWNER_NAME", "BUSINESS_NAME", "DECIDED_AT", "REASON"],
   cafe_created: ["SITE_URL", "OWNER_NAME", "OWNER_EMAIL", "CAFE_NAME", "CAFE_HOST", "CREATED_AT"],
+  language_request_decided: [
+    "SITE_URL",
+    "OWNER_NAME",
+    "CAFE_NAME",
+    "LANGUAGE",
+    "DECISION_TITLE",
+    "DECISION_MESSAGE",
+    "NOTE",
+    "SETTINGS_URL",
+  ],
 };
 
 function footer(v: EmailVars, locale?: string | null) {
@@ -287,6 +303,41 @@ function CafeCreated({ v, locale }: { v: EmailVars; locale?: string | null }) {
   );
 }
 
+/**
+ * Decision on a language request. Resend templates have no conditions, so the dispatcher fills
+ * the approved/declined texts (DECISION_TITLE / DECISION_MESSAGE) and the note.
+ */
+function LanguageRequestDecided({ v, locale }: { v: EmailVars; locale?: string | null }) {
+  const c = emailCopy(locale);
+  const l = c.language;
+  return (
+    <EmailLayout
+      logoUrl={`${v.SITE_URL}/brand/serbi-email-mark.png`}
+      preview={l.preview}
+      badge={c.headerBadge}
+      tagline={c.brandTagline}
+      hero={{ tone: "brand", label: l.heroLabel, title: v.DECISION_TITLE, subtitle: v.CAFE_NAME }}
+      footer={footer(v, locale)}
+    >
+      <Title>{l.hi(v.OWNER_NAME)}</Title>
+      <P muted>{v.DECISION_MESSAGE}</P>
+      <Card title={l.heroLabel} tint="mid">
+        <Fields
+          items={[
+            { label: l.cafeLabel, value: v.CAFE_NAME },
+            { label: l.languageLabel, value: v.LANGUAGE },
+          ]}
+        />
+      </Card>
+      <Note icon="💬" title={l.noteTitle}>
+        {v.NOTE}
+      </Note>
+      <PrimaryButton href={v.SETTINGS_URL}>{l.cta} →</PrimaryButton>
+      <SignOff line={c.signOff} team={c.team} />
+    </EmailLayout>
+  );
+}
+
 function Email({
   template,
   v,
@@ -305,6 +356,8 @@ function Email({
       return <AdminDeclinedUser v={v} locale={locale} />;
     case "cafe_created":
       return <CafeCreated v={v} locale={locale} />;
+    case "language_request_decided":
+      return <LanguageRequestDecided v={v} locale={locale} />;
   }
 }
 
@@ -313,6 +366,7 @@ const SUBJECTS: Record<EmailTemplate, (c: ReturnType<typeof emailCopy>) => strin
   admin_approve_user: (c) => c.approved.subject,
   admin_declined_user: (c) => c.declined.subject,
   cafe_created: (c) => c.ready.subject,
+  language_request_decided: (c) => c.language.subject,
 };
 
 export function emailSubject(template: EmailTemplate, locale?: string | null): string {

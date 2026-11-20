@@ -525,6 +525,7 @@ export type Database = {
           delivery_id: string;
           event_at: string;
           locale: string;
+          payload: Json;
           reason: string;
           recipient_email: string;
           recipient_name: string;
@@ -655,7 +656,7 @@ export type Database = {
         Returns: string;
       };
       admin_list_language_requests: {
-        Args: { p_status?: string };
+        Args: { p_status?: string | null };
         Returns: {
           cafe_name: string;
           cafe_slug: string;

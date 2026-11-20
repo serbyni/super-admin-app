@@ -19,7 +19,11 @@ export function LiveNotifications({ userId }: { userId: string }) {
       const d = describeNotification(n);
       toast.show({
         id: `notification-${n.id}`,
-        variant: n.type === "admin_approve_user" ? "success" : "info",
+        variant:
+          n.type === "admin_approve_user" ||
+          (n.type === "language_request_decided" && n.data.approved)
+            ? "success"
+            : "info",
         icon: d.icon,
         title: d.title,
         description: d.body,

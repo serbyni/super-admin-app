@@ -21,6 +21,28 @@ const myLanguagesSchema = z.object({
   requests: z.array(requestSchema),
 });
 export type MyLanguages = z.infer<typeof myLanguagesSchema>;
+
+const adminCafeSchema = z.object({
+  main: z.string(),
+  offered: z.array(z.string()),
+  extras: z.array(z.string()),
+  supported: z.array(z.string()),
+  base: z.array(z.string()),
+});
+export type AdminCafeLanguages = z.infer<typeof adminCafeSchema>;
+
+export type AdminLanguageRequest = {
+  id: string;
+  cafeSlug: string;
+  cafeName: string;
+  locale: string;
+  note: string;
+  status: "pending" | "approved" | "declined";
+  decisionNote: string;
+  ownerEmail: string | null;
+  createdAt: string;
+  decidedAt: string | null;
+};
 export type LanguageRequest = z.infer<typeof requestSchema>;
 
 /**
@@ -52,6 +74,57 @@ export class LanguagesService {
       await (
         await this.db()
       ).rpc("request_my_language", { p_slug: slug, p_locale: locale, p_note: note }),
+    );
+  }
+
+  /* ── Super admin ── */
+
+  /** Requests by status (null = all), newest first. */
+  async adminRequests(
+    status: "pending" | "approved" | "declined" | null,
+  ): Promise<AdminLanguageRequest[]> {
+    const rows = unwrap(
+      "admin_list_language_requests",
+      await (await this.db()).rpc("admin_list_language_requests", { p_status: status }),
+    );
+    return rows.map((r) => ({
+      id: r.id,
+      cafeSlug: r.cafe_slug,
+      cafeName: r.cafe_name,
+      locale: r.locale,
+      note: r.note,
+      status: r.status as AdminLanguageRequest["status"],
+      decisionNote: r.decision_note,
+      ownerEmail: r.owner_email,
+      createdAt: r.created_at,
+      decidedAt: r.decided_at,
+    }));
+  }
+
+  /** Approve (language added and offered) or decline; the owner is notified. */
+  async adminDecide(id: string, approve: boolean, note: string): Promise<void> {
+    unwrap(
+      "admin_decide_language_request",
+      await (
+        await this.db()
+      ).rpc("admin_decide_language_request", { p_id: id, p_approve: approve, p_note: note }),
+    );
+  }
+
+  async adminCafe(slug: string): Promise<AdminCafeLanguages | null> {
+    const raw = unwrap(
+      "admin_get_cafe_languages",
+      await (await this.db()).rpc("admin_get_cafe_languages", { p_slug: slug }),
+    );
+    return raw ? adminCafeSchema.parse(raw) : null;
+  }
+
+  async adminSetExtras(slug: string, locales: string[]): Promise<void> {
+    unwrap(
+      "admin_set_cafe_extra_locales",
+      await (
+        await this.db()
+      ).rpc("admin_set_cafe_extra_locales", { p_slug: slug, p_locales: locales }),
     );
   }
 }

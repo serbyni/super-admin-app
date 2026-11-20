@@ -5,7 +5,10 @@
  *                   admin_declined_user, cafe_created) + payload schema
  *   3. automations — one per event: trigger → send the template from EMAIL_FROM
  *
- *   RESEND_API_KEY=re_... EMAIL_FROM="Serbi <noreply@dev.serbi.me>" npm run email:sync
+ *   RESEND_API_KEY=re_... EMAIL_FROM="Serbi <noreply@dev.serbi.me>" npm run email:sync [template…]
+ *
+ * With template names, only those are synced (e.g. a new e-mail). An enabled automation can't be
+ * edited in Resend, so an existing one is left as it is (disable it in Resend to change it).
  *
  * Needs a FULL-ACCESS Resend key (the app itself only needs a sending key) and a VERIFIED domain
  * for EMAIL_FROM (Resend refuses automations otherwise). Run it once per environment.
@@ -37,7 +40,13 @@ void (async () => {
   const resend = new Resend(key);
   const automations = check("list automations", await resend.automations.list({ limit: 100 })).data;
 
-  for (const t of EMAIL_TEMPLATES) {
+  const only = process.argv.slice(2);
+  const unknown = only.filter((t) => !(EMAIL_TEMPLATES as readonly string[]).includes(t));
+  if (unknown.length) {
+    console.error(`email:sync: unknown template(s): ${unknown.join(", ")}`);
+    process.exit(1);
+  }
+  for (const t of EMAIL_TEMPLATES.filter((x) => !only.length || only.includes(x))) {
     // 1. Template
     const tpl = await renderResendTemplate(t);
     const existing = await resend.templates.get(tpl.alias);
@@ -83,7 +92,9 @@ void (async () => {
     ];
     const connections = [{ from: "trigger", to: "send_email" }];
     const current = automations.find((a) => a.name === AUTOMATION_NAME(t));
-    if (current) {
+    if (current?.status === "enabled") {
+      console.log(`email:sync: ${t} — automation is enabled, left unchanged`);
+    } else if (current) {
       check(
         `update automation ${t}`,
         await resend.automations.update(current.id, { steps, connections, status: "enabled" }),

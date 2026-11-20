@@ -1,4 +1,6 @@
+import { tenantSettings } from "@/lib/auth/routes";
 import type { AppNotification } from "@/lib/data/services/notification-types";
+import { languageLabel } from "@/lib/i18n/languages";
 
 /** Text, icon and link of each notification type. */
 export function describeNotification(n: AppNotification): {
@@ -30,6 +32,26 @@ export function describeNotification(n: AppNotification): {
         body: `${business} finished onboarding and is live.`,
         href: n.data.cafeSlug ? `/admin/cafes/${n.data.cafeSlug}` : "/admin/cafes",
       };
+    case "language_requested": {
+      const lang = n.data.locale ? languageLabel(n.data.locale) : "a language";
+      return {
+        icon: "translate",
+        title: "Language request",
+        body: `${n.data.cafeName ?? "A café"} asks for ${lang}${n.data.note ? ` — “${n.data.note}”` : "."}`,
+        href: "/admin/languages",
+      };
+    }
+    case "language_request_decided": {
+      const lang = n.data.locale ? languageLabel(n.data.locale) : "your language";
+      return {
+        icon: n.data.approved ? "translate" : "do_not_disturb_on",
+        title: n.data.approved ? `${lang} added` : `${lang} request declined`,
+        body: n.data.approved
+          ? `Your café can now offer ${lang}. Add your translations in Menu and Website.`
+          : `Serbi declined your request${n.data.note ? `: “${n.data.note}”` : "."}`,
+        href: n.data.cafeSlug ? `${tenantSettings(n.data.cafeSlug)}?tab=languages` : "/auth/home",
+      };
+    }
     default:
       return { icon: "notifications", title: "Update", body: business, href: "/pending" };
   }
