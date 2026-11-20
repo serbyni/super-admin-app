@@ -1015,5 +1015,27 @@
     "readyTable": "Your order is ready — it's coming to table {label}.",
     "readyTakeaway": "Your order is ready — pick it up at the counter, {name}.",
     "reason": "Reason: {reason}"
+  },
+  "receipt": {
+    "subject": "Your receipt — {cafe} #{number}",
+    "preview": "Your order #{number} was accepted.",
+    "badge": "Receipt",
+    "heroLabel": "Order accepted",
+    "heroTitle": "Receipt — order #{number}",
+    "title": "Thank you for your order!",
+    "intro": "{cafe} accepted your order. Here is your receipt.",
+    "details": "Order",
+    "date": "Date",
+    "where": "Where",
+    "table": "Table {label}",
+    "takeaway": "Takeaway · {name}",
+    "items": "Items",
+    "total": "Total",
+    "payAtCounter": "To pay at the counter.",
+    "paid": "Paid",
+    "follow": "Follow your order",
+    "signOff": "See you soon,",
+    "why": "You receive this email because you entered your address when ordering at {cafe}. It is used only for this order.",
+    "tagline": "Ordered with Serbi · QR menus and ordering for cafés"
   }
 }

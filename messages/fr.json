@@ -1015,5 +1015,27 @@
     "readyTable": "Votre commande est prête — elle arrive à la table {label}.",
     "readyTakeaway": "Votre commande est prête — récupérez-la au comptoir, {name}.",
     "reason": "Motif : {reason}"
+  },
+  "receipt": {
+    "subject": "Votre reçu — {cafe} n°{number}",
+    "preview": "Votre commande n°{number} a été acceptée.",
+    "badge": "Reçu",
+    "heroLabel": "Commande acceptée",
+    "heroTitle": "Reçu — commande n°{number}",
+    "title": "Merci pour votre commande !",
+    "intro": "{cafe} a accepté votre commande. Voici votre reçu.",
+    "details": "Commande",
+    "date": "Date",
+    "where": "Où",
+    "table": "Table {label}",
+    "takeaway": "À emporter · {name}",
+    "items": "Articles",
+    "total": "Total",
+    "payAtCounter": "À régler au comptoir.",
+    "paid": "Payé",
+    "follow": "Suivre votre commande",
+    "signOff": "À bientôt,",
+    "why": "Vous recevez cet e-mail car vous avez saisi votre adresse en commandant chez {cafe}. Elle n'est utilisée que pour cette commande.",
+    "tagline": "Commandé avec Serbi · Menus QR et commande pour cafés"
   }
 }

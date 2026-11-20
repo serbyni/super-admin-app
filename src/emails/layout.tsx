@@ -55,6 +55,8 @@ export function EmailLayout({
   hero,
   children,
   footer,
+  lang = "en",
+  dir = "ltr",
 }: {
   /** Absolute URL of the app mark (served from the app: /brand/serbi-email-mark.png). */
   logoUrl: string;
@@ -64,10 +66,13 @@ export function EmailLayout({
   hero: { tone: Tone; label: string; title: string; subtitle?: string };
   children: ReactNode;
   footer: { tagline: string; why: string; links: { label: string; href: string }[] };
+  /** Language and direction of the e-mail (receipts in the customer's language, RTL for Arabic). */
+  lang?: string;
+  dir?: "ltr" | "rtl";
 }) {
   const h = heroColors[hero.tone];
   return (
-    <Html lang="en">
+    <Html lang={lang} dir={dir}>
       <Head />
       <Preview>{preview}</Preview>
       <Body style={{ ...font, backgroundColor: t.color.page, margin: 0, padding: "32px 0" }}>
