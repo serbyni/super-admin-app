@@ -2,7 +2,7 @@ import type { CSSProperties } from "react";
 import { Icon } from "@/components/ui/icon";
 import type { CafePalette } from "@/lib/cafes/theme";
 import { mediaUrl } from "@/lib/media/config";
-import { groupHours, type Website, type WebsiteImage } from "@/lib/website/schema";
+import { WEEKDAYS, groupHours, type Website, type WebsiteImage } from "@/lib/website/schema";
 
 /*
  * Phone-sized preview of the café website in the café's colours. A close sketch of what cafe-app
@@ -20,18 +20,39 @@ function Photo({ image, className }: { image: WebsiteImage; className: string })
 /** A featured menu item as the website shows it (price already formatted). */
 export type FeaturedItem = { id: string; name: string; price: string; image: WebsiteImage | null };
 
+export type PreviewLabels = {
+  headline: string;
+  viewMenu: string;
+  /** The 3 "How ordering works" steps. */
+  steps: string[];
+  /** Monday first. */
+  days: string[];
+  closed: string;
+  hours?: string;
+};
+const PREVIEW_EN: PreviewLabels = {
+  headline: "Your headline",
+  viewMenu: "View menu",
+  steps: ["Scan the table QR code", "Choose from the menu", "We bring your order"],
+  days: [...WEEKDAYS],
+  closed: "Closed",
+};
+
 export function WebsitePreview({
   website,
   palette,
   cafeName,
   contact,
   featured = [],
+  labels = PREVIEW_EN,
 }: {
   website: Website;
   palette: CafePalette;
   cafeName: string;
   contact: { address: string | null; phone: string | null };
   featured?: FeaturedItem[];
+  /** Fixed texts of the page (the editor passes them in the owner's language). */
+  labels?: PreviewLabels;
 }) {
   const primary: CSSProperties = { color: palette.primary };
   const soft: CSSProperties = { backgroundColor: palette.container, color: palette.onContainer };
@@ -56,14 +77,14 @@ export function WebsitePreview({
           </span>
         ) : null}
         <h1 className="text-headline-md font-bold" style={primary}>
-          {hero.title || "Your headline"}
+          {hero.title || labels.headline}
         </h1>
         {hero.subtitle ? <p className="text-body-sm opacity-80">{hero.subtitle}</p> : null}
         <span
           className="flex w-full items-center justify-center gap-xs rounded-full py-sm text-body-sm font-semibold"
           style={{ backgroundColor: palette.primary, color: palette.onPrimary }}
         >
-          <Icon name="menu_book" className="text-icon-md" /> View menu
+          <Icon name="menu_book" className="text-icon-md" /> {labels.viewMenu}
         </span>
         {hero.highlights.length ? (
           <div className="flex flex-wrap gap-xs">
@@ -102,9 +123,9 @@ export function WebsitePreview({
                 {s.text ? <p className="text-body-sm opacity-80">{s.text}</p> : null}
                 <ol className="flex flex-col gap-xs">
                   {[
-                    ["qr_code_scanner", "Scan the table QR code"],
-                    ["restaurant_menu", "Choose from the menu"],
-                    ["notifications_active", "We bring your order"],
+                    ["qr_code_scanner", labels.steps[0]],
+                    ["restaurant_menu", labels.steps[1]],
+                    ["notifications_active", labels.steps[2]],
                   ].map(([icon, label]) => (
                     <li
                       key={icon}
@@ -184,9 +205,9 @@ export function WebsitePreview({
         style={{ backgroundColor: palette.variant, color: palette.onVariant }}
       >
         <p className="flex items-center gap-xs font-semibold uppercase" style={primary}>
-          <Icon name="schedule" className="text-icon-md" /> Opening hours
+          <Icon name="schedule" className="text-icon-md" /> {labels.hours ?? "Opening hours"}
         </p>
-        {groupHours(website.footer.hours).map((g) => (
+        {groupHours(website.footer.hours, { days: labels.days, closed: labels.closed }).map((g) => (
           <p key={g.days} className="flex justify-between gap-sm">
             <span>{g.days}</span>
             <span>{g.hours}</span>

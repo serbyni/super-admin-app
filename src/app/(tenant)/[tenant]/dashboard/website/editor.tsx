@@ -1,12 +1,16 @@
 "use client";
 
+import { useFormatter, useTranslations } from "next-intl";
 import { useEffect, useMemo, useState, useTransition, type ReactNode } from "react";
 import { TextAreaField, TextField } from "@/components/auth/fields";
 import { ConfirmDialog } from "@/components/ui/dialog";
 import { Icon } from "@/components/ui/icon";
 import { useToast } from "@/components/ui/toast";
 import { GalleryField, ImageField } from "@/components/media/image-fields";
-import { isRtlLanguage, languageLabel } from "@/lib/i18n/languages";
+import { useLanguageLabel } from "@/i18n/use-language-label";
+import { useMsg } from "@/i18n/use-msg";
+import { msg, type MsgKey } from "@/i18n/msg";
+import { isRtlLanguage } from "@/lib/i18n/languages";
 import { WebsitePreview, type FeaturedItem } from "@/components/website/website-preview";
 import type { CafePalette } from "@/lib/cafes/theme";
 import {
@@ -28,29 +32,31 @@ import {
   type WebsiteResult,
 } from "./actions";
 
-const SECTION_META: Record<WebsiteSection["type"], { label: string; icon: string; hint: string }> =
-  {
-    how_it_works: {
-      label: "How ordering works",
-      icon: "qr_code_2",
-      hint: "Explains QR ordering in 3 steps. The steps are standard; you choose the title and intro.",
-    },
-    story: {
-      label: "Our story",
-      icon: "auto_stories",
-      hint: "Who you are, a photo, up to 3 highlights and a quote.",
-    },
-    gallery: {
-      label: "Gallery",
-      icon: "photo_library",
-      hint: `Up to ${LIMITS.galleryImages} photos of your place and products.`,
-    },
-    specialties: {
-      label: "Signature specialties",
-      icon: "stars",
-      hint: `Up to ${SPECIALTIES_MAX} featured items from your menu, with photos and prices.`,
-    },
-  };
+const SECTION_ICON: Record<WebsiteSection["type"], string> = {
+  how_it_works: "qr_code_2",
+  story: "auto_stories",
+  gallery: "photo_library",
+  specialties: "stars",
+};
+
+/**
+ * Website schema messages are English (the schema is shared with cafe-app): known ones are
+ * shown translated, anything else as a generic "check this value".
+ */
+const SCHEMA_MESSAGES: Record<string, MsgKey> = {
+  "Use HH:MM": "useHHMM",
+  "Upload the photo again": "menuPhoto",
+  "Closing time must differ from opening time": "closingDiffers",
+  "Tell your story (10+ characters) or hide this section": "storyRequired",
+  "Add at least one photo or hide this section": "galleryRequired",
+};
+const localErrors = (errors: Record<string, string>) =>
+  Object.fromEntries(
+    Object.entries(errors).map(([k, v]) => [
+      k,
+      v.startsWith("§") ? v : msg(SCHEMA_MESSAGES[v] ?? "checkValue"),
+    ]),
+  );
 
 type Props = {
   slug: string;
@@ -71,8 +77,6 @@ type Props = {
 };
 
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
-const when = (iso: string | null) =>
-  iso ? new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }) : null;
 
 export function WebsiteEditor({
   slug,
@@ -87,6 +91,36 @@ export function WebsiteEditor({
   menuHref,
   languages,
 }: Props) {
+  const t = useTranslations("website");
+  const tc = useTranslations("common");
+  const m = useMsg();
+  const format = useFormatter();
+  const languageLabel = useLanguageLabel();
+  const when = (iso: string | null) =>
+    iso ? format.dateTime(new Date(iso), { dateStyle: "medium", timeStyle: "short" }) : "";
+  const sectionLabel = (type: WebsiteSection["type"]) => t(`sections.${type}`);
+  /** Label of a translatable text, from its stable key ("sections.story.points.1.text"). */
+  const fieldLabel = (key: string): string => {
+    const parts = key.split(".");
+    if (parts[0] === "hero") {
+      if (parts[1] === "badge") return t("fieldLabels.badge");
+      if (parts[1] === "title") return t("fieldLabels.headline");
+      if (parts[1] === "subtitle") return t("fieldLabels.introduction");
+      return t("fieldLabels.highlight", { n: Number(parts[2]) + 1 });
+    }
+    const section = sectionLabel(parts[1] as WebsiteSection["type"]);
+    if (parts[2] === "points")
+      return parts[4] === "text"
+        ? t("fieldLabels.pointDetail", { section, n: Number(parts[3]) + 1 })
+        : t("fieldLabels.point", { section, n: Number(parts[3]) + 1 });
+    if (parts[2] === "title") return t("fieldLabels.sectionTitle", { section });
+    if (parts[2] === "quote") return t("fieldLabels.quote", { section });
+    if (parts[2] === "quoteAuthor") return t("fieldLabels.quoteAuthor", { section });
+    return parts[1] === "story"
+      ? t("fieldLabels.sectionText", { section })
+      : t("fieldLabels.sectionIntro", { section });
+  };
+  const days = t("days").split("|");
   const toast = useToast();
   const [lang, setLang] = useState(languages.main);
   const [doc, setDoc] = useState<Website>(initial);
@@ -109,12 +143,13 @@ export function WebsiteEditor({
 
   const update = (fn: (d: Website) => Website) => setDoc((d) => fn(structuredClone(d)));
   const err = (key: string) => errors[key];
+  const setLocalErrors = (e: Record<string, string>) => setErrors(localErrors(e));
 
   const run = (kind: "save" | "publish") => {
     const check = websiteSchema.safeParse(doc);
     if (!check.success) {
-      setErrors(websiteErrors(check.error));
-      toast.show({ variant: "error", title: "Some fields need your attention." });
+      setLocalErrors(websiteErrors(check.error));
+      toast.show({ variant: "error", title: t("fixErrors") });
       return;
     }
     start(async () => {
@@ -123,8 +158,8 @@ export function WebsiteEditor({
           ? await saveWebsiteAction(slug, doc)
           : await publishWebsiteAction(slug, doc);
       if (!r.ok) {
-        setErrors(r.errors ?? {});
-        toast.show({ variant: "error", title: r.message });
+        setLocalErrors(r.errors ?? {});
+        toast.show({ variant: "error", title: m(r.message) });
         return;
       }
       setErrors({});
@@ -133,11 +168,11 @@ export function WebsiteEditor({
         setLive({ doc, at: r.publishedAt ?? null });
         toast.show({
           variant: "success",
-          title: "Website published",
-          description: "Customers see the new version within a few minutes.",
+          title: t("published"),
+          description: t("publishedBody"),
         });
       } else {
-        toast.show({ variant: "success", title: "Draft saved" });
+        toast.show({ variant: "success", title: t("draftSaved") });
       }
     });
   };
@@ -147,31 +182,32 @@ export function WebsiteEditor({
       const r = await discardWebsiteAction(slug);
       setConfirmDiscard(false);
       if (!r.ok) {
-        toast.show({ variant: "error", title: r.message });
+        toast.show({ variant: "error", title: m(r.message) });
         return;
       }
       const next = r.draft ?? live.doc ?? initial;
       setDoc(next);
       setSaved(next);
       setErrors({});
-      toast.show({ variant: "success", title: "Changes discarded" });
+      toast.show({ variant: "success", title: t("discarded") });
     });
 
   const status = useMemo(() => {
     if (!live.doc)
       return {
         tone: "bg-secondary-container text-on-secondary-container",
-        text: "Not published yet — customers see a simple default page.",
+        text: t("statusNever"),
       };
     if (unpublished)
       return {
         tone: "bg-warning-container text-on-warning-container",
-        text: `Unpublished changes · live version from ${when(live.at)}`,
+        text: t("statusUnpublished", { date: when(live.at) }),
       };
     return {
       tone: "bg-success-container text-on-success-container",
-      text: `Published ${when(live.at)}`,
+      text: t("statusPublished", { date: when(live.at) }),
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- t/when follow the page language
   }, [live, unpublished]);
 
   return (
@@ -189,7 +225,7 @@ export function WebsiteEditor({
               onClick={() => setConfirmDiscard(true)}
               className="rounded-xl px-md py-sm text-body-sm font-semibold text-on-surface-variant hover:bg-surface-container disabled:opacity-60"
             >
-              Discard changes
+              {t("discard")}
             </button>
           ) : null}
           <button
@@ -198,7 +234,8 @@ export function WebsiteEditor({
             onClick={() => run("save")}
             className="inline-flex items-center gap-xs rounded-xl border border-outline-variant px-md py-sm text-body-sm font-semibold text-primary hover:bg-secondary-container disabled:opacity-60"
           >
-            <Icon name="save" className="text-icon-md" /> {unsaved ? "Save draft" : "Draft saved"}
+            <Icon name="save" className="text-icon-md" />{" "}
+            {unsaved ? t("saveDraft") : t("draftSavedButton")}
           </button>
           <button
             type="button"
@@ -210,15 +247,19 @@ export function WebsiteEditor({
               name={pending ? "progress_activity" : "publish"}
               className={`text-icon-md ${pending ? "animate-spin" : ""}`}
             />
-            Publish
+            {t("publish")}
           </button>
         </div>
       </div>
 
       {languages.others.length ? (
-        <div role="tablist" aria-label="Language" className="flex flex-wrap items-center gap-xs">
+        <div
+          role="tablist"
+          aria-label={t("language")}
+          className="flex flex-wrap items-center gap-xs"
+        >
           <span className="me-xs flex items-center gap-xs text-body-sm text-on-surface-variant">
-            <Icon name="translate" className="text-icon-md" /> Editing:
+            <Icon name="translate" className="text-icon-md" /> {t("editing")}
           </span>
           {[languages.main, ...languages.others].map((l) => {
             const fields = translatableFields(doc);
@@ -238,7 +279,7 @@ export function WebsiteEditor({
               >
                 {languageLabel(l)}
                 <span className="opacity-75">
-                  {l === languages.main ? "· main" : `${done}/${fields.length}`}
+                  {l === languages.main ? t("main") : `${done}/${fields.length}`}
                 </span>
               </button>
             );
@@ -251,8 +292,11 @@ export function WebsiteEditor({
           {lang !== languages.main ? (
             <Card
               icon="translate"
-              title={`${languageLabel(lang)} translation`}
-              hint={`Visitors who choose ${languageLabel(lang)} see these texts. Empty fields show the ${languageLabel(languages.main)} text. Photos, hours and sections are shared.`}
+              title={t("translationTitle", { language: languageLabel(lang) })}
+              hint={t("translationHint", {
+                language: languageLabel(lang),
+                main: languageLabel(languages.main),
+              })}
             >
               <div className="flex flex-col gap-md" lang={lang}>
                 {translatableFields(doc).map((f) => {
@@ -267,11 +311,11 @@ export function WebsiteEditor({
                     });
                   const common = {
                     id: `tr-${lang}-${f.key}`,
-                    label: f.label,
+                    label: fieldLabel(f.key),
                     maxLength: f.max,
                     value,
                     dir: isRtlLanguage(lang) ? "rtl" : "ltr",
-                    hint: `Original: ${f.value}`,
+                    hint: t("original", { text: f.value }),
                   } as const;
                   return f.multiline ? (
                     <TextAreaField
@@ -289,15 +333,11 @@ export function WebsiteEditor({
           ) : null}
           <div className="flex flex-col gap-lg" hidden={lang !== languages.main}>
             {/* Hero */}
-            <Card
-              icon="wallpaper"
-              title="Top of the page"
-              hint="The first thing customers see. Always shown."
-            >
+            <Card icon="wallpaper" title={t("heroTitle")} hint={t("heroHint")}>
               <div className="flex flex-col gap-md">
                 <TextField
                   id="hero-title"
-                  label="Headline"
+                  label={t("headline")}
                   required
                   maxLength={80}
                   value={doc.hero.title}
@@ -312,7 +352,7 @@ export function WebsiteEditor({
                 />
                 <TextAreaField
                   id="hero-subtitle"
-                  label="Short introduction"
+                  label={t("shortIntro")}
                   rows={3}
                   maxLength={240}
                   value={doc.hero.subtitle}
@@ -327,9 +367,9 @@ export function WebsiteEditor({
                 />
                 <TextField
                   id="hero-badge"
-                  label="Small badge above the headline (optional)"
+                  label={t("badgeLabel")}
                   maxLength={40}
-                  placeholder="e.g. Specialty coffee since 2015"
+                  placeholder={t("badgePlaceholder")}
                   value={doc.hero.badge}
                   error={err("hero.badge")}
                   onChange={(e) => {
@@ -342,7 +382,7 @@ export function WebsiteEditor({
                 />
                 <ImageField
                   cafeId={cafeId}
-                  label="Cover photo"
+                  label={t("coverPhoto")}
                   value={doc.hero.image}
                   error={err("hero.image.path")}
                   onChange={(img) =>
@@ -354,12 +394,12 @@ export function WebsiteEditor({
                 />
                 <div className="flex flex-col gap-sm">
                   <p className="text-body-sm font-semibold text-on-surface">
-                    Highlights (up to {LIMITS.highlights})
+                    {t("highlightsUpTo", { max: LIMITS.highlights })}
                   </p>
                   {doc.hero.highlights.map((h, i) => (
                     <div key={i} className="flex items-start gap-sm">
                       <select
-                        aria-label="Icon"
+                        aria-label={t("icon")}
                         value={h.icon}
                         onChange={(e) => {
                           const v = e.target.value;
@@ -372,14 +412,14 @@ export function WebsiteEditor({
                       >
                         {HIGHLIGHT_ICONS.map((o) => (
                           <option key={o.value} value={o.value}>
-                            {o.label}
+                            {t(`icons.${o.value}`)}
                           </option>
                         ))}
                       </select>
                       <div className="flex-1">
                         <TextField
                           id={`hero-hl-${i}`}
-                          label="Label"
+                          label={t("label")}
                           required
                           maxLength={30}
                           value={h.label}
@@ -395,7 +435,7 @@ export function WebsiteEditor({
                       </div>
                       <IconButton
                         icon="close"
-                        label="Remove highlight"
+                        label={t("removeHighlight")}
                         onClick={() =>
                           update((d) => {
                             d.hero.highlights.splice(i, 1);
@@ -407,7 +447,7 @@ export function WebsiteEditor({
                   ))}
                   {doc.hero.highlights.length < LIMITS.highlights ? (
                     <AddButton
-                      label="Add highlight"
+                      label={t("addHighlight")}
                       onClick={() =>
                         update((d) => {
                           d.hero.highlights.push({ icon: "local_cafe", label: "" });
@@ -422,7 +462,7 @@ export function WebsiteEditor({
 
             {/* Sections */}
             {doc.sections.map((s, i) => {
-              const meta = SECTION_META[s.type];
+              const label = sectionLabel(s.type);
               const set = (fn: (x: WebsiteSection) => void) =>
                 update((d) => {
                   fn(d.sections[i]);
@@ -432,15 +472,17 @@ export function WebsiteEditor({
               return (
                 <Card
                   key={s.type}
-                  icon={meta.icon}
-                  title={meta.label}
-                  hint={meta.hint}
+                  icon={SECTION_ICON[s.type]}
+                  title={label}
+                  hint={t(`hints.${s.type}`, {
+                    max: s.type === "gallery" ? LIMITS.galleryImages : SPECIALTIES_MAX,
+                  })}
                   muted={!s.enabled}
                   actions={
                     <>
                       <IconButton
                         icon="arrow_upward"
-                        label="Move up"
+                        label={t("moveUp")}
                         disabled={i === 0}
                         onClick={() =>
                           update((d) => {
@@ -451,7 +493,7 @@ export function WebsiteEditor({
                       />
                       <IconButton
                         icon="arrow_downward"
-                        label="Move down"
+                        label={t("moveDown")}
                         disabled={i === doc.sections.length - 1}
                         onClick={() =>
                           update((d) => {
@@ -462,7 +504,7 @@ export function WebsiteEditor({
                       />
                       <Switch
                         checked={s.enabled}
-                        label={`Show ${meta.label}`}
+                        label={t("showSection", { section: label })}
                         onChange={(on) =>
                           set((x) => {
                             x.enabled = on;
@@ -476,7 +518,7 @@ export function WebsiteEditor({
                     <div className="flex flex-col gap-md">
                       <TextField
                         id={`s-${s.type}-title`}
-                        label="Title"
+                        label={t("fieldTitle")}
                         required
                         maxLength={80}
                         value={s.title}
@@ -491,7 +533,7 @@ export function WebsiteEditor({
                       {s.type === "how_it_works" ? (
                         <TextAreaField
                           id="s-how-text"
-                          label="Introduction"
+                          label={t("fieldIntro")}
                           rows={3}
                           maxLength={300}
                           value={s.text}
@@ -508,7 +550,7 @@ export function WebsiteEditor({
                         <>
                           <TextAreaField
                             id="s-story-text"
-                            label="Your story"
+                            label={t("yourStory")}
                             rows={6}
                             maxLength={1200}
                             value={s.text}
@@ -522,7 +564,7 @@ export function WebsiteEditor({
                           />
                           <ImageField
                             cafeId={cafeId}
-                            label="Photo"
+                            label={t("photo")}
                             value={s.image}
                             error={err(k("image.path"))}
                             onChange={(img) =>
@@ -533,14 +575,14 @@ export function WebsiteEditor({
                           />
                           <div className="flex flex-col gap-sm">
                             <p className="text-body-sm font-semibold text-on-surface">
-                              Highlights (up to {LIMITS.points})
+                              {t("highlightsUpTo", { max: LIMITS.points })}
                             </p>
                             {s.points.map((p, j) => (
                               <div key={j} className="flex items-start gap-sm">
                                 <div className="grid flex-1 grid-cols-1 gap-sm sm:grid-cols-2">
                                   <TextField
                                     id={`s-pt-${j}-t`}
-                                    label="Title"
+                                    label={t("fieldTitle")}
                                     required
                                     maxLength={50}
                                     value={p.title}
@@ -554,7 +596,7 @@ export function WebsiteEditor({
                                   />
                                   <TextField
                                     id={`s-pt-${j}-x`}
-                                    label="Detail"
+                                    label={t("detail")}
                                     maxLength={140}
                                     value={p.text}
                                     error={err(k(`points.${j}.text`))}
@@ -568,7 +610,7 @@ export function WebsiteEditor({
                                 </div>
                                 <IconButton
                                   icon="close"
-                                  label="Remove highlight"
+                                  label={t("removeHighlight")}
                                   onClick={() =>
                                     set((x) => {
                                       if (x.type === "story") x.points.splice(j, 1);
@@ -579,7 +621,7 @@ export function WebsiteEditor({
                             ))}
                             {s.points.length < LIMITS.points ? (
                               <AddButton
-                                label="Add highlight"
+                                label={t("addHighlight")}
                                 onClick={() =>
                                   set((x) => {
                                     if (x.type === "story") x.points.push({ title: "", text: "" });
@@ -590,7 +632,7 @@ export function WebsiteEditor({
                           </div>
                           <TextAreaField
                             id="s-story-quote"
-                            label="Quote (optional)"
+                            label={t("quote")}
                             rows={2}
                             maxLength={280}
                             value={s.quote}
@@ -604,7 +646,7 @@ export function WebsiteEditor({
                           />
                           <TextField
                             id="s-story-author"
-                            label="Quote author (optional)"
+                            label={t("quoteAuthor")}
                             maxLength={60}
                             value={s.quoteAuthor}
                             error={err(k("quoteAuthor"))}
@@ -621,7 +663,7 @@ export function WebsiteEditor({
                         <>
                           <TextAreaField
                             id="s-spec-text"
-                            label="Introduction (optional)"
+                            label={t("introOptional")}
                             rows={2}
                             maxLength={300}
                             value={s.text}
@@ -637,24 +679,23 @@ export function WebsiteEditor({
                             {featured.length ? (
                               <>
                                 <p className="font-semibold text-on-surface">
-                                  Shown: {featured.map((f) => f.name).join(", ")}
+                                  {t("shown", { items: featured.map((f) => f.name).join(", ") })}
                                 </p>
                                 <p className="mt-xs text-on-surface-variant">
-                                  These are the items marked <strong>Featured</strong> in your menu.
+                                  {t.rich("featuredNote", { b: (c) => <strong>{c}</strong> })}
                                 </p>
                               </>
                             ) : (
                               <p className="text-on-surface-variant">
-                                No featured items yet. The section stays hidden on your website
-                                until you mark items as <strong>Featured</strong> in your menu (they
-                                also need a price).
+                                {t.rich("noFeatured", { b: (c) => <strong>{c}</strong> })}
                               </p>
                             )}
                             <a
                               href={menuHref}
                               className="mt-xs inline-flex items-center gap-xs font-semibold text-primary hover:underline"
                             >
-                              <Icon name="restaurant_menu" className="text-icon-md" /> Open the menu
+                              <Icon name="restaurant_menu" className="text-icon-md" />{" "}
+                              {t("openMenu")}
                             </a>
                           </div>
                         </>
@@ -674,25 +715,19 @@ export function WebsiteEditor({
                       ) : null}
                     </div>
                   ) : (
-                    <p className="text-body-sm text-on-surface-variant">
-                      Hidden from your website. Switch it on to edit and show it.
-                    </p>
+                    <p className="text-body-sm text-on-surface-variant">{t("hiddenSection")}</p>
                   )}
                 </Card>
               );
             })}
 
             {/* Hours */}
-            <Card
-              icon="schedule"
-              title="Opening hours"
-              hint="Shown at the bottom of your website, with your address and phone from Settings."
-            >
+            <Card icon="schedule" title={t("hoursTitle")} hint={t("hoursHint")}>
               <div className="flex flex-col gap-sm">
                 {doc.footer.hours.map((d, i) => (
                   <div key={i} className="grid grid-cols-2 items-center gap-sm sm:grid-cols-4">
                     <span className="text-body-sm font-semibold text-on-surface">
-                      {WEEKDAYS[i]}
+                      {days[i] ?? WEEKDAYS[i]}
                     </span>
                     <label className="flex items-center gap-xs text-body-sm text-on-surface-variant">
                       <input
@@ -707,17 +742,17 @@ export function WebsiteEditor({
                         }}
                         className="h-4 w-4 accent-primary"
                       />
-                      Open
+                      {t("open")}
                     </label>
                     {d.closed ? (
                       <span className="text-body-sm text-on-surface-variant sm:col-span-2">
-                        Closed
+                        {t("closed")}
                       </span>
                     ) : (
                       <div className="col-span-2 flex items-center gap-xs">
                         <input
                           type="time"
-                          aria-label={`${WEEKDAYS[i]} opens`}
+                          aria-label={t("opens", { day: days[i] ?? WEEKDAYS[i] })}
                           value={d.open}
                           onChange={(e) => {
                             const v = e.target.value;
@@ -731,7 +766,7 @@ export function WebsiteEditor({
                         <span aria-hidden="true">–</span>
                         <input
                           type="time"
-                          aria-label={`${WEEKDAYS[i]} closes`}
+                          aria-label={t("closes", { day: days[i] ?? WEEKDAYS[i] })}
                           value={d.close}
                           onChange={(e) => {
                             const v = e.target.value;
@@ -746,7 +781,7 @@ export function WebsiteEditor({
                     )}
                     {err(`footer.hours.${i}.close`) ? (
                       <p className="col-span-full text-body-xs text-error">
-                        {err(`footer.hours.${i}.close`)}
+                        {m(err(`footer.hours.${i}.close`))}
                       </p>
                     ) : null}
                   </div>
@@ -754,7 +789,7 @@ export function WebsiteEditor({
                 <div>
                   <AddButton
                     icon="content_copy"
-                    label="Copy Monday to every day"
+                    label={t("copyMonday")}
                     onClick={() =>
                       update((x) => {
                         x.footer.hours = x.footer.hours.map(() => ({ ...x.footer.hours[0] }));
@@ -772,8 +807,10 @@ export function WebsiteEditor({
         <aside className="xl:col-span-2">
           <div className="xl:sticky xl:top-20">
             <p className="mb-sm flex items-center gap-xs text-body-sm font-semibold text-on-surface-variant">
-              <Icon name="smartphone" className="text-icon-md" /> Preview (draft
-              {lang !== languages.main ? ` · ${languageLabel(lang)}` : ""})
+              <Icon name="smartphone" className="text-icon-md" />{" "}
+              {t("preview", {
+                language: lang !== languages.main ? ` · ${languageLabel(lang)}` : "",
+              })}
             </p>
             <WebsitePreview
               website={translateWebsite(doc, lang === languages.main ? null : lang)}
@@ -781,6 +818,14 @@ export function WebsiteEditor({
               cafeName={cafeName}
               contact={contact}
               featured={featured}
+              labels={{
+                headline: t("previewHeadline"),
+                viewMenu: t("previewViewMenu"),
+                steps: t("previewSteps").split("|"),
+                days,
+                closed: t("closed"),
+                hours: t("hoursTitle"),
+              }}
             />
           </div>
         </aside>
@@ -788,14 +833,15 @@ export function WebsiteEditor({
 
       <ConfirmDialog
         open={confirmDiscard}
-        title="Discard your changes?"
+        title={t("discardTitle")}
         tone="danger"
-        confirmLabel="Discard"
+        confirmLabel={t("discardConfirm")}
+        cancelLabel={tc("cancel")}
         pending={pending}
         onConfirm={discard}
         onClose={() => setConfirmDiscard(false)}
       >
-        Your website goes back to the version customers see now. This can&apos;t be undone.
+        {t("discardBody")}
       </ConfirmDialog>
     </div>
   );
