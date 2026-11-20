@@ -215,9 +215,15 @@ export function parseWebsite(raw: unknown): Website | null {
   return r.success ? r.data : null;
 }
 
-/** Consecutive days with the same hours, e.g. [{ days: "Monday – Friday", hours: "08:00 – 20:00" }]. */
-export function groupHours(hours: OpeningDay[]): { days: string; hours: string }[] {
-  const label = (d: OpeningDay) => (d.closed ? "Closed" : `${d.open} – ${d.close}`);
+/**
+ * Consecutive days with the same hours, e.g. [{ days: "Monday – Friday", hours: "08:00 – 20:00" }].
+ * `labels` translates the day names and "Closed" (default English).
+ */
+export function groupHours(
+  hours: OpeningDay[],
+  labels: { days: readonly string[]; closed: string } = { days: WEEKDAYS, closed: "Closed" },
+): { days: string; hours: string }[] {
+  const label = (d: OpeningDay) => (d.closed ? labels.closed : `${d.open} – ${d.close}`);
   const out: { from: number; to: number; hours: string }[] = [];
   hours.forEach((d, i) => {
     const last = out.at(-1);
@@ -225,7 +231,7 @@ export function groupHours(hours: OpeningDay[]): { days: string; hours: string }
     else out.push({ from: i, to: i, hours: label(d) });
   });
   return out.map((g) => ({
-    days: g.from === g.to ? WEEKDAYS[g.from] : `${WEEKDAYS[g.from]} – ${WEEKDAYS[g.to]}`,
+    days: g.from === g.to ? labels.days[g.from] : `${labels.days[g.from]} – ${labels.days[g.to]}`,
     hours: g.hours,
   }));
 }
