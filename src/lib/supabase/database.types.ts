@@ -707,6 +707,7 @@ export type Database = {
       get_public_order: { Args: { p_slug: string; p_token: string }; Returns: Json };
       place_order: {
         Args: {
+          p_customer_email?: string | null;
           p_customer_name: string;
           p_items: Json;
           p_locale: string;
@@ -716,6 +717,25 @@ export type Database = {
         };
         Returns: Json;
       };
+      save_my_push_subscription: {
+        Args: { p_auth: string; p_endpoint: string; p_p256dh: string; p_slug: string };
+        Returns: undefined;
+      };
+      delete_my_push_subscription: { Args: { p_endpoint: string }; Returns: undefined };
+      save_order_push_subscription: {
+        Args: {
+          p_auth: string;
+          p_endpoint: string;
+          p_p256dh: string;
+          p_slug: string;
+          p_token: string;
+        };
+        Returns: undefined;
+      };
+      push_new_order_targets: { Args: { p_slug: string; p_token: string }; Returns: Json };
+      push_order_update_targets: { Args: { p_order_id: string }; Returns: Json };
+      push_drop_subscription: { Args: { p_endpoint: string; p_gone: boolean }; Returns: undefined };
+      receipt_order: { Args: { p_order_id: string }; Returns: Json };
       get_my_profile: {
         Args: never;
         Returns: {
