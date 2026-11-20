@@ -51,6 +51,13 @@ import {
   setAvailableAction,
   type MenuResult,
 } from "./actions";
+import {
+  OptionsEditor,
+  OptionsTranslation,
+  fromOptionGroups,
+  toOptionGroups,
+  type EditGroup,
+} from "./options-editor";
 
 type Props = {
   slug: string;
@@ -555,6 +562,12 @@ function ItemCard({
         <p className="line-clamp-2 text-body-sm text-on-surface-variant">
           {[categoryName, item.description].filter(Boolean).join(" · ") || " "}
         </p>
+        {item.options.length ? (
+          <p className="flex items-center gap-xs text-caption text-on-surface-variant">
+            <Icon name="tune" className="text-icon-sm" />
+            {t("optionsCount", { count: item.options.length })}
+          </p>
+        ) : null}
         {tags.length ? (
           <ul className="flex flex-wrap gap-xs">
             {tags.map((tag) => (
@@ -626,8 +639,12 @@ function ItemFields({
   const t = useTranslations("menu");
   const tt = useTranslations("tags");
   const languageLabel = useLanguageLabel();
+  const m = useMsg();
   const digits = currencyDigits(currency);
   const [tab, setTab] = useState(languages.main);
+  const [options, setOptions] = useState<EditGroup[]>(() =>
+    fromOptionGroups(item?.options ?? [], digits),
+  );
   const [i18n, setI18n] = useState<I18nState>(() => structuredClone(item?.i18n ?? {}) as I18nState);
   // Main texts (shown as reference in the translation tabs).
   const [mainName, setMainName] = useState(item?.name ?? "");
@@ -652,6 +669,7 @@ function ItemFields({
       is_visible: f.get("is_visible") === "on",
       is_featured: f.get("is_featured") === "on",
       i18n,
+      options: toOptionGroups(options),
     });
   };
   return (
@@ -694,6 +712,7 @@ function ItemFields({
               onChange={(e) => setTr(l, "description", e.target.value)}
               hint={mainDesc ? t("original", { text: mainDesc }) : undefined}
             />
+            <OptionsTranslation value={options} onChange={setOptions} lang={l} />
           </div>
         ) : null,
       )}
@@ -776,6 +795,12 @@ function ItemFields({
             })}
           </div>
         </fieldset>
+        <OptionsEditor
+          value={options}
+          onChange={setOptions}
+          currency={currency}
+          error={errors.options ? m(errors.options) : undefined}
+        />
         <div className="flex flex-col gap-sm rounded-lg bg-surface-container-low p-md text-body-sm text-on-surface">
           <Check name="is_available" defaultChecked={item?.isAvailable ?? true}>
             {t("availableCheck")}

@@ -625,6 +625,7 @@ export type Database = {
       save_my_menu_item: {
         Args: {
           p_i18n?: Json;
+          p_options?: Json;
           p_category_id: string;
           p_description: string;
           p_id: string | null;
@@ -689,6 +690,32 @@ export type Database = {
       };
       get_my_owner_status: { Args: never; Returns: string };
       set_my_ui_locale: { Args: { p_locale: string }; Returns: undefined };
+      set_my_accepting_orders: { Args: { p_on: boolean; p_slug: string }; Returns: undefined };
+      get_my_orders: {
+        Args: { p_day?: string | null; p_scope: string; p_slug: string };
+        Returns: Json;
+      };
+      set_my_order_status: {
+        Args: { p_id: string; p_reason?: string; p_slug: string; p_status: string };
+        Returns: undefined;
+      };
+      set_my_order_paid: {
+        Args: { p_id: string; p_paid: boolean; p_slug: string };
+        Returns: undefined;
+      };
+      get_public_ordering: { Args: { p_slug: string }; Returns: Json };
+      get_public_order: { Args: { p_slug: string; p_token: string }; Returns: Json };
+      place_order: {
+        Args: {
+          p_customer_name: string;
+          p_items: Json;
+          p_locale: string;
+          p_note: string;
+          p_slug: string;
+          p_table_code: string | null;
+        };
+        Returns: Json;
+      };
       get_my_profile: {
         Args: never;
         Returns: {
