@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { msg } from "@/i18n/msg";
 import { phoneSchema } from "@/lib/auth/register-schema";
 
 /*
@@ -70,11 +71,12 @@ const social = (normalize: (v: string) => string | null, message: string) =>
 /** Phone + email of the café (required) and its social pages (optional). */
 export const cafeContactSchema = z.object({
   phone: phoneSchema,
-  email: z.string().trim().toLowerCase().pipe(z.email("Enter the café's email address")),
-  facebook: social(
-    normalizeFacebook,
-    "Enter a Facebook page link or name, e.g. facebook.com/yourcafe",
-  ),
-  instagram: social(normalizeInstagram, "Enter an Instagram link or @handle, e.g. @yourcafe"),
+  email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .pipe(z.email(msg("cafeEmailInvalid"))),
+  facebook: social(normalizeFacebook, msg("facebookInvalid")),
+  instagram: social(normalizeInstagram, msg("instagramInvalid")),
 });
 export type CafeContactInput = z.infer<typeof cafeContactSchema>;

@@ -1,26 +1,35 @@
+import { getTranslations } from "next-intl/server";
 import { Icon } from "@/components/ui/icon";
 import { serverApi } from "@/lib/data/server-api";
-import { EmailForm, PasswordForm, ProfileForm } from "./profile-forms";
+import { EmailForm, PasswordForm, ProfileForm, UiLanguageForm } from "./profile-forms";
 
 /** Result of /auth/email-change, shown on the Profile tab (?email=confirmed|pending). */
-const EMAIL_NOTICE: Record<string, { tone: "success" | "info"; text: string }> = {
-  confirmed: { tone: "success", text: "Your sign-in email was changed." },
-  pending: {
-    tone: "info",
-    text: "Confirmed. Now open the link we sent to your other address to finish the change.",
-  },
-};
+const EMAIL_NOTICE = {
+  confirmed: { tone: "success", text: "emailConfirmed" },
+  pending: { tone: "info", text: "emailPending" },
+} as const;
 
-/** Profile tab (café owners and super admins): name + phone, sign-in email, password. */
+/**
+ * Profile tab (café owners and super admins): dashboard language (owners: `uiLocale`),
+ * name + phone, sign-in email, password.
+ */
 export async function ProfileTab({
   emailResult,
   pendingEmail,
+  uiLocale,
 }: {
   emailResult?: string | string[];
   pendingEmail: string | null;
+  uiLocale?: string;
 }) {
-  const profile = await serverApi().owners.profile();
-  const notice = typeof emailResult === "string" ? EMAIL_NOTICE[emailResult] : undefined;
+  const [profile, t] = await Promise.all([
+    serverApi().owners.profile(),
+    getTranslations("profile"),
+  ]);
+  const notice =
+    emailResult === "confirmed" || emailResult === "pending"
+      ? EMAIL_NOTICE[emailResult]
+      : undefined;
   return (
     <div className="flex flex-col gap-lg">
       {notice ? (
@@ -36,9 +45,10 @@ export async function ProfileTab({
             name={notice.tone === "success" ? "check_circle" : "info"}
             className="text-icon-lg"
           />
-          {notice.text}
+          {t(notice.text)}
         </p>
       ) : null}
+      {uiLocale ? <UiLanguageForm current={uiLocale} /> : null}
       <ProfileForm fullName={profile.fullName ?? ""} phone={profile.phone ?? ""} />
       <EmailForm email={profile.email ?? ""} pendingEmail={pendingEmail} />
       <PasswordForm />

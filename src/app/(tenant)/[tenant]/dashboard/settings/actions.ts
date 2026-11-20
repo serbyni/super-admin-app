@@ -5,6 +5,7 @@ import { requireTenantOwner } from "@/lib/auth/guards";
 import { tenantDashboard } from "@/lib/auth/routes";
 import { inputField, isDataError } from "@/lib/data/errors";
 import { serverApi } from "@/lib/data/server-api";
+import { msg } from "@/i18n/msg";
 import { cafeSettingsSchema, zodErrors, type FormState } from "@/lib/settings/schema";
 
 const values = (f: FormData) => Object.fromEntries(f) as Record<string, string>;
@@ -41,12 +42,12 @@ export async function saveCafeAction(
     });
   } catch (e) {
     const field = inputField(e);
-    if (field) return { errors: { [field]: "Please check this value." } };
-    if (isDataError(e)) return { errors: { form: "Could not save. Please try again." } };
+    if (field) return { errors: { [field]: msg("checkValue") } };
+    if (isDataError(e)) return { errors: { form: msg("saveFailed") } };
     throw e;
   }
   revalidatePath(tenantDashboard(slug), "layout");
-  return done(prev, "Café settings saved");
+  return done(prev, msg("cafeSaved"));
 }
 
 /* ── Languages tab ── */
@@ -63,16 +64,15 @@ export async function setLanguagesAction(
     !Array.isArray(locales) ||
     locales.some((l) => typeof l !== "string" || !/^[a-z]{2}$/.test(l))
   )
-    return { ok: false, message: "Please check the languages." };
+    return { ok: false, message: msg("languagesInvalid") };
   try {
     await serverApi().languages.setOffered(slug, locales);
   } catch (e) {
-    if (isDataError(e))
-      return { ok: false, message: "Could not save the languages. Please try again." };
+    if (isDataError(e)) return { ok: false, message: msg("languagesSaveFailed") };
     throw e;
   }
   revalidatePath(tenantDashboard(slug), "layout");
-  return { ok: true, message: "Languages saved" };
+  return { ok: true, message: msg("languagesSaved") };
 }
 
 /** Asks Serbi to add an extra language to the café (admins are notified). */
@@ -83,16 +83,14 @@ export async function requestLanguageAction(
 ): Promise<LanguagesResult> {
   await requireTenantOwner(slug);
   if (!/^[a-z]{2}$/.test(locale) || note.length > 300)
-    return { ok: false, message: "Please check the request." };
+    return { ok: false, message: msg("requestInvalid") };
   try {
     await serverApi().languages.request(slug, locale, note.trim());
   } catch (e) {
-    if (isDataError(e, "conflict"))
-      return { ok: false, message: "You already asked for this language — it is being reviewed." };
-    if (isDataError(e))
-      return { ok: false, message: "Could not send the request. Please try again." };
+    if (isDataError(e, "conflict")) return { ok: false, message: msg("requestDuplicate") };
+    if (isDataError(e)) return { ok: false, message: msg("requestFailed") };
     throw e;
   }
   revalidatePath(tenantDashboard(slug), "layout");
-  return { ok: true, message: "Request sent — we'll notify you when it is reviewed" };
+  return { ok: true, message: msg("requestSent") };
 }

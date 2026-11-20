@@ -5,18 +5,18 @@
  */
 
 export const CONTENT_LANGUAGES = {
-  en: { name: "English", native: "English" },
-  fr: { name: "French", native: "Français" },
-  ar: { name: "Arabic", native: "العربية" },
-  es: { name: "Spanish", native: "Español" },
-  it: { name: "Italian", native: "Italiano" },
-  de: { name: "German", native: "Deutsch" },
-  tr: { name: "Turkish", native: "Türkçe" },
-  pt: { name: "Portuguese", native: "Português" },
-  ru: { name: "Russian", native: "Русский" },
-  zh: { name: "Chinese", native: "中文" },
-  nl: { name: "Dutch", native: "Nederlands" },
-  ja: { name: "Japanese", native: "日本語" },
+  en: { name: "English", names: { fr: "Anglais", ar: "الإنجليزية" }, native: "English" },
+  fr: { name: "French", names: { fr: "Français", ar: "الفرنسية" }, native: "Français" },
+  ar: { name: "Arabic", names: { fr: "Arabe", ar: "العربية" }, native: "العربية" },
+  es: { name: "Spanish", names: { fr: "Espagnol", ar: "الإسبانية" }, native: "Español" },
+  it: { name: "Italian", names: { fr: "Italien", ar: "الإيطالية" }, native: "Italiano" },
+  de: { name: "German", names: { fr: "Allemand", ar: "الألمانية" }, native: "Deutsch" },
+  tr: { name: "Turkish", names: { fr: "Turc", ar: "التركية" }, native: "Türkçe" },
+  pt: { name: "Portuguese", names: { fr: "Portugais", ar: "البرتغالية" }, native: "Português" },
+  ru: { name: "Russian", names: { fr: "Russe", ar: "الروسية" }, native: "Русский" },
+  zh: { name: "Chinese", names: { fr: "Chinois", ar: "الصينية" }, native: "中文" },
+  nl: { name: "Dutch", names: { fr: "Néerlandais", ar: "الهولندية" }, native: "Nederlands" },
+  ja: { name: "Japanese", names: { fr: "Japonais", ar: "اليابانية" }, native: "日本語" },
 } as const;
 
 export type ContentLanguage = keyof typeof CONTENT_LANGUAGES;
@@ -24,11 +24,15 @@ export const BASE_LANGUAGES: readonly ContentLanguage[] = ["en", "fr", "ar"];
 export const isContentLanguage = (v: unknown): v is ContentLanguage =>
   typeof v === "string" && v in CONTENT_LANGUAGES;
 
-/** "French (Français)" — or just the name when both are the same. */
-export function languageLabel(code: string): string {
+/**
+ * "French (Français)" in the interface language `ui` ("Anglais (English)", "الفرنسية (Français)"),
+ * or just the name when both are the same.
+ */
+export function languageLabel(code: string, ui: string = "en"): string {
   if (!isContentLanguage(code)) return code;
   const l = CONTENT_LANGUAGES[code];
-  return l.name === l.native ? l.name : `${l.name} (${l.native})`;
+  const name = ui === "fr" || ui === "ar" ? l.names[ui] : l.name;
+  return name === l.native ? name : `${name} (${l.native})`;
 }
 
 export const isRtlLanguage = (code: string) => ["ar", "he", "fa", "ur"].includes(code);

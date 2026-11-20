@@ -1,32 +1,37 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { CafePageLink } from "@/components/cafe/cafe-page-link";
 import { PageHeader, TenantShell } from "@/components/tenant/tenant-shell";
 import { Icon } from "@/components/ui/icon";
-import { CAFE_LOCALES } from "@/config/cafe-defaults";
+import { applyOwnerLocale } from "@/i18n/owner-locale";
+import { languageLabel } from "@/lib/i18n/languages";
 import { requireTenantOwner } from "@/lib/auth/guards";
 import { tenantDashboard } from "@/lib/auth/routes";
 import { cafePalette } from "@/lib/cafes/theme";
 import { serverApi } from "@/lib/data/server-api";
 
-export const metadata: Metadata = { title: "Café dashboard" };
+export async function generateMetadata(): Promise<Metadata> {
+  await applyOwnerLocale();
+  const t = await getTranslations("dashboard");
+  return { title: t("metaTitle") };
+}
 
-/** Modules not built yet. */
-const SOON = [
-  { icon: "receipt_long", title: "Orders", body: "Receive and manage orders in real time." },
-  { icon: "group", title: "Staff", body: "Invite your team." },
-];
-
-type Stat = { label: string; value: string | number; tone?: "warn" };
-
-const COUNTRY = new Intl.DisplayNames(["en"], { type: "region" });
+type Stat = { label: string; value: string | number; tone?: "warn"; wide?: boolean };
 
 async function Dashboard({ params }: { params: PageProps<"/[tenant]/dashboard">["params"] }) {
   const { tenant } = await params;
   // Page-level check too: layouts are not re-run on every client navigation.
   const { user } = await requireTenantOwner(tenant);
+  const locale = await applyOwnerLocale();
+  const [t, tn, tc] = await Promise.all([
+    getTranslations("dashboard"),
+    getTranslations("nav"),
+    getTranslations("common"),
+  ]);
+  const country = new Intl.DisplayNames([locale], { type: "region" });
   const api = serverApi();
   const cafe = await api.cafes.mine(tenant);
   if (!cafe) notFound();
@@ -42,46 +47,52 @@ async function Dashboard({ params }: { params: PageProps<"/[tenant]/dashboard">[
   const soldOut = menu.items.filter((i) => !i.isAvailable).length;
   const scans = floor.menu.scans30d + floor.tables.reduce((n, t) => n + t.scans30d, 0);
   const websiteState = !site.published
-    ? "Not published"
+    ? "notPublished"
     : JSON.stringify(site.draft) !== JSON.stringify(site.published)
-      ? "Unpublished changes"
-      : "Published";
+      ? "unpublishedChanges"
+      : "published";
+  /** Modules not built yet. */
+  const soon = [
+    { icon: "receipt_long", title: tn("orders"), body: t("ordersBody") },
+    { icon: "group", title: tn("staff"), body: t("staffBody") },
+  ];
   const modules: { href: string; icon: string; title: string; stats: Stat[]; cta: string }[] = [
     {
       href: `${base}/menu`,
       icon: "restaurant_menu",
-      title: "Menu",
-      cta: menu.items.length ? "Manage menu" : "Create your menu",
+      title: tn("menu"),
+      cta: menu.items.length ? t("manageMenu") : t("createMenu"),
       stats: [
-        { label: "Items", value: menu.items.length },
-        { label: "Sold out", value: soldOut, tone: soldOut ? "warn" : undefined },
-        { label: "No price", value: unpriced, tone: unpriced ? "warn" : undefined },
+        { label: t("items"), value: menu.items.length },
+        { label: t("soldOut"), value: soldOut, tone: soldOut ? "warn" : undefined },
+        { label: t("noPrice"), value: unpriced, tone: unpriced ? "warn" : undefined },
       ],
     },
     {
       href: `${base}/tables`,
       icon: "table_restaurant",
-      title: "Tables & QR",
-      cta: floor.tables.length ? "Tables & QR codes" : "Add your tables",
+      title: tn("tables"),
+      cta: floor.tables.length ? t("tablesQr") : t("addTables"),
       stats: [
-        { label: "Tables", value: floor.tables.length },
-        { label: "Areas", value: floor.areas.length },
-        { label: "Scans · 30 d", value: scans },
+        { label: t("tables"), value: floor.tables.length },
+        { label: t("areas"), value: floor.areas.length },
+        { label: t("scans30d"), value: scans },
       ],
     },
     {
       href: `${base}/website`,
       icon: "web",
-      title: "Website",
-      cta: "Edit website",
+      title: tn("website"),
+      cta: t("editWebsite"),
       stats: [
         {
-          label: "Status",
-          value: websiteState,
-          tone: websiteState === "Published" ? undefined : "warn",
+          label: t("status"),
+          value: t(websiteState),
+          tone: websiteState === "published" ? undefined : "warn",
+          wide: true,
         },
         {
-          label: "Featured",
+          label: t("featured"),
           // Same rule as the website: featured items customers can see (visible, priced).
           value: menu.items.filter(
             (i) => i.isFeatured && i.isVisible && i.price !== null && visibleCats.has(i.categoryId),
@@ -94,12 +105,12 @@ async function Dashboard({ params }: { params: PageProps<"/[tenant]/dashboard">[
   return (
     <TenantShell cafe={cafe} email={user.email} active="dashboard">
       <PageHeader
-        title="Dashboard"
-        description={`Welcome back to ${cafe.name}.`}
+        title={t("title")}
+        description={t("welcome", { name: cafe.name })}
         actions={
           cafe.status === "suspended" ? (
             <p className="w-fit rounded-full bg-error-container px-md py-xs text-body-sm font-semibold text-on-error-container">
-              Suspended — contact Serbi support
+              {t("suspended")}
             </p>
           ) : (
             <CafePageLink slug={cafe.slug} />
@@ -110,20 +121,17 @@ async function Dashboard({ params }: { params: PageProps<"/[tenant]/dashboard">[
         <section className="rounded-xl bg-surface-container-lowest p-lg shadow-sm">
           <h2 className="mb-sm flex items-center gap-sm text-headline-md text-on-surface">
             <Icon name="storefront" className="text-icon-xl text-primary" />
-            Your café
+            {t("yourCafe")}
           </h2>
           <dl className="grid grid-cols-1 gap-md sm:grid-cols-2 lg:grid-cols-4">
             {[
               {
-                label: "Location",
-                value: [cafe.city, COUNTRY.of(cafe.countryCode)].filter(Boolean).join(", "),
+                label: t("location"),
+                value: [cafe.city, country.of(cafe.countryCode)].filter(Boolean).join(", "),
               },
-              { label: "Currency", value: cafe.currency },
-              { label: "Time zone", value: cafe.timezone.replaceAll("_", " ") },
-              {
-                label: "Menu language",
-                value: CAFE_LOCALES.find((l) => l.value === cafe.locale)?.label ?? cafe.locale,
-              },
+              { label: t("currency"), value: cafe.currency },
+              { label: t("timezone"), value: cafe.timezone.replaceAll("_", " ") },
+              { label: t("menuLanguage"), value: languageLabel(cafe.locale, locale) },
             ].map((r) => (
               <div key={r.label}>
                 <dt className="text-caption text-on-surface-variant">{r.label}</dt>
@@ -153,7 +161,7 @@ async function Dashboard({ params }: { params: PageProps<"/[tenant]/dashboard">[
 
               <dl className="grid grid-cols-3 gap-sm">
                 {m.stats.map((st) => (
-                  <div key={st.label} className={st.label === "Status" ? "col-span-2" : ""}>
+                  <div key={st.label} className={st.wide ? "col-span-2" : ""}>
                     <dt className="text-caption text-on-surface-variant">{st.label}</dt>
 
                     <dd
@@ -175,7 +183,7 @@ async function Dashboard({ params }: { params: PageProps<"/[tenant]/dashboard">[
         </div>
 
         <div className="grid grid-cols-1 gap-md sm:grid-cols-2">
-          {SOON.map((n) => (
+          {soon.map((n) => (
             <div
               key={n.title}
               className="flex items-center gap-md rounded-xl bg-surface-container-lowest p-md opacity-80 shadow-sm"
@@ -188,7 +196,9 @@ async function Dashboard({ params }: { params: PageProps<"/[tenant]/dashboard">[
                 <span className="block text-body-sm text-on-surface-variant">{n.body}</span>
               </span>
 
-              <span className="text-caption font-semibold text-outline uppercase">Soon</span>
+              <span className="text-caption font-semibold text-outline uppercase">
+                {tc("soon")}
+              </span>
             </div>
           ))}
         </div>

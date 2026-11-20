@@ -1,9 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { isUiLocale } from "@/i18n/config";
 import { requireAccountUser } from "@/lib/auth/guards";
 import { inputField, isDataError } from "@/lib/data/errors";
 import { serverApi } from "@/lib/data/server-api";
+import { msg } from "@/i18n/msg";
 import {
   emailChangeSchema,
   passwordChangeSchema,
@@ -36,18 +38,18 @@ export async function saveProfileAction(prev: FormState, form: FormData): Promis
     });
   } catch (e) {
     const field = inputField(e);
-    if (field) return { errors: { [field]: "Please check this value." } };
-    if (isDataError(e)) return { errors: { form: "Could not save. Please try again." } };
+    if (field) return { errors: { [field]: msg("checkValue") } };
+    if (isDataError(e)) return { errors: { form: msg("saveFailed") } };
     throw e;
   }
   revalidatePath(settingsPath);
-  return done(prev, "Profile saved");
+  return done(prev, msg("profileSaved"));
 }
 
 const EMAIL_ERRORS: Record<string, string> = {
-  email_exists: "This email is already used by another account.",
-  email_address_invalid: "This email address is not accepted. Try another one.",
-  over_email_send_rate_limit: "Too many emails sent. Wait a few minutes and try again.",
+  email_exists: msg("emailExists"),
+  email_address_invalid: msg("emailNotAccepted"),
+  over_email_send_rate_limit: msg("emailRateLimit"),
 };
 
 /** Sign-in email: Supabase sends the confirmation link(s); nothing changes until confirmed. */
@@ -56,23 +58,20 @@ export async function changeEmailAction(prev: FormState, form: FormData): Promis
   const parsed = emailChangeSchema.safeParse(values(form));
   if (!parsed.success) return { errors: zodErrors(parsed.error) };
   if (parsed.data.email === user.email?.toLowerCase()) {
-    return { errors: { email: "This is already your sign-in email." } };
+    return { errors: { email: msg("emailSame") } };
   }
   const r = await serverApi().auth.requestEmailChange(parsed.data.email);
   if (!r.ok) {
-    return { errors: { email: EMAIL_ERRORS[r.code] ?? "Could not start the change. Try again." } };
+    return { errors: { email: EMAIL_ERRORS[r.code] ?? msg("emailChangeFailed") } };
   }
   revalidatePath(settingsPath);
-  return done(
-    prev,
-    `Check ${parsed.data.email} (and your current inbox) for the confirmation link.`,
-  );
+  return done(prev, msg("emailLinkSent", { email: parsed.data.email }));
 }
 
 const PASSWORD_ERRORS: Record<string, string> = {
-  same_password: "Choose a password different from the current one.",
-  weak_password: "This password is too weak or has appeared in a data breach. Choose another.",
-  reauthentication_needed: "Please sign in again, then change your password.",
+  same_password: msg("passwordSameAsCurrent"),
+  weak_password: msg("passwordWeak"),
+  reauthentication_needed: msg("passwordReauth"),
 };
 
 /** Password: checks the current one, sets the new one, signs out the other devices. */
@@ -86,9 +85,25 @@ export async function changePasswordAction(prev: FormState, form: FormData): Pro
   );
   if (!r.ok) {
     if (r.code === "invalid_current_password") {
-      return { errors: { current_password: "The current password is not correct." } };
+      return { errors: { current_password: msg("passwordWrong") } };
     }
-    return { errors: { form: PASSWORD_ERRORS[r.code] ?? "Could not change the password." } };
+    return { errors: { form: PASSWORD_ERRORS[r.code] ?? msg("passwordFailed") } };
   }
-  return done(prev, "Password changed. Other devices were signed out.");
+  return done(prev, msg("passwordChanged"));
+}
+
+/** Owners: dashboard (and e-mail) language. The page reloads to show it. */
+export async function setUiLanguageAction(
+  locale: string,
+): Promise<{ ok: true } | { ok: false; message: string }> {
+  const { kind, settingsPath } = await requireAccountUser();
+  if (kind !== "owner" || !isUiLocale(locale)) return { ok: false, message: msg("checkValue") };
+  try {
+    await serverApi().owners.setUiLocale(locale);
+  } catch (e) {
+    if (isDataError(e)) return { ok: false, message: msg("saveFailed") };
+    throw e;
+  }
+  revalidatePath(settingsPath, "layout");
+  return { ok: true };
 }

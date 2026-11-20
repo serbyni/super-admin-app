@@ -683,10 +683,12 @@ export type Database = {
         Args: never;
         Returns: {
           cafe_slug: string;
+          locale: string;
           status: string;
         }[];
       };
       get_my_owner_status: { Args: never; Returns: string };
+      set_my_ui_locale: { Args: { p_locale: string }; Returns: undefined };
       get_my_profile: {
         Args: never;
         Returns: {

@@ -1,3 +1,4 @@
+import { enText } from "@/i18n/en-text";
 import { describe, expect, it } from "vitest";
 import { passwordChangeSchema, profileSchema, zodErrors } from "./schema";
 
@@ -22,9 +23,9 @@ describe("settings schemas", () => {
     };
     expect(passwordChangeSchema.safeParse(ok).success).toBe(true);
     const mismatch = passwordChangeSchema.safeParse({ ...ok, confirm_password: "x" });
-    expect(zodErrors(mismatch.error!).confirm_password).toBe("Passwords do not match");
+    expect(enText(zodErrors(mismatch.error!).confirm_password)).toBe("Passwords do not match");
     const same = passwordChangeSchema.safeParse({ ...ok, current_password: ok.password });
-    expect(zodErrors(same.error!).password).toMatch(/different/);
+    expect(enText(zodErrors(same.error!).password)).toMatch(/different/);
     const weak = passwordChangeSchema.safeParse({
       ...ok,
       password: "short",

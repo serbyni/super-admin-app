@@ -8,7 +8,9 @@ import {
   type FormEvent,
   type ReactNode,
 } from "react";
+import { useTranslations } from "next-intl";
 import { Icon } from "@/components/ui/icon";
+import { useMsg } from "@/i18n/use-msg";
 import { useToast } from "@/components/ui/toast";
 import type { FormState } from "@/lib/settings/schema";
 
@@ -24,15 +26,16 @@ export function useSettingsForm(action: Action, opts?: { resetOnSuccess?: boolea
   const [state, run, pending] = useActionState(action, {});
   const formRef = useRef<HTMLFormElement>(null);
   const toast = useToast();
+  const m = useMsg();
   const lastSaved = useRef(0);
   const resetOnSuccess = opts?.resetOnSuccess ?? false;
   useEffect(() => {
     if (state.saved && state.saved !== lastSaved.current) {
       lastSaved.current = state.saved;
-      toast.show({ variant: "success", title: state.message ?? "Saved" });
+      toast.show({ variant: "success", title: m(state.message ?? "§saved") });
       if (resetOnSuccess) formRef.current?.reset();
     }
-  }, [state, toast, resetOnSuccess]);
+  }, [state, toast, resetOnSuccess, m]);
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const data = new FormData(e.currentTarget);
@@ -68,13 +71,8 @@ export function Section({
   );
 }
 
-export function SaveButton({
-  pending,
-  label = "Save changes",
-}: {
-  pending: boolean;
-  label?: string;
-}) {
+export function SaveButton({ pending, label }: { pending: boolean; label?: string }) {
+  const t = useTranslations("common");
   return (
     <div className="mt-lg flex justify-end">
       <button
@@ -86,7 +84,7 @@ export function SaveButton({
           name={pending ? "progress_activity" : "check"}
           className={`text-icon-lg ${pending ? "animate-spin" : ""}`}
         />
-        {pending ? "Saving…" : label}
+        {pending ? t("saving") : (label ?? t("saveChanges"))}
       </button>
     </div>
   );

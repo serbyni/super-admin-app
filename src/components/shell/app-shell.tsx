@@ -14,6 +14,9 @@ export type ShellNavItem = {
   soon?: boolean;
 };
 
+export type ShellLabels = { signOut: string; menu: string; soon: string };
+const EN_LABELS: ShellLabels = { signOut: "Sign out", menu: "Menu", soon: "Soon" };
+
 type Props = {
   /** Logo + name block at the top of the sidebar (and of the phone bar). */
   brand: ReactNode;
@@ -25,10 +28,17 @@ type Props = {
   accent?: { background: string; color: string };
   /** Extra content above "Sign out" (e.g. signed-in email, "Powered by Serbi"). */
   footer?: ReactNode;
+  /** Texts of the frame (default English: admin console). */
+  labels?: ShellLabels;
   children: ReactNode;
 };
 
-function NavList({ nav, active, accent }: Pick<Props, "nav" | "active" | "accent">) {
+function NavList({
+  nav,
+  active,
+  accent,
+  soon,
+}: Pick<Props, "nav" | "active" | "accent"> & { soon: string }) {
   return (
     <nav className="flex flex-col gap-xs">
       {nav.map((item) => {
@@ -42,7 +52,7 @@ function NavList({ nav, active, accent }: Pick<Props, "nav" | "active" | "accent
               <Icon name={item.icon} className="text-icon-lg" />
               {item.label}
               <span className="ms-auto rounded-full bg-surface-container-high px-xs text-caption text-on-surface-variant">
-                Soon
+                {soon}
               </span>
             </span>
           );
@@ -73,7 +83,7 @@ function NavList({ nav, active, accent }: Pick<Props, "nav" | "active" | "accent
   );
 }
 
-function SignOut() {
+function SignOut({ label }: { label: string }) {
   return (
     <form action={signOut}>
       <button
@@ -81,7 +91,7 @@ function SignOut() {
         className="flex w-full items-center gap-sm rounded-lg px-sm py-sm text-body-sm font-semibold text-error transition-colors hover:bg-error-container"
       >
         <Icon name="logout" className="text-icon-lg" flipRtl />
-        Sign out
+        {label}
       </button>
     </form>
   );
@@ -92,7 +102,16 @@ function SignOut() {
  * desktop; on phones a top bar whose menu button opens the same navigation (no JavaScript:
  * native <details>).
  */
-export function AppShell({ brand, homeHref, nav, active, accent, footer, children }: Props) {
+export function AppShell({
+  brand,
+  homeHref,
+  nav,
+  active,
+  accent,
+  footer,
+  labels = EN_LABELS,
+  children,
+}: Props) {
   return (
     <div className="flex min-h-screen flex-col bg-background md:flex-row">
       {/* Phone: top bar + collapsible menu */}
@@ -108,13 +127,13 @@ export function AppShell({ brand, homeHref, nav, active, accent, footer, childre
             <span className="hidden group-open:flex">
               <Icon name="close" className="text-icon-xl" />
             </span>
-            <span className="sr-only">Menu</span>
+            <span className="sr-only">{labels.menu}</span>
           </span>
         </summary>
         <div className="flex flex-col gap-sm px-gutter pb-md">
-          <NavList nav={nav} active={active} accent={accent} />
+          <NavList nav={nav} active={active} accent={accent} soon={labels.soon} />
           {footer}
-          <SignOut />
+          <SignOut label={labels.signOut} />
         </div>
       </details>
 
@@ -124,11 +143,11 @@ export function AppShell({ brand, homeHref, nav, active, accent, footer, childre
           {brand}
         </Link>
         <div className="flex-1 overflow-y-auto">
-          <NavList nav={nav} active={active} accent={accent} />
+          <NavList nav={nav} active={active} accent={accent} soon={labels.soon} />
         </div>
         <div className="flex flex-col gap-sm">
           {footer}
-          <SignOut />
+          <SignOut label={labels.signOut} />
         </div>
       </aside>
 

@@ -1,18 +1,21 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { TextAreaField } from "@/components/auth/fields";
 import { Section } from "@/components/settings/form-kit";
 import { Icon } from "@/components/ui/icon";
 import { useToast } from "@/components/ui/toast";
 import type { MyLanguages } from "@/lib/data/services/languages";
-import { BASE_LANGUAGES, languageLabel } from "@/lib/i18n/languages";
+import { useLanguageLabel } from "@/i18n/use-language-label";
+import { useMsg } from "@/i18n/use-msg";
+import { BASE_LANGUAGES } from "@/lib/i18n/languages";
 import { requestLanguageAction, setLanguagesAction, type LanguagesResult } from "./actions";
 
 const STATUS = {
-  pending: { label: "Pending review", className: "bg-warning-container text-on-warning-container" },
-  approved: { label: "Approved", className: "bg-success-container text-success" },
-  declined: { label: "Declined", className: "bg-error-container text-on-error-container" },
+  pending: "bg-warning-container text-on-warning-container",
+  approved: "bg-success-container text-success",
+  declined: "bg-error-container text-on-error-container",
 } as const;
 
 /** Settings → Languages: languages the café offers, and requests for extra languages. */
@@ -25,6 +28,9 @@ export function LanguagesTab({
   languages: MyLanguages;
   dates: Record<string, string>;
 }) {
+  const t = useTranslations("languagesTab");
+  const m = useMsg();
+  const languageLabel = useLanguageLabel();
   const toast = useToast();
   const [pending, start] = useTransition();
   const [offered, setOffered] = useState<string[]>(languages.offered);
@@ -47,17 +53,13 @@ export function LanguagesTab({
   const run = (fn: () => Promise<LanguagesResult>, after?: () => void) =>
     start(async () => {
       const r = await fn();
-      toast.show({ variant: r.ok ? "success" : "error", title: r.message });
+      toast.show({ variant: r.ok ? "success" : "error", title: m(r.message) });
       if (r.ok) after?.();
     });
 
   return (
     <div className="flex flex-col gap-lg">
-      <Section
-        title="Languages your café offers"
-        icon="translate"
-        description="Customers can read your menu and website in these languages. Texts you haven't translated yet show in your main language."
-      >
+      <Section title={t("offeredTitle")} icon="translate" description={t("offeredBody")}>
         <ul className="flex flex-col divide-y divide-surface-container-high">
           {available.map((l) => {
             const main = l === languages.main;
@@ -68,17 +70,17 @@ export function LanguagesTab({
                   <span className="block font-semibold text-on-surface">{languageLabel(l)}</span>
                   <span className="block text-caption text-on-surface-variant">
                     {main
-                      ? "Main language — change it in the Café tab"
+                      ? t("mainHint")
                       : BASE_LANGUAGES.includes(l as never)
-                        ? "Included for every café"
-                        : "Extra language added by Serbi"}
+                        ? t("baseHint")
+                        : t("extraHint")}
                   </span>
                 </span>
                 <button
                   type="button"
                   role="switch"
                   aria-checked={on}
-                  aria-label={`Offer ${languageLabel(l)}`}
+                  aria-label={t("offer", { language: languageLabel(l) })}
                   disabled={main || pending}
                   onClick={() => setOffered((o) => (on ? o.filter((x) => x !== l) : [...o, l]))}
                   className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors disabled:opacity-60 ${on ? "bg-primary" : "bg-surface-container-highest"}`}
@@ -102,16 +104,12 @@ export function LanguagesTab({
               name={pending ? "progress_activity" : "check"}
               className={`text-icon-lg ${pending ? "animate-spin" : ""}`}
             />
-            {dirty ? "Save languages" : "Saved"}
+            {dirty ? t("saveLanguages") : t("saved")}
           </button>
         </div>
       </Section>
 
-      <Section
-        title="Need another language?"
-        icon="add_comment"
-        description="Serbi can add languages like Spanish, Italian or German to your café. Send a request — we'll notify you when it's reviewed."
-      >
+      <Section title={t("requestTitle")} icon="add_comment" description={t("requestBody")}>
         {requestable.length ? (
           <form
             className="flex flex-col gap-md"
@@ -124,7 +122,7 @@ export function LanguagesTab({
             }}
           >
             <label className="flex flex-col gap-xs text-body-sm font-semibold text-on-surface">
-              Language
+              {t("language")}
               <select
                 value={locale}
                 onChange={(e) => setLocale(e.target.value)}
@@ -139,12 +137,12 @@ export function LanguagesTab({
             </label>
             <TextAreaField
               id="language-note"
-              label="Why do you need it? (optional)"
+              label={t("why")}
               rows={2}
               maxLength={300}
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              hint="e.g. Many Italian tourists visit us in summer"
+              hint={t("whyHint")}
             />
             <div className="flex justify-end">
               <button
@@ -152,14 +150,12 @@ export function LanguagesTab({
                 disabled={pending || !locale}
                 className="inline-flex items-center gap-xs rounded-xl border border-outline-variant px-lg py-sm font-semibold text-primary hover:bg-secondary-container disabled:opacity-60"
               >
-                <Icon name="send" className="text-icon-lg" flipRtl /> Send request
+                <Icon name="send" className="text-icon-lg" flipRtl /> {t("send")}
               </button>
             </div>
           </form>
         ) : (
-          <p className="text-body-sm text-on-surface-variant">
-            All supported languages are available or requested.
-          </p>
+          <p className="text-body-sm text-on-surface-variant">{t("allRequested")}</p>
         )}
 
         {languages.requests.length ? (
@@ -172,17 +168,19 @@ export function LanguagesTab({
                 <div className="flex flex-wrap items-center justify-between gap-sm">
                   <span className="font-semibold text-on-surface">{languageLabel(r.locale)}</span>
                   <span
-                    className={`rounded-full px-sm py-xs text-caption font-semibold ${STATUS[r.status].className}`}
+                    className={`rounded-full px-sm py-xs text-caption font-semibold ${STATUS[r.status]}`}
                   >
-                    {STATUS[r.status].label}
+                    {t(r.status)}
                   </span>
                 </div>
                 <span className="text-caption text-on-surface-variant">
-                  Requested {dates[r.id]}
+                  {t("requested", { date: dates[r.id] })}
                   {r.note ? ` · “${r.note}”` : ""}
                 </span>
                 {r.decisionNote ? (
-                  <span className="text-caption text-on-surface">Serbi: {r.decisionNote}</span>
+                  <span className="text-caption text-on-surface">
+                    {t("serbiReply", { note: r.decisionNote })}
+                  </span>
                 ) : null}
               </li>
             ))}

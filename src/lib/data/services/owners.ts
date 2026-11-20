@@ -37,11 +37,19 @@ export class OwnersService {
   }
 
   /** Signed-in user's owner status + café slug, or null when not an owner. */
-  async me(): Promise<{ status: OwnerStatus; cafeSlug: string | null } | null> {
+  async me(): Promise<{ status: OwnerStatus; cafeSlug: string | null; locale: string } | null> {
     const [row] = unwrap("get_my_owner", await (await this.db()).rpc("get_my_owner"));
     return row && isOwnerStatus(row.status)
-      ? { status: row.status, cafeSlug: row.cafe_slug }
+      ? { status: row.status, cafeSlug: row.cafe_slug, locale: row.locale }
       : null;
+  }
+
+  /** Dashboard (and e-mail) language of the signed-in owner: "en" | "fr" | "ar". */
+  async setUiLocale(locale: string): Promise<void> {
+    unwrap(
+      "set_my_ui_locale",
+      await (await this.db()).rpc("set_my_ui_locale", { p_locale: locale }),
+    );
   }
 
   /** Email sign-up; Supabase sends the verification email. A DB trigger stores the profile. */

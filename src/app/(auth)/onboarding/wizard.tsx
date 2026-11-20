@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, useTransition, type FormEvent } from "react";
+import { useMsg } from "@/i18n/use-msg";
 import { FormAlert } from "@/components/auth/form-alert";
 import { Icon } from "@/components/ui/icon";
 import { useToast } from "@/components/ui/toast";
@@ -553,6 +554,7 @@ function AgreementStep({
   onBack: () => void;
   onSubmit: (v: Record<string, unknown>) => void;
 }) {
+  const m = useMsg();
   return (
     <form
       noValidate
@@ -605,7 +607,7 @@ function AgreementStep({
                 </span>
               </span>
             </label>
-            {a.error ? <p className="mt-1 ps-3 text-body-xs text-error">{a.error}</p> : null}
+            {a.error ? <p className="mt-1 ps-3 text-body-xs text-error">{m(a.error)}</p> : null}
           </div>
         ))}
       </div>
