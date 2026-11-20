@@ -117,6 +117,13 @@ export const websiteSchema = z
     hero: heroSchema,
     sections: z.array(sectionSchema).max(SECTION_TYPES.length),
     footer: z.object({ hours: z.array(daySchema).length(7) }),
+    /** Translations: { "en": { "hero.title": "…", "sections.story.text": "…" } } (see translatableFields). */
+    i18n: z
+      .record(
+        z.string().regex(/^[a-z]{2}$/),
+        z.record(z.string().max(80), z.string().trim().max(1200)),
+      )
+      .optional(),
   })
   .superRefine((w, ctx) => {
     const seen = new Set<string>();
@@ -154,40 +161,71 @@ export function websiteErrors(error: z.ZodError): Record<string, string> {
 }
 
 /** Starting point for a café that never edited its website. */
-export function defaultWebsite(cafe: { name: string }): Website {
+/** Starting texts of a new website, in the café's menu language (EN fallback). */
+const DEFAULT_TEXTS = {
+  en: {
+    title: (name: string) => `Welcome to ${name}`,
+    subtitle: "Browse our menu and order right from your table — no app needed.",
+    highlight: "Order from your table",
+    howTitle: "Order from your table",
+    howText:
+      "Scan the QR code on your table, choose from the menu and send your order. Pay at the counter.",
+    story: "Our story",
+    gallery: "Gallery",
+    specialties: "Signature specialties",
+    specialtiesText: "Our favourites, prepared fresh every day.",
+  },
+  fr: {
+    title: (name: string) => `Bienvenue chez ${name}`,
+    subtitle: "Parcourez notre menu et commandez depuis votre table — sans application.",
+    highlight: "Commandez depuis votre table",
+    howTitle: "Commandez depuis votre table",
+    howText:
+      "Scannez le QR code de votre table, choisissez dans le menu et envoyez votre commande. Réglez au comptoir.",
+    story: "Notre histoire",
+    gallery: "Galerie",
+    specialties: "Nos spécialités",
+    specialtiesText: "Nos coups de cœur, préparés chaque jour.",
+  },
+  ar: {
+    title: (name: string) => `مرحبًا بكم في ${name}`,
+    subtitle: "تصفّح قائمتنا واطلب من طاولتك مباشرة — دون الحاجة إلى تطبيق.",
+    highlight: "اطلب من طاولتك",
+    howTitle: "اطلب من طاولتك",
+    howText: "امسح رمز QR الموجود على طاولتك، واختر من القائمة وأرسل طلبك. الدفع عند الصندوق.",
+    story: "قصتنا",
+    gallery: "معرض الصور",
+    specialties: "أطباقنا المميزة",
+    specialtiesText: "أطباقنا المفضلة، تُحضَّر طازجة كل يوم.",
+  },
+} as const;
+
+/** Starting point for a café that never edited its website (texts in its menu language). */
+export function defaultWebsite(cafe: { name: string; locale?: string }): Website {
+  const t = DEFAULT_TEXTS[(cafe.locale ?? "en") as keyof typeof DEFAULT_TEXTS] ?? DEFAULT_TEXTS.en;
   return {
     version: WEBSITE_VERSION,
     hero: {
       badge: "",
-      title: `Welcome to ${cafe.name}`.slice(0, 80),
-      subtitle: "Browse our menu and order right from your table — no app needed.",
+      title: t.title(cafe.name).slice(0, 80),
+      subtitle: t.subtitle,
       image: null,
-      highlights: [{ icon: "qr_code_scanner", label: "Order from your table" }],
+      highlights: [{ icon: "qr_code_scanner", label: t.highlight }],
     },
     sections: [
-      {
-        type: "how_it_works",
-        enabled: true,
-        title: "Order from your table",
-        text: "Scan the QR code on your table, choose from the menu and send your order. Pay at the counter.",
-      },
+      { type: "how_it_works", enabled: true, title: t.howTitle, text: t.howText },
       {
         type: "story",
         enabled: false,
-        title: "Our story",
+        title: t.story,
         text: "",
         image: null,
         points: [],
         quote: "",
         quoteAuthor: "",
       },
-      { type: "gallery", enabled: false, title: "Gallery", images: [] },
-      {
-        type: "specialties",
-        enabled: false,
-        title: "Signature specialties",
-        text: "Our favourites, prepared fresh every day.",
-      },
+      { type: "gallery", enabled: false, title: t.gallery, images: [] },
+      { type: "specialties", enabled: false, title: t.specialties, text: t.specialtiesText },
     ],
     footer: {
       hours: WEEKDAYS.map((_, i) => ({
@@ -215,9 +253,15 @@ export function parseWebsite(raw: unknown): Website | null {
   return r.success ? r.data : null;
 }
 
-/** Consecutive days with the same hours, e.g. [{ days: "Monday – Friday", hours: "08:00 – 20:00" }]. */
-export function groupHours(hours: OpeningDay[]): { days: string; hours: string }[] {
-  const label = (d: OpeningDay) => (d.closed ? "Closed" : `${d.open} – ${d.close}`);
+/**
+ * Consecutive days with the same hours, e.g. [{ days: "Monday – Friday", hours: "08:00 – 20:00" }].
+ * `labels` translates the day names and "Closed" (default English).
+ */
+export function groupHours(
+  hours: OpeningDay[],
+  labels: { days: readonly string[]; closed: string } = { days: WEEKDAYS, closed: "Closed" },
+): { days: string; hours: string }[] {
+  const label = (d: OpeningDay) => (d.closed ? labels.closed : `${d.open} – ${d.close}`);
   const out: { from: number; to: number; hours: string }[] = [];
   hours.forEach((d, i) => {
     const last = out.at(-1);
@@ -225,7 +269,101 @@ export function groupHours(hours: OpeningDay[]): { days: string; hours: string }
     else out.push({ from: i, to: i, hours: label(d) });
   });
   return out.map((g) => ({
-    days: g.from === g.to ? WEEKDAYS[g.from] : `${WEEKDAYS[g.from]} – ${WEEKDAYS[g.to]}`,
+    days: g.from === g.to ? labels.days[g.from] : `${labels.days[g.from]} – ${labels.days[g.to]}`,
     hours: g.hours,
   }));
+}
+
+/* ── Translations ─────────────────────────────────────────────────────────── */
+
+export type TranslatableField = {
+  /** Stable key, independent of the section order: "hero.title", "sections.story.points.1.text". */
+  key: string;
+  label: string;
+  value: string;
+  max: number;
+  multiline?: boolean;
+};
+
+/** Every visitor-facing text of the website (non-empty), in page order. */
+export function translatableFields(w: Website): TranslatableField[] {
+  const out: TranslatableField[] = [];
+  const add = (key: string, label: string, value: string, max: number, multiline = false) => {
+    if (value.trim()) out.push({ key, label, value, max, multiline });
+  };
+  add("hero.badge", "Badge", w.hero.badge, 40);
+  add("hero.title", "Headline", w.hero.title, 80);
+  add("hero.subtitle", "Introduction", w.hero.subtitle, 240, true);
+  w.hero.highlights.forEach((h, i) =>
+    add(`hero.highlights.${i}.label`, `Highlight ${i + 1}`, h.label, 30),
+  );
+  for (const s of w.sections) {
+    const k = `sections.${s.type}`;
+    switch (s.type) {
+      case "how_it_works":
+        add(`${k}.title`, "How ordering works · title", s.title, 80);
+        add(`${k}.text`, "How ordering works · introduction", s.text, 300, true);
+        break;
+      case "story":
+        add(`${k}.title`, "Our story · title", s.title, 80);
+        add(`${k}.text`, "Our story · text", s.text, 1200, true);
+        s.points.forEach((pt, i) => {
+          add(`${k}.points.${i}.title`, `Our story · highlight ${i + 1}`, pt.title, 50);
+          add(`${k}.points.${i}.text`, `Our story · highlight ${i + 1} detail`, pt.text, 140);
+        });
+        add(`${k}.quote`, "Our story · quote", s.quote, 280, true);
+        add(`${k}.quoteAuthor`, "Our story · quote author", s.quoteAuthor, 60);
+        break;
+      case "gallery":
+        add(`${k}.title`, "Gallery · title", s.title, 80);
+        break;
+      case "specialties":
+        add(`${k}.title`, "Signature specialties · title", s.title, 80);
+        add(`${k}.text`, "Signature specialties · introduction", s.text, 300, true);
+        break;
+    }
+  }
+  return out;
+}
+
+/** The website in a language: translated texts where available, the main texts elsewhere. */
+export function translateWebsite(w: Website, lang: string | null | undefined): Website {
+  const tr = lang ? w.i18n?.[lang] : undefined;
+  if (!tr || !Object.keys(tr).length) return w;
+  const t = (key: string, fallback: string) => (tr[key]?.trim() ? tr[key] : fallback);
+  return {
+    ...w,
+    hero: {
+      ...w.hero,
+      badge: t("hero.badge", w.hero.badge),
+      title: t("hero.title", w.hero.title),
+      subtitle: t("hero.subtitle", w.hero.subtitle),
+      highlights: w.hero.highlights.map((h, i) => ({
+        ...h,
+        label: t(`hero.highlights.${i}.label`, h.label),
+      })),
+    },
+    sections: w.sections.map((s) => {
+      const k = `sections.${s.type}`;
+      switch (s.type) {
+        case "how_it_works":
+        case "specialties":
+          return { ...s, title: t(`${k}.title`, s.title), text: t(`${k}.text`, s.text) };
+        case "gallery":
+          return { ...s, title: t(`${k}.title`, s.title) };
+        case "story":
+          return {
+            ...s,
+            title: t(`${k}.title`, s.title),
+            text: t(`${k}.text`, s.text),
+            points: s.points.map((pt, i) => ({
+              title: t(`${k}.points.${i}.title`, pt.title),
+              text: t(`${k}.points.${i}.text`, pt.text),
+            })),
+            quote: t(`${k}.quote`, s.quote),
+            quoteAuthor: t(`${k}.quoteAuthor`, s.quoteAuthor),
+          };
+      }
+    }),
+  };
 }

@@ -1,16 +1,17 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useRef } from "react";
 import { Icon } from "@/components/ui/icon";
 
 export type QrDownloadKind = "card-png" | "card-svg" | "sticker-png" | "sticker-svg";
 
-const OPTIONS: { kind: QrDownloadKind; label: string; hint: string }[] = [
-  { kind: "card-png", label: "Card · PNG", hint: "Large, ~10×14 cm — stands, counter" },
-  { kind: "card-svg", label: "Card · SVG", hint: "Large, for print shops" },
-  { kind: "sticker-png", label: "Sticker · PNG", hint: "Small, ~5×6 cm — on the table" },
-  { kind: "sticker-svg", label: "Sticker · SVG", hint: "Small, for print shops" },
-];
+const OPTIONS = [
+  { kind: "card-png", label: "cardPng", hint: "cardPngHint" },
+  { kind: "card-svg", label: "cardSvg", hint: "cardSvgHint" },
+  { kind: "sticker-png", label: "stickerPng", hint: "stickerPngHint" },
+  { kind: "sticker-svg", label: "stickerSvg", hint: "stickerSvgHint" },
+] as const satisfies { kind: QrDownloadKind; label: string; hint: string }[];
 
 /**
  * "Download" button with the size/format choice (native <details>: keyboard friendly, no JS
@@ -18,7 +19,7 @@ const OPTIONS: { kind: QrDownloadKind; label: string; hint: string }[] = [
  */
 export function QrDownloadMenu({
   onPick,
-  label = "Download",
+  label,
   iconOnly = false,
   name,
 }: {
@@ -28,12 +29,13 @@ export function QrDownloadMenu({
   /** For the accessible name of an icon-only button, e.g. "T7". */
   name?: string;
 }) {
+  const t = useTranslations("qrDownload");
   const ref = useRef<HTMLDetailsElement>(null);
   return (
     <details ref={ref} className="group relative">
       <summary
-        aria-label={iconOnly ? `Download QR code${name ? ` of ${name}` : ""}` : undefined}
-        title={iconOnly ? "Download QR code" : undefined}
+        aria-label={iconOnly ? (name ? t("downloadQrOf", { name }) : t("downloadQr")) : undefined}
+        title={iconOnly ? t("downloadQr") : undefined}
         className={`no-marker flex cursor-pointer list-none items-center gap-xs font-semibold text-primary hover:bg-secondary-container ${
           iconOnly
             ? "h-9 w-9 justify-center rounded-lg text-on-surface-variant"
@@ -43,7 +45,7 @@ export function QrDownloadMenu({
         <Icon name="download" className={iconOnly ? "text-icon-lg" : "text-icon-md"} />
         {iconOnly ? null : (
           <>
-            {label}
+            {label ?? t("download")}
             <Icon
               name="expand_more"
               className="text-icon-md transition-transform group-open:rotate-180"
@@ -62,8 +64,8 @@ export function QrDownloadMenu({
               }}
               className="flex w-full flex-col items-start px-md py-sm text-start hover:bg-surface-container-low"
             >
-              <span className="text-body-sm font-semibold text-on-surface">{o.label}</span>
-              <span className="text-caption text-on-surface-variant">{o.hint}</span>
+              <span className="text-body-sm font-semibold text-on-surface">{t(o.label)}</span>
+              <span className="text-caption text-on-surface-variant">{t(o.hint)}</span>
             </button>
           </li>
         ))}

@@ -14,13 +14,13 @@ export type CafeFieldOptions = {
  * (Intl.DisplayNames) and the time-zone list come from the runtime's ICU data, which differs
  * between Node and browsers — computing them on both sides causes hydration mismatches.
  */
-export function cafeFieldOptions(): CafeFieldOptions {
-  const countryNames = new Intl.DisplayNames(["en"], { type: "region" });
-  const currencyNames = new Intl.DisplayNames(["en"], { type: "currency" });
+export function cafeFieldOptions(locale: string = "en"): CafeFieldOptions {
+  const countryNames = new Intl.DisplayNames([locale], { type: "region" });
+  const currencyNames = new Intl.DisplayNames([locale], { type: "currency" });
   return {
     countries: getCountries()
       .map((c) => ({ value: c, label: countryNames.of(c) ?? c }))
-      .sort((a, b) => a.label.localeCompare(b.label)),
+      .sort((a, b) => a.label.localeCompare(b.label, locale)),
     currencies: CURRENCIES.map((c) => ({ value: c, label: `${c} — ${currencyNames.of(c) ?? c}` })),
     timezones: Intl.supportedValuesOf("timeZone").map((tz) => ({
       value: tz,

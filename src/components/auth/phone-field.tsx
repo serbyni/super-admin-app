@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
 import {
   AsYouType,
@@ -27,14 +28,17 @@ import { DEFAULT_PHONE_COUNTRY, PREFERRED_PHONE_COUNTRIES } from "@/config/phone
 
 type Country = { code: CountryCode; name: string; dial: string };
 
-let cachedCountries: Country[] | null = null;
-function allCountries(): Country[] {
-  if (cachedCountries) return cachedCountries;
-  const names = new Intl.DisplayNames(["en"], { type: "region" });
-  cachedCountries = getCountries()
+const cachedCountries = new Map<string, Country[]>();
+/** Countries with their names in the interface language `locale`. */
+function allCountries(locale: string): Country[] {
+  const hit = cachedCountries.get(locale);
+  if (hit) return hit;
+  const names = new Intl.DisplayNames([locale], { type: "region" });
+  const list = getCountries()
     .map((code) => ({ code, name: names.of(code) ?? code, dial: getCountryCallingCode(code) }))
-    .sort((a, b) => a.name.localeCompare(b.name));
-  return cachedCountries;
+    .sort((a, b) => a.name.localeCompare(b.name, locale));
+  cachedCountries.set(locale, list);
+  return list;
 }
 
 const digitsOf = (v: string) => v.replace(/\D/g, "");
@@ -90,6 +94,8 @@ type Props = {
  * country, detects the country when a "+…" number is pasted, and submits E.164 in `name={id}`.
  */
 export function PhoneField({ id, label, required, defaultValue, error, suggestedCountry }: Props) {
+  const t = useTranslations("fields");
+  const locale = useLocale();
   const [{ country, national }, setState] = useState(() => initialState(defaultValue));
   const [open, setOpen] = useState(false);
   const close = useCallback(() => setOpen(false), []);
@@ -155,7 +161,10 @@ export function PhoneField({ id, label, required, defaultValue, error, suggested
           onClick={() => setOpen((o) => !o)}
           aria-haspopup="listbox"
           aria-expanded={open}
-          aria-label={`Country code: ${allCountries().find((c) => c.code === country)?.name ?? country} +${dial}`}
+          aria-label={t("countryCode", {
+            country: allCountries(locale).find((c) => c.code === country)?.name ?? country,
+            dial,
+          })}
           className="flex shrink-0 items-center gap-xs rounded-s-lg border-e border-outline-variant ps-3 pe-2 text-body-md text-on-surface hover:bg-surface-container"
         >
           <Flag code={country} />
@@ -197,7 +206,7 @@ export function PhoneField({ id, label, required, defaultValue, error, suggested
       {error ? (
         <FieldError id={id} message={error} />
       ) : national && !valid ? (
-        <FieldHint id={id}>Keep typing — the number looks incomplete for this country.</FieldHint>
+        <FieldHint id={id}>{t("phoneIncomplete")}</FieldHint>
       ) : null}
     </div>
   );
@@ -215,13 +224,15 @@ function CountryList({
   /** Clicks inside (e.g. on the toggle button) do not count as "outside". */
   containerRef: RefObject<HTMLDivElement | null>;
 }) {
+  const t = useTranslations("fields");
+  const locale = useLocale();
   const listId = useId();
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
   const searchRef = useRef<HTMLInputElement>(null);
 
   const items = useMemo(() => {
-    const all = allCountries();
+    const all = allCountries(locale);
     const q = query.trim().toLowerCase().replace(/^\+/, "");
     if (q) {
       const pref = (c: Country) => {
@@ -249,7 +260,7 @@ function CountryList({
       all.find((c) => c.code === code)!,
     ).filter(Boolean);
     return [...preferred, ...all.filter((c) => !PREFERRED_PHONE_COUNTRIES.includes(c.code))];
-  }, [query]);
+  }, [query, locale]);
   const preferredCount = query.trim() ? 0 : PREFERRED_PHONE_COUNTRIES.length;
 
   useEffect(() => {
@@ -297,7 +308,7 @@ function CountryList({
             setActive(0);
           }}
           onKeyDown={onKey}
-          placeholder="Search country or code"
+          placeholder={t("searchCountry")}
           role="combobox"
           aria-expanded
           aria-controls={listId}
@@ -307,7 +318,7 @@ function CountryList({
       </div>
       <ul id={listId} role="listbox" className="max-h-72 overflow-y-auto py-xs">
         {items.length === 0 ? (
-          <li className="px-md py-sm text-body-sm text-on-surface-variant">No country found</li>
+          <li className="px-md py-sm text-body-sm text-on-surface-variant">{t("noCountry")}</li>
         ) : (
           items.map((c, i) => (
             <li

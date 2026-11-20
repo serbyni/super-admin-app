@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { msg } from "@/i18n/msg";
 
 /*
  * Café address (slug) rules on the app side — instant feedback in the form and validation in
@@ -95,11 +96,11 @@ export function localSlugProblem(slug: string): LocalSlugProblem | null {
 
 /** Human message per problem (form + toasts). */
 export const SLUG_MESSAGES: Record<SlugProblem, string> = {
-  format: `Use ${SLUG_MIN}–${SLUG_MAX} letters, digits or hyphens (a–z, 0–9, -), not starting or ending with a hyphen.`,
-  reserved: "This name is reserved by Serbi. Choose another one.",
-  blocked: "This name is not allowed. Choose another one.",
-  taken: "Another café already uses this address.",
-  held: "Another café owner is setting up this address right now. Try another one.",
+  format: msg("slugFormat", { min: SLUG_MIN, max: SLUG_MAX }),
+  reserved: msg("slugReserved"),
+  blocked: msg("slugBlocked"),
+  taken: msg("slugTaken"),
+  held: msg("slugHeld"),
 };
 
 /** Server-action schema: normalizes, then checks the local rules. */

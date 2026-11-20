@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
+import { applyOwnerLocale } from "@/i18n/owner-locale";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
@@ -15,13 +17,19 @@ import { CafePageLink } from "@/components/cafe/cafe-page-link";
 import { ProfileTab } from "@/components/settings/profile-tab";
 import { Section } from "@/components/settings/form-kit";
 import { saveCafeAction } from "./actions";
+import { LanguagesTab } from "./languages-tab";
+import { formatDateTime } from "@/config/locale";
 import { CafeSettingsForm } from "./forms";
 
-export const metadata: Metadata = { title: "Settings" };
+export async function generateMetadata(): Promise<Metadata> {
+  await applyOwnerLocale();
+  return { title: (await getTranslations("settings"))("metaTitle") };
+}
 
 const TABS = [
-  { key: "cafe", label: "Café", icon: "storefront" },
-  { key: "profile", label: "Profile", icon: "person" },
+  { key: "cafe", label: "tabCafe", icon: "storefront" },
+  { key: "languages", label: "tabLanguages", icon: "translate" },
+  { key: "profile", label: "tabProfile", icon: "person" },
 ] as const;
 
 async function Settings({
@@ -33,6 +41,8 @@ async function Settings({
 }) {
   const { tenant } = await params;
   const { user } = await requireTenantOwner(tenant);
+  const locale = await applyOwnerLocale();
+  const t = await getTranslations("settings");
   const { tab: rawTab, email: emailResult } = await searchParams;
   const tab = TABS.find((t) => t.key === rawTab) ?? TABS[0];
   const api = serverApi();
@@ -43,17 +53,17 @@ async function Settings({
 
   return (
     <TenantShell cafe={cafe} email={user.email} active="settings">
-      <PageHeader title="Settings" description="Your café and your account." />
+      <PageHeader title={t("title")} description={t("description")} />
       <nav
-        aria-label="Settings"
+        aria-label={t("title")}
         className="mb-lg flex gap-xs border-b border-surface-container-high"
       >
-        {TABS.map((t) => {
-          const active = t.key === tab.key;
+        {TABS.map((tab_) => {
+          const active = tab_.key === tab.key;
           return (
             <Link
-              key={t.key}
-              href={t.key === "cafe" ? base : `${base}?tab=${t.key}`}
+              key={tab_.key}
+              href={tab_.key === "cafe" ? base : `${base}?tab=${tab_.key}`}
               aria-current={active ? "page" : undefined}
               className={`-mb-px inline-flex items-center gap-xs border-b-2 px-md py-sm text-body-sm font-semibold transition-colors ${
                 active
@@ -61,8 +71,8 @@ async function Settings({
                   : "border-transparent text-on-surface-variant hover:text-on-surface"
               }`}
             >
-              <Icon name={t.icon} className="text-icon-md" />
-              {t.label}
+              <Icon name={tab_.icon} className="text-icon-md" />
+              {t(tab_.label)}
             </Link>
           );
         })}
@@ -70,24 +80,18 @@ async function Settings({
 
       {tab.key === "cafe" ? (
         <div className="flex flex-col gap-lg">
-          <Section
-            title="Café address"
-            icon="language"
-            description="Customers open your menu at this address. Your printed QR codes keep working even if it changes later."
-          >
+          <Section title={t("addressTitle")} icon="language" description={t("addressBody")}>
             <p className="flex items-center gap-xs text-body-md">
               <Icon name="link" className="text-icon-lg text-primary" />
               <CafePageLink slug={cafe.slug} variant="inline">
                 {host}
               </CafePageLink>
             </p>
-            <p className="mt-xs text-caption text-on-surface-variant">
-              Changing the café address is not available yet — contact us if you need it.
-            </p>
+            <p className="mt-xs text-caption text-on-surface-variant">{t("addressFixed")}</p>
           </Section>
           <CafeSettingsForm
             action={saveCafeAction.bind(null, tenant)}
-            options={cafeFieldOptions()}
+            options={cafeFieldOptions(locale)}
             host={host}
             values={{
               name: cafe.name,
@@ -105,8 +109,14 @@ async function Settings({
             }}
           />
         </div>
+      ) : tab.key === "languages" ? (
+        <LanguagesTabLoader slug={tenant} locale={locale} />
       ) : (
-        <ProfileTab emailResult={emailResult} pendingEmail={user.new_email ?? null} />
+        <ProfileTab
+          emailResult={emailResult}
+          pendingEmail={user.new_email ?? null}
+          uiLocale={locale}
+        />
       )}
     </TenantShell>
   );
@@ -121,4 +131,13 @@ export default function SettingsPage({
       <Settings params={params} searchParams={searchParams} />
     </Suspense>
   );
+}
+
+async function LanguagesTabLoader({ slug, locale }: { slug: string; locale: string }) {
+  const languages = await serverApi().languages.mine(slug);
+  // Dates formatted on the server (same text in the browser — no hydration mismatch).
+  const dates = Object.fromEntries(
+    languages.requests.map((r) => [r.id, formatDateTime(r.createdAt, locale)]),
+  );
+  return <LanguagesTab slug={slug} languages={languages} dates={dates} />;
 }

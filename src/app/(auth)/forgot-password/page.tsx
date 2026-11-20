@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
+import { applyOwnerLocale } from "@/i18n/owner-locale";
 import { Suspense } from "react";
 import Link from "next/link";
 import { AuthShell } from "@/components/auth/auth-shell";
@@ -6,9 +8,12 @@ import { RedirectIfSignedIn } from "@/components/auth/redirect-if-signed-in";
 import { Icon } from "@/components/ui/icon";
 import { ForgotPasswordForm } from "./forgot-form";
 
+// Static title: these pages are prerendered (the visible texts follow the language).
 export const metadata: Metadata = { title: "Forgot password" };
 
-export default function ForgotPasswordPage() {
+async function ForgotPasswordPageContent() {
+  await applyOwnerLocale();
+  const t = await getTranslations("forgot");
   return (
     <AuthShell>
       <Suspense fallback={null}>
@@ -23,19 +28,16 @@ export default function ForgotPasswordPage() {
             <span className="inline-flex items-center gap-xs rounded-full bg-surface-container px-3 py-1.5 text-on-surface-variant">
               <Icon name="shield" className="text-icon-sm text-tertiary" />
               <span className="font-label-sm text-label-sm tracking-wider uppercase">
-                Account recovery
+                {t("badge")}
               </span>
             </span>
           </div>
 
           <div className="mb-8 space-y-sm">
             <h1 className="text-headline-md font-semibold tracking-tight text-on-surface">
-              Reset your password
+              {t("title")}
             </h1>
-            <p className="leading-relaxed text-on-surface-variant">
-              Enter the email you registered with and we will send you a secure link to choose a new
-              password.
-            </p>
+            <p className="leading-relaxed text-on-surface-variant">{t("body")}</p>
           </div>
 
           <Suspense fallback={null}>
@@ -52,11 +54,19 @@ export default function ForgotPasswordPage() {
                 className="text-icon-md transition-transform group-hover:-translate-x-1"
                 flipRtl
               />
-              <span>Back to sign in</span>
+              <span>{t("back")}</span>
             </Link>
           </div>
         </div>
       </div>
     </AuthShell>
+  );
+}
+
+export default function ForgotPasswordPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-background" />}>
+      <ForgotPasswordPageContent />
+    </Suspense>
   );
 }

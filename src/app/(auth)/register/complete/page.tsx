@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
+import { applyOwnerLocale } from "@/i18n/owner-locale";
 import { Suspense } from "react";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { Icon } from "@/components/ui/icon";
@@ -7,6 +9,7 @@ import { serverApi } from "@/lib/data/server-api";
 import { mapsClientConfig } from "@/lib/maps/server";
 import { CompleteProfileForm } from "./complete-form";
 
+// Static title: these pages are prerendered (the visible texts follow the language).
 export const metadata: Metadata = { title: "Complete your profile" };
 
 async function Form() {
@@ -33,23 +36,31 @@ async function Form() {
   );
 }
 
-export default function CompleteProfilePage() {
+async function CompleteProfilePageContent() {
+  await applyOwnerLocale();
+  const t = await getTranslations("complete");
   return (
     <AuthShell>
       <div className="mx-auto w-full max-w-2xl rounded-xl bg-surface-container-lowest p-lg shadow-md sm:p-xl">
         <span className="mb-sm inline-flex items-center gap-xs rounded-full bg-secondary-fixed px-sm py-xs font-label-sm text-label-sm tracking-wider text-on-secondary-fixed uppercase">
           <Icon name="storefront" className="text-icon-xs" />
-          One last step
+          {t("badge")}
         </span>
-        <h1 className="mb-md text-headline-md tracking-tight text-on-surface">
-          Complete your profile
-        </h1>
+        <h1 className="mb-md text-headline-md tracking-tight text-on-surface">{t("title")}</h1>
         <div className="flex flex-col gap-md">
-          <Suspense fallback={<p className="text-on-surface-variant">Loading…</p>}>
+          <Suspense fallback={<p className="text-on-surface-variant">{t("loading")}</p>}>
             <Form />
           </Suspense>
         </div>
       </div>
     </AuthShell>
+  );
+}
+
+export default function CompleteProfilePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-background" />}>
+      <CompleteProfilePageContent />
+    </Suspense>
   );
 }

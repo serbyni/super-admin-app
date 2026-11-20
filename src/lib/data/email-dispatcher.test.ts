@@ -11,7 +11,7 @@ process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
 process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_test_key_000000";
 process.env.NEXT_PUBLIC_SITE_URL = "https://dev.serbi.me";
 
-const { EmailDispatcher, escapeHtml } = await import("./email-dispatcher");
+const { EmailDispatcher, escapeHtml, eventPayload } = await import("./email-dispatcher");
 
 const delivery = (id: string, template: string, extra: Record<string, unknown> = {}) => ({
   delivery_id: id,
@@ -163,5 +163,50 @@ describe("EmailDispatcher (Resend events)", () => {
     expect(EmailDispatcher.fromEnv()).toEqual({
       missing: ["SUPABASE_SECRET_KEY", "RESEND_API_KEY"],
     });
+  });
+});
+
+describe("language request e-mail", () => {
+  const base = {
+    delivery_id: "d1",
+    template: "language_request_decided",
+    attempts: 1,
+    recipient_email: "owner@example.test",
+    recipient_name: "Amira Ben Salah",
+    business_name: null,
+    business_address: null,
+    locale: "en",
+    reason: null,
+    submitted_at: null,
+    decided_at: null,
+    cafe_name: "Lune Bleue",
+    cafe_slug: "lune",
+    event_at: "2026-11-20T10:00:00Z",
+  };
+
+  it("sends the approved texts and the settings link", () => {
+    const p = eventPayload(
+      { ...base, payload: { locale: "it", approved: true, cafe_slug: "lune" } } as never,
+      "https://dev.serbi.me",
+      "dev.serbi.me",
+    );
+    expect(p.language).toBe("Italian (Italiano)");
+    expect(p.decision_title).toBe("Italian (Italiano) is now available");
+    expect(p.settings_url).toBe("https://dev.serbi.me/lune/dashboard/settings?tab=languages");
+    expect(p.note).toBeUndefined(); // → the template's fallback
+  });
+
+  it("sends the declined texts with the escaped note", () => {
+    const p = eventPayload(
+      {
+        ...base,
+        payload: { locale: "de", approved: false, note: "Not <yet>", cafe_slug: "lune" },
+      } as never,
+      "https://dev.serbi.me",
+      "dev.serbi.me",
+    );
+    expect(p.decision_title).toBe("German (Deutsch) request declined");
+    expect(p.note).toBe("Not &lt;yet&gt;");
+    expect(p.owner_name).toBe("Amira");
   });
 });

@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useToast } from "@/components/ui/toast";
@@ -13,22 +14,28 @@ import { describeNotification } from "./describe";
 export function LiveNotifications({ userId }: { userId: string }) {
   const router = useRouter();
   const toast = useToast();
+  const t = useTranslations("notifications");
+  const locale = useLocale();
 
   useEffect(() => {
     return browserApi().subscribeToNotifications(userId, (n) => {
-      const d = describeNotification(n);
+      const d = describeNotification(n, t, locale);
       toast.show({
         id: `notification-${n.id}`,
-        variant: n.type === "admin_approve_user" ? "success" : "info",
+        variant:
+          n.type === "admin_approve_user" ||
+          (n.type === "language_request_decided" && n.data.approved)
+            ? "success"
+            : "info",
         icon: d.icon,
         title: d.title,
         description: d.body,
-        actions: [{ label: "Open", href: d.href }],
+        actions: [{ label: t("open"), href: d.href }],
         duration: 10000,
       });
       router.refresh();
     });
-  }, [userId, router, toast]);
+  }, [userId, router, toast, t, locale]);
 
   return null;
 }

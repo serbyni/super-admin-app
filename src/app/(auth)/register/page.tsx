@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
+import { applyOwnerLocale } from "@/i18n/owner-locale";
 import Link from "next/link";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { RedirectIfSignedIn } from "@/components/auth/redirect-if-signed-in";
@@ -9,13 +11,8 @@ import { mapsClientConfig } from "@/lib/maps/server";
 import { RegisterForm } from "./register-form";
 import { Icon } from "@/components/ui/icon";
 
+// Static title: these pages are prerendered (the visible texts follow the language).
 export const metadata: Metadata = { title: "Register" };
-
-const steps = [
-  "Create your account and verify your email",
-  "The Serbi team reviews your application",
-  "Choose your subdomain — your café is live",
-];
 
 /** Business types are managed by super admins; read at request time (cached, tag-invalidated). */
 async function RegisterFormWithTypes() {
@@ -28,7 +25,10 @@ async function RegisterFormWithTypes() {
   );
 }
 
-export default function RegisterPage() {
+async function RegisterPageContent() {
+  await applyOwnerLocale();
+  const t = await getTranslations("register");
+  const steps = t("steps").split("|");
   return (
     <AuthShell>
       <Suspense fallback={null}>
@@ -42,10 +42,10 @@ export default function RegisterPage() {
 
           <div className="relative z-10">
             <span className="rounded-full bg-surface-container px-sm py-xs font-label-sm text-label-sm tracking-wider text-secondary uppercase">
-              For café owners
+              {t("forOwners")}
             </span>
             <p className="mt-lg text-headline-md leading-snug font-bold text-primary">
-              Your café, your menu, your QR codes — live in minutes.
+              {t("pitch")}
             </p>
           </div>
 
@@ -54,9 +54,7 @@ export default function RegisterPage() {
             <p className="mt-sm font-label-sm text-label-sm tracking-wider text-primary-fixed-dim uppercase">
               artisan-brew.serbi.me
             </p>
-            <p className="mt-xs font-semibold text-white">
-              Branded menu, table ordering and live order tracking.
-            </p>
+            <p className="mt-xs font-semibold text-white">{t("pitchBody")}</p>
           </div>
 
           <ol className="relative z-10 flex flex-col gap-sm rounded-lg bg-surface-container-lowest/60 p-md backdrop-blur-sm">
@@ -76,33 +74,38 @@ export default function RegisterPage() {
           <div className="mb-lg">
             <span className="mb-sm inline-flex items-center gap-xs rounded-full bg-secondary-fixed px-sm py-xs font-label-sm text-label-sm tracking-wider text-on-secondary-fixed uppercase">
               <Icon name="storefront" className="text-icon-xs" />
-              New café
+              {t("newCafe")}
             </span>
             <h1 className="text-headline-md tracking-tight text-on-surface sm:font-display-lg sm:text-display-lg">
-              Create your Serbi account
+              {t("title")}
             </h1>
-            <p className="mt-xs text-on-surface-variant">
-              After verifying your email, the Serbi team reviews your application — usually within
-              24 hours.
-            </p>
+            <p className="mt-xs text-on-surface-variant">{t("subtitle")}</p>
           </div>
 
-          <Suspense fallback={<p className="text-on-surface-variant">Loading form…</p>}>
+          <Suspense fallback={<p className="text-on-surface-variant">{t("loadingForm")}</p>}>
             <RegisterFormWithTypes />
           </Suspense>
 
           <div className="mt-lg flex items-center justify-center gap-xs rounded-lg bg-surface-container-low/50 p-sm text-center">
-            <span className="text-body-sm text-on-surface-variant">Already have an account?</span>
+            <span className="text-body-sm text-on-surface-variant">{t("haveAccount")}</span>
             <Link
               href="/login"
               className="flex items-center gap-xs text-body-sm font-bold text-primary transition-colors hover:text-primary-container"
             >
-              <span>Sign in</span>
+              <span>{t("signIn")}</span>
               <Icon name="arrow_forward" className="text-icon-sm" flipRtl />
             </Link>
           </div>
         </div>
       </div>
     </AuthShell>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-background" />}>
+      <RegisterPageContent />
+    </Suspense>
   );
 }

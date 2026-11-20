@@ -1,11 +1,17 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
+import { getTranslations } from "next-intl/server";
+import { applyOwnerLocale } from "@/i18n/owner-locale";
 import Link from "next/link";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { Icon } from "@/components/ui/icon";
 
+// Static title: these pages are prerendered (the visible texts follow the language).
 export const metadata: Metadata = { title: "Password updated" };
 
-export default function ResetPasswordSuccessPage() {
+async function ResetPasswordSuccessPageContent() {
+  await applyOwnerLocale();
+  const t = await getTranslations("reset");
   return (
     <AuthShell>
       <div className="relative mx-auto flex w-full max-w-2xl flex-col items-center">
@@ -23,12 +29,9 @@ export default function ResetPasswordSuccessPage() {
               </span>
             </div>
             <h1 className="mb-xs text-headline-md font-bold tracking-tight text-primary">
-              Password updated
+              {t("doneTitle")}
             </h1>
-            <p className="max-w-card-sm text-on-surface-variant">
-              Your password has been changed. For your security, you have been signed out on all
-              devices. Sign in with your new password.
-            </p>
+            <p className="max-w-card-sm text-on-surface-variant">{t("doneBody")}</p>
           </div>
 
           <div className="flex flex-col gap-sm">
@@ -36,7 +39,7 @@ export default function ResetPasswordSuccessPage() {
               href="/login"
               className="group flex w-full items-center justify-center gap-xs rounded-xl bg-primary px-lg py-md text-center text-body-lg font-semibold text-on-primary shadow-md shadow-primary/20 transition-all duration-200 hover:bg-primary-container active:scale-99"
             >
-              <span>Continue to sign in</span>
+              <span>{t("continue")}</span>
               <Icon
                 name="arrow_forward"
                 className="text-icon-lg transition-transform duration-200 group-hover:translate-x-1"
@@ -49,26 +52,32 @@ export default function ResetPasswordSuccessPage() {
                 className="flex items-center gap-xs rounded-lg px-sm py-xs font-label-sm text-label-sm text-on-surface-variant transition-colors hover:bg-surface-container hover:text-primary"
               >
                 <Icon name="home" className="text-icon-sm" />
-                Back to serbi.me
+                {t("home")}
               </Link>
               <Link
                 href="/contact"
                 className="flex items-center gap-xs rounded-lg px-sm py-xs font-label-sm text-label-sm text-secondary transition-colors hover:bg-surface-container hover:text-primary"
               >
                 <Icon name="help_outline" className="text-icon-sm" />
-                Need help? Contact us
+                {t("help")}
               </Link>
             </div>
           </div>
 
           <div className="flex items-start gap-sm rounded-lg bg-surface-container p-md">
             <Icon name="shield" filled className="mt-0.5 shrink-0 text-primary" />
-            <p className="text-on-surface-variant">
-              Didn&apos;t change your password? Contact us right away so we can secure your account.
-            </p>
+            <p className="text-on-surface-variant">{t("notYou")}</p>
           </div>
         </div>
       </div>
     </AuthShell>
+  );
+}
+
+export default function ResetPasswordSuccessPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-background" />}>
+      <ResetPasswordSuccessPageContent />
+    </Suspense>
   );
 }

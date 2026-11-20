@@ -1,6 +1,8 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState } from "react";
+import { useMsg } from "@/i18n/use-msg";
 import { PhoneField } from "@/components/auth/phone-field";
 import { SelectField, TextField } from "@/components/auth/fields";
 import {
@@ -41,6 +43,8 @@ export function CafeDetailsFields({
   /** Built on the server (cafeFieldOptions) so labels match after hydration. */
   options: CafeFieldOptions;
 }) {
+  const t = useTranslations("fields");
+  const m = useMsg();
   const draft = values;
   const [country, setCountry] = useState(draft.country_code ?? "");
   // Country change → suggest its currency + time zone (re-mounts those selects).
@@ -50,7 +54,7 @@ export function CafeDetailsFields({
     <div className="flex flex-col gap-md">
       <TextField
         id="name"
-        label="Café name"
+        label={t("cafeName")}
         icon="storefront"
         required
         defaultValue={draft.name}
@@ -59,9 +63,9 @@ export function CafeDetailsFields({
       <div className="grid grid-cols-1 gap-md sm:grid-cols-2">
         <SelectField
           id="country_code"
-          label="Country"
+          label={t("country")}
           icon="public"
-          placeholder="Select country"
+          placeholder={t("selectCountry")}
           options={options.countries}
           required
           defaultValue={draft.country_code}
@@ -70,7 +74,7 @@ export function CafeDetailsFields({
         />
         <TextField
           id="city"
-          label="City"
+          label={t("city")}
           icon="location_city"
           required
           defaultValue={draft.city}
@@ -79,7 +83,7 @@ export function CafeDetailsFields({
       </div>
       <TextField
         id="address"
-        label="Address"
+        label={t("address")}
         icon="signpost"
         defaultValue={draft.address}
         error={errors.address}
@@ -88,9 +92,9 @@ export function CafeDetailsFields({
         <SelectField
           key={`cur-${country}`}
           id="currency"
-          label="Currency"
+          label={t("currency")}
           icon="payments"
-          placeholder="Select currency"
+          placeholder={t("selectCurrency")}
           options={options.currencies}
           required
           defaultValue={currency ?? FALLBACK_CURRENCY}
@@ -99,9 +103,9 @@ export function CafeDetailsFields({
         <SelectField
           key={`tz-${country}`}
           id="timezone"
-          label="Time zone"
+          label={t("timezone")}
           icon="schedule"
-          placeholder="Select time zone"
+          placeholder={t("selectTimezone")}
           options={options.timezones}
           required
           defaultValue={timezone ?? FALLBACK_TIMEZONE}
@@ -110,7 +114,7 @@ export function CafeDetailsFields({
       </div>
       <fieldset>
         <legend className="mb-xs text-body-sm font-semibold text-on-surface">
-          Default menu language
+          {t("menuLanguage")}
         </legend>
         <div className="flex flex-wrap gap-sm">
           {CAFE_LOCALES.map((l) => (
@@ -129,7 +133,7 @@ export function CafeDetailsFields({
             </label>
           ))}
         </div>
-        {errors.locale ? <p className="mt-1 text-body-xs text-error">{errors.locale}</p> : null}
+        {errors.locale ? <p className="mt-1 text-body-xs text-error">{m(errors.locale)}</p> : null}
       </fieldset>
     </div>
   );
@@ -152,12 +156,13 @@ export function CafeContactFields({
   values: CafeContactValues;
   errors: Errors;
 }) {
+  const t = useTranslations("fields");
   const draft = values;
   return (
     <div className="flex flex-col gap-md">
       <PhoneField
         id="phone"
-        label="Café phone"
+        label={t("cafePhone")}
         required
         defaultValue={draft.phone}
         suggestedCountry={draft.country_code}
@@ -166,7 +171,7 @@ export function CafeContactFields({
       <TextField
         id="email"
         type="email"
-        label="Café email"
+        label={t("cafeEmail")}
         icon="mail"
         required
         autoComplete="email"
@@ -176,7 +181,7 @@ export function CafeContactFields({
       <div className="grid grid-cols-1 gap-md sm:grid-cols-2">
         <TextField
           id="facebook"
-          label="Facebook page (optional)"
+          label={t("facebook")}
           icon="thumb_up"
           placeholder="facebook.com/yourcafe"
           autoCapitalize="none"
@@ -186,7 +191,7 @@ export function CafeContactFields({
         />
         <TextField
           id="instagram"
-          label="Instagram (optional)"
+          label={t("instagram")}
           icon="photo_camera"
           placeholder="@yourcafe"
           autoCapitalize="none"

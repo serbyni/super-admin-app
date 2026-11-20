@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { msg } from "@/i18n/msg";
 import { serverApi } from "@/lib/data/server-api";
 
 export type LoginState = {
@@ -24,7 +25,7 @@ export async function signIn(_prev: LoginState, formData: FormData): Promise<Log
   const email = String(formData.get("email") ?? "");
   if (!parsed.success) {
     return {
-      error: "Enter your email and password.",
+      error: msg("loginMissing"),
       code: "invalid_input",
       email,
       at: Date.now(),
@@ -39,9 +40,7 @@ export async function signIn(_prev: LoginState, formData: FormData): Promise<Log
     }
     const invalid = result.code === "invalid_credentials";
     return {
-      error: invalid
-        ? "Incorrect email or password."
-        : "Could not sign in. Please try again in a moment.",
+      error: invalid ? msg("loginInvalid") : msg("loginUnavailable"),
       code: invalid ? "invalid_credentials" : "unavailable",
       email,
       at: Date.now(),

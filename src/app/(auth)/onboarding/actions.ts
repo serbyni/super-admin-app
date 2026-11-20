@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import type { z } from "zod";
 import { DPA_VERSION, TERMS_VERSION } from "@/config/legal";
+import { msg } from "@/i18n/msg";
 import { SLUG_MESSAGES, type SlugProblem } from "@/lib/cafes/slug";
 import { requireOwnerStage } from "@/lib/auth/guards";
 import { inputField, isDataError } from "@/lib/data/errors";
@@ -58,7 +59,7 @@ export async function saveStepAction(step: 1 | 2 | 3 | 4 | 5, input: unknown): P
     4: lookSchema,
     5: agreementSchema,
   }[step];
-  if (!schema) return { ok: false, errors: { form: "Unknown step" } };
+  if (!schema) return { ok: false, errors: { form: msg("unknownStep") } };
   const parsed = schema.safeParse(input);
   if (!parsed.success) return { ok: false, errors: issues(parsed.error) };
   const data = parsed.data as WizardDraft;
@@ -121,12 +122,11 @@ export async function createCafeAction(): Promise<StepResult> {
     if (field) {
       return {
         ok: false,
-        errors: { [field]: "Please check this value." },
+        errors: { [field]: msg("checkValue") },
         step: FIELD_STEP[field] ?? 1,
       };
     }
-    if (isDataError(e))
-      return { ok: false, errors: { form: "Could not create your café. Please try again." } };
+    if (isDataError(e)) return { ok: false, errors: { form: msg("cafeCreateFailed") } };
     throw e;
   }
   kickEmailDispatch(); // cafe_created → "Your café is ready"

@@ -1,6 +1,7 @@
 import { MEDIA_BUCKET, mediaPath } from "@/lib/media/config";
 import { ACCEPTED_IMAGE_TYPES, MediaError, fingerprint, resizeImage } from "@/lib/media/image";
 import type { Db } from "../types";
+import { msg } from "@/i18n/msg";
 
 /** Upload limit of the bucket (5 MB) — the original may be bigger, the stored file must not. */
 const MAX_BYTES = 5 * 1024 * 1024;
@@ -28,21 +29,19 @@ export class MediaService {
   /** Throws MediaError with a message for the owner. */
   async uploadImage(cafeId: string, file: File): Promise<StoredImage> {
     if (file.type && !ACCEPTED_IMAGE_TYPES.includes(file.type))
-      throw new MediaError("Use a JPG, PNG or WebP photo.");
+      throw new MediaError(msg("mediaType"));
     const [hash, { blob, ext }] = await Promise.all([
       fingerprint(file),
       resizeImage(file, MAX_SIDE),
     ]);
-    if (blob.size > MAX_BYTES)
-      throw new MediaError("This photo is too large, even after resizing.");
+    if (blob.size > MAX_BYTES) throw new MediaError(msg("mediaTooLarge"));
     const path = mediaPath(cafeId, hash, ext);
 
     const { error } = await this.db.storage
       .from(MEDIA_BUCKET)
       .upload(path, blob, { contentType: blob.type, cacheControl: "31536000", upsert: false });
     const reused = !!error && isAlreadyExists(error);
-    if (error && !reused)
-      throw new MediaError("Upload failed. Check your connection and try again.");
+    if (error && !reused) throw new MediaError(msg("mediaUploadFailed"));
 
     const alt = file.name
       .replace(/\.[^.]+$/, "")

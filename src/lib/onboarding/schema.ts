@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { msg } from "@/i18n/msg";
 import { cafeContactSchema } from "@/lib/cafes/contact";
 import { slugSchema } from "@/lib/cafes/slug";
 
@@ -9,21 +10,21 @@ import { slugSchema } from "@/lib/cafes/slug";
 const timezones: ReadonlySet<string> = new Set(Intl.supportedValuesOf("timeZone"));
 
 export const detailsSchema = z.object({
-  name: z.string().trim().min(2, "Enter the café name (2–80 characters)").max(80),
+  name: z.string().trim().min(2, msg("cafeNameLength")).max(80),
   country_code: z
     .string()
     .trim()
     .toUpperCase()
-    .regex(/^[A-Z]{2}$/, "Choose the country"),
-  city: z.string().trim().min(1, "Enter the city").max(80),
+    .regex(/^[A-Z]{2}$/, msg("countryRequired")),
+  city: z.string().trim().min(1, msg("cityRequired")).max(80),
   address: z.string().trim().max(300).optional().or(z.literal("")),
   currency: z
     .string()
     .trim()
     .toUpperCase()
-    .regex(/^[A-Z]{3}$/, "Choose the currency"),
-  timezone: z.string().refine((tz) => timezones.has(tz), "Choose the time zone"),
-  locale: z.enum(["en", "fr", "ar"], { error: "Choose the default language" }),
+    .regex(/^[A-Z]{3}$/, msg("currencyRequired")),
+  timezone: z.string().refine((tz) => timezones.has(tz), msg("timezoneRequired")),
+  locale: z.enum(["en", "fr", "ar"], { error: msg("localeRequired") }),
 });
 export type DetailsInput = z.infer<typeof detailsSchema>;
 
@@ -38,12 +39,12 @@ export const lookSchema = z.object({
     .string()
     .trim()
     .toLowerCase()
-    .regex(/^#[0-9a-f]{6}$/, "Choose a colour"),
+    .regex(/^#[0-9a-f]{6}$/, msg("colourRequired")),
 });
 
 export const agreementSchema = z.object({
-  terms: z.literal(true, { error: "Accept the Terms of Service" }),
-  dpa: z.literal(true, { error: "Accept the Data Processing Agreement" }),
+  terms: z.literal(true, { error: msg("termsOfServiceRequired") }),
+  dpa: z.literal(true, { error: msg("dpaRequired") }),
 });
 
 /** Everything provision_cafe needs (the review step re-validates the whole draft). */

@@ -1,3 +1,6 @@
+"use client";
+
+import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { Icon } from "@/components/ui/icon";
 import { cafeUrl } from "@/lib/env";
@@ -15,7 +18,7 @@ const STYLES = {
 export function CafePageLink({
   slug,
   variant = "button",
-  children = "Open café page",
+  children,
   className = "",
 }: {
   slug: string;
@@ -23,6 +26,7 @@ export function CafePageLink({
   children?: ReactNode;
   className?: string;
 }) {
+  const t = useTranslations("common");
   return (
     <a
       href={cafeUrl(slug)}
@@ -30,9 +34,9 @@ export function CafePageLink({
       rel="noopener noreferrer"
       className={`${STYLES[variant]} ${className}`}
     >
-      {children}
+      {children ?? t("openCafePage")}
       <Icon name="open_in_new" className="text-icon-md" />
-      <span className="sr-only"> (opens in a new tab)</span>
+      <span className="sr-only">{t("opensInNewTab")}</span>
     </a>
   );
 }

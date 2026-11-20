@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
+import { applyOwnerLocale } from "@/i18n/owner-locale";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { CafePageLink } from "@/components/cafe/cafe-page-link";
@@ -12,15 +14,24 @@ import { formatPrice } from "@/lib/menu/schema";
 import { SPECIALTIES_MAX, defaultWebsite, withAllSections } from "@/lib/website/schema";
 import { WebsiteEditor } from "./editor";
 
-export const metadata: Metadata = { title: "Website" };
+export async function generateMetadata(): Promise<Metadata> {
+  await applyOwnerLocale();
+  return { title: (await getTranslations("website"))("metaTitle") };
+}
 
 async function Website({ params }: { params: PageProps<"/[tenant]/dashboard/website">["params"] }) {
   const { tenant } = await params;
   const { user } = await requireTenantOwner(tenant);
+  await applyOwnerLocale();
+  const t = await getTranslations("website");
   const api = serverApi();
   const cafe = await api.cafes.mine(tenant);
   if (!cafe) notFound();
-  const [site, menu] = await Promise.all([api.website.get(tenant), api.menu.get(tenant)]);
+  const [site, menu, langs] = await Promise.all([
+    api.website.get(tenant),
+    api.menu.get(tenant),
+    api.languages.mine(tenant),
+  ]);
   const visibleCats = new Set(menu.categories.filter((c) => c.isVisible).map((c) => c.id));
   // Same rule as the café site: featured, visible, priced, in a visible category.
   const featured = menu.items
@@ -36,8 +47,8 @@ async function Website({ params }: { params: PageProps<"/[tenant]/dashboard/webs
   return (
     <TenantShell cafe={cafe} email={user.email} active="website">
       <PageHeader
-        title="Website"
-        description="Your café's home page. Edit it as a draft, check the preview, then publish."
+        title={t("title")}
+        description={t("description")}
         actions={<CafePageLink slug={cafe.slug} />}
       />
       <WebsiteEditor
@@ -56,6 +67,7 @@ async function Website({ params }: { params: PageProps<"/[tenant]/dashboard/webs
         publishedAt={site.publishedAt}
         featured={featured}
         menuHref={`${tenantDashboard(cafe.slug).replace(/\/$/, "")}/menu`}
+        languages={{ main: langs.main, others: langs.offered.filter((l) => l !== langs.main) }}
       />
     </TenantShell>
   );

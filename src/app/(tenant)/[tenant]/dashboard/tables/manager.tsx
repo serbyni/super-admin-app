@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import dynamic from "next/dynamic";
 import { useMemo, useState, useTransition, type FormEvent, type ReactNode } from "react";
 import { TextField } from "@/components/auth/fields";
@@ -9,6 +10,8 @@ import { downloadPng, downloadSvg, fileName } from "@/components/qr/qr-download"
 import { ConfirmDialog, Dialog } from "@/components/ui/dialog";
 import { Icon } from "@/components/ui/icon";
 import { useToast } from "@/components/ui/toast";
+import { useMsg } from "@/i18n/use-msg";
+import type { QrCardText } from "@/lib/qr/card-text";
 import {
   CARD,
   STICKER,
@@ -38,17 +41,24 @@ import {
 /** three.js is loaded only when the 3D view is opened (and never on the server). */
 const Floor3D = dynamic(() => import("@/components/floor/floor-3d"), {
   ssr: false,
-  loading: () => (
-    <div className="flex h-full items-center justify-center gap-xs text-body-sm text-on-surface-variant">
-      <Icon name="progress_activity" className="animate-spin text-icon-lg" /> Loading 3D view…
-    </div>
-  ),
+  loading: () => <Loading3D />,
 });
+
+function Loading3D() {
+  const t = useTranslations("tables");
+  return (
+    <div className="flex h-full items-center justify-center gap-xs text-body-sm text-on-surface-variant">
+      <Icon name="progress_activity" className="animate-spin text-icon-lg" /> {t("loading3d")}
+    </div>
+  );
+}
 
 type Props = {
   slug: string;
   cafeName: string;
   floor: Floor;
+  /** Printed card texts, in the café's menu language. */
+  cardText: QrCardText;
   /** Base of the printed links, e.g. https://serbi.me/q/ */
   qrBase: string;
   colors: QrCardInput["colors"];
@@ -65,11 +75,16 @@ export function TablesManager({
   slug,
   cafeName,
   floor,
+  cardText,
   qrBase,
   colors,
   initialArea,
   printHref,
 }: Props) {
+  const t = useTranslations("tables");
+  const tc = useTranslations("common");
+  const tq = useTranslations("qrDownload");
+  const m = useMsg();
   const toast = useToast();
   const [pending, start] = useTransition();
   const [areaId, setAreaId] = useState<string | null>(
@@ -84,15 +99,24 @@ export function TablesManager({
 
   const area = floor.areas.find((a) => a.id === areaId) ?? null;
   const tables = useMemo(
-    () => floor.tables.filter((t) => t.areaId === areaId),
+    () => floor.tables.filter((x) => x.areaId === areaId),
     [floor.tables, areaId],
   );
 
+  const tableTitle = (label: string) => cardText.table.replace("{label}", label);
   const card = (title: string, subtitle: string, code: string) =>
-    qrCardSvg({ url: `${qrBase}${code}`, cafeName, title, subtitle, code, colors });
-  const menuSvg = card("Menu", "Scan to see our menu", floor.menu.code);
-  const tableSvg = (t: CafeTable) =>
-    t.code ? card(`Table ${t.label}`, "Scan to order", t.code) : null;
+    qrCardSvg({
+      url: `${qrBase}${code}`,
+      cafeName,
+      title,
+      subtitle,
+      code,
+      colors,
+      footer: cardText.poweredBy,
+    });
+  const menuSvg = card(cardText.menu, cardText.menuSubtitle, floor.menu.code);
+  const tableSvg = (x: CafeTable) =>
+    x.code ? card(tableTitle(x.label), cardText.tableSubtitle, x.code) : null;
 
   const selectArea = (id: string) => setAreaId(id);
 
@@ -105,11 +129,11 @@ export function TablesManager({
       const r = await fn();
       if (!r.ok) {
         setErrors(r.errors ?? {});
-        toast.show({ variant: "error", title: r.message });
+        toast.show({ variant: "error", title: m(r.message) });
         return;
       }
       setErrors({});
-      if (r.message) toast.show({ variant: "success", title: r.message });
+      if (r.message) toast.show({ variant: "success", title: m(r.message) });
       after?.(r);
     });
 
@@ -145,47 +169,56 @@ export function TablesManager({
     const sticker = kind.startsWith("sticker");
     const svg = sticker
       ? qrStickerSvg({ url, label: q.label, code: q.code, colors })
-      : qrCardSvg({ url, cafeName, title: q.title, subtitle: q.subtitle, code: q.code, colors });
+      : qrCardSvg({
+          url,
+          cafeName,
+          title: q.title,
+          subtitle: q.subtitle,
+          code: q.code,
+          colors,
+          footer: cardText.poweredBy,
+        });
     const name = `${q.file}${sticker ? "-sticker" : ""}`;
     try {
       if (kind.endsWith("svg")) downloadSvg(svg, name);
       else await downloadPng(svg, name, sticker ? STICKER : CARD);
     } catch {
-      toast.show({ variant: "error", title: "Download failed. Please try again." });
+      toast.show({ variant: "error", title: tq("failed") });
     }
   };
   const menuQr = {
-    title: "Menu",
-    subtitle: "Scan to see our menu",
-    label: "Menu",
+    title: cardText.menu,
+    subtitle: cardText.menuSubtitle,
+    label: cardText.menu,
     code: floor.menu.code,
     file: fileName(cafeName, "menu-qr"),
   };
-  const tableQr = (t: CafeTable) => ({
-    title: `Table ${t.label}`,
-    subtitle: "Scan to order",
-    label: t.label,
-    code: t.code ?? "",
-    file: fileName(cafeName, t.label),
+  const tableQr = (x: CafeTable) => ({
+    title: tableTitle(x.label),
+    subtitle: cardText.tableSubtitle,
+    label: x.label,
+    code: x.code ?? "",
+    file: fileName(cafeName, x.label),
   });
 
   return (
     <div className="flex flex-col gap-lg">
       {/* Café menu QR */}
       <section className="grid grid-cols-1 gap-lg rounded-xl bg-surface-container-lowest p-lg shadow-sm md:grid-cols-3">
-        <QrImage svg={menuSvg} alt="Menu QR code" />
+        <QrImage svg={menuSvg} alt={t("menuQrAlt")} />
         <div className="flex flex-col gap-sm md:col-span-2">
           <h2 className="flex items-center gap-sm text-headline-md text-on-surface">
             <Icon name="qr_code_2" className="text-icon-xl text-primary" />
-            Menu QR code
+            {t("menuQrTitle")}
           </h2>
-          <p className="text-body-sm text-on-surface-variant">
-            For your counter, window, flyers or takeaway bags. It opens your menu without a table.
-            Each table below has its own code, so orders know where to go.
-          </p>
+          <p className="text-body-sm text-on-surface-variant">{t("menuQrBody")}</p>
           <p className="text-body-sm text-on-surface">
-            <span className="font-semibold">{floor.menu.scans30d}</span> scans in the last 30 days ·
-            code <span className="font-mono font-semibold">{floor.menu.code}</span>
+            {t.rich("menuQrStats", {
+              scans: floor.menu.scans30d,
+              code: floor.menu.code,
+              b: (c) => <span className="font-semibold">{c}</span>,
+              mono: (c) => <span className="font-mono font-semibold">{c}</span>,
+            })}
           </p>
           <div className="mt-xs flex flex-wrap gap-sm">
             <QrDownloadMenu onPick={(k) => download(k, menuQr)} />
@@ -193,7 +226,7 @@ export function TablesManager({
               icon="autorenew"
               onClick={() => setConfirm({ kind: "new-code", table: null })}
             >
-              New code
+              {t("newCode")}
             </ActionButton>
           </div>
         </div>
@@ -202,7 +235,7 @@ export function TablesManager({
       {/* Areas */}
       <section className="flex flex-col gap-md">
         <div className="flex flex-wrap items-center justify-between gap-sm">
-          <div role="tablist" aria-label="Areas" className="flex flex-wrap gap-xs">
+          <div role="tablist" aria-label={t("areas")} className="flex flex-wrap gap-xs">
             {floor.areas.map((a) => (
               <button
                 key={a.id}
@@ -218,7 +251,7 @@ export function TablesManager({
               >
                 {a.name}
                 <span className="ms-xs opacity-75">
-                  {floor.tables.filter((t) => t.areaId === a.id).length}
+                  {floor.tables.filter((x) => x.areaId === a.id).length}
                 </span>
               </button>
             ))}
@@ -228,7 +261,7 @@ export function TablesManager({
                 onClick={() => setAreaForm("new")}
                 className="inline-flex items-center gap-xs rounded-full border border-dashed border-outline-variant px-md py-xs text-body-sm font-semibold text-primary hover:bg-secondary-container"
               >
-                <Icon name="add" className="text-icon-md" /> Area
+                <Icon name="add" className="text-icon-md" /> {t("area")}
               </button>
             ) : null}
           </div>
@@ -237,7 +270,7 @@ export function TablesManager({
               href={printHref}
               className="inline-flex items-center gap-xs rounded-xl border border-outline-variant px-md py-sm text-body-sm font-semibold text-primary hover:bg-secondary-container"
             >
-              <Icon name="print" className="text-icon-md" /> Print QR codes
+              <Icon name="print" className="text-icon-md" /> {t("print")}
             </a>
           ) : null}
         </div>
@@ -245,11 +278,11 @@ export function TablesManager({
         {!area ? (
           <EmptyState
             icon="floor"
-            title="Start with an area"
-            body="An area is a room or zone of your café — e.g. Inside or Terrace. Then add its tables."
+            title={t("startTitle")}
+            body={t("startBody")}
             action={
               <PrimaryButton icon="add" onClick={() => setAreaForm("new")}>
-                Add your first area
+                {t("firstArea")}
               </PrimaryButton>
             }
           />
@@ -259,24 +292,28 @@ export function TablesManager({
               <div>
                 <h2 className="text-headline-md text-on-surface">{area.name}</h2>
                 <p className="text-body-sm text-on-surface-variant">
-                  {area.widthM} × {area.depthM} m · {tables.length} table
-                  {tables.length === 1 ? "" : "s"} · {tables.reduce((n, t) => n + t.seats, 0)} seats
+                  {t("areaSummary", {
+                    width: area.widthM,
+                    depth: area.depthM,
+                    tables: tables.length,
+                    seats: tables.reduce((n, x) => n + x.seats, 0),
+                  })}
                 </p>
               </div>
               <div className="flex flex-wrap gap-xs">
                 <ActionButton icon="edit" onClick={() => setAreaForm(area)}>
-                  Edit area
+                  {t("editArea")}
                 </ActionButton>
                 <ActionButton
                   icon="delete"
                   tone="danger"
                   onClick={() => setConfirm({ kind: "delete-area", area })}
                 >
-                  Delete
+                  {tc("delete")}
                 </ActionButton>
                 {floor.tables.length < LIMITS.tables ? (
                   <PrimaryButton icon="add" onClick={() => setTableForm("new")}>
-                    Add table
+                    {t("addTable")}
                   </PrimaryButton>
                 ) : null}
               </div>
@@ -284,14 +321,14 @@ export function TablesManager({
 
             <div
               role="tablist"
-              aria-label="View"
+              aria-label={t("view")}
               className="flex w-fit rounded-xl bg-surface-container p-xs"
             >
               {(
                 [
-                  ["list", "view_list", "List"],
-                  ["plan", "floor", "Floor plan"],
-                  ["3d", "view_in_ar", "3D"],
+                  ["list", "view_list", t("list")],
+                  ["plan", "floor", t("plan")],
+                  ["3d", "view_in_ar", t("threeD")],
                 ] as const
               ).map(([v, icon, label]) => (
                 <button
@@ -323,61 +360,57 @@ export function TablesManager({
                       colors={{ primary: colors.primary, container: colors.container }}
                     />
                   </div>
-                  <p className="text-caption text-on-surface-variant">
-                    Drag to turn around · scroll or pinch to zoom · click a table for its QR code.
-                    Arrange tables in the Floor plan.
-                  </p>
+                  <p className="text-caption text-on-surface-variant">{t("help3d")}</p>
                   {/* Same choice without the canvas (keyboard, screen readers). */}
-                  <div className="flex flex-wrap gap-xs" aria-label="Tables">
-                    {tables.map((t) => (
+                  <div className="flex flex-wrap gap-xs" aria-label={t("tablesLabel")}>
+                    {tables.map((x) => (
                       <button
-                        key={t.id}
+                        key={x.id}
                         type="button"
-                        aria-pressed={picked === t.id}
-                        onClick={() => setPicked(t.id)}
+                        aria-pressed={picked === x.id}
+                        onClick={() => setPicked(x.id)}
                         className={`rounded-full px-sm py-xs text-caption font-semibold ${
-                          picked === t.id
+                          picked === x.id
                             ? "bg-primary text-on-primary"
                             : "bg-surface-container text-on-surface-variant"
                         }`}
                       >
-                        {t.label}
+                        {x.label}
                       </button>
                     ))}
                   </div>
                 </div>
                 {(() => {
-                  const t = tables.find((x) => x.id === picked);
-                  const svg = t ? tableSvg(t) : null;
-                  if (!t)
+                  const tb = tables.find((x) => x.id === picked);
+                  const svg = tb ? tableSvg(tb) : null;
+                  if (!tb)
                     return (
-                      <EmptyState
-                        icon="touch_app"
-                        title="Pick a table"
-                        body="Click a table in the 3D view to see its QR code."
-                      />
+                      <EmptyState icon="touch_app" title={t("pickTitle")} body={t("pickBody")} />
                     );
-                  const shape = TABLE_SHAPES.find((s) => s.value === t.shape);
                   return (
                     <div className="flex flex-col gap-sm rounded-xl border border-surface-container-high p-md">
-                      {svg ? <QrImage svg={svg} alt={`QR code of table ${t.label}`} /> : null}
+                      {svg ? (
+                        <QrImage svg={svg} alt={t("tableQrAlt", { label: tb.label })} />
+                      ) : null}
                       <p className="text-body-lg font-bold text-on-surface">
-                        {t.label}{" "}
-                        {!t.isActive ? (
+                        {tb.label}{" "}
+                        {!tb.isActive ? (
                           <span className="text-caption font-semibold text-on-surface-variant">
-                            (off)
+                            {t("offParen")}
                           </span>
                         ) : null}
                       </p>
                       <p className="text-body-sm text-on-surface-variant">
-                        {shape?.label} · {t.seats} seat{t.seats === 1 ? "" : "s"} · {t.scans30d}{" "}
-                        scans in 30 days
+                        {t(`shapes.${tb.shape}`)} · {t("seats", { count: tb.seats })} ·{" "}
+                        {t("scans30d", { count: tb.scans30d })}
                       </p>
                       <div className="flex flex-wrap gap-xs">
-                        <ActionButton icon="edit" onClick={() => setTableForm(t)}>
-                          Edit
+                        <ActionButton icon="edit" onClick={() => setTableForm(tb)}>
+                          {tc("edit")}
                         </ActionButton>
-                        {t.code ? <QrDownloadMenu onPick={(k) => download(k, tableQr(t))} /> : null}
+                        {tb.code ? (
+                          <QrDownloadMenu onPick={(k) => download(k, tableQr(tb))} />
+                        ) : null}
                       </div>
                     </div>
                   );
@@ -395,63 +428,66 @@ export function TablesManager({
             ) : tables.length === 0 ? (
               <EmptyState
                 icon="table_restaurant"
-                title="No tables yet"
-                body="Add the tables of this area. Each gets its own QR code to print."
+                title={t("noTablesTitle")}
+                body={t("noTablesBody")}
               />
             ) : (
               <ul className="grid grid-cols-1 gap-md sm:grid-cols-2 xl:grid-cols-3">
-                {tables.map((t) => {
-                  const svg = tableSvg(t);
-                  const shape = TABLE_SHAPES.find((s) => s.value === t.shape);
+                {tables.map((tb) => {
+                  const svg = tableSvg(tb);
+                  const shape = TABLE_SHAPES.find((s) => s.value === tb.shape);
                   return (
                     <li
-                      key={t.id}
-                      className={`flex gap-md rounded-xl border border-surface-container-high p-md ${t.isActive ? "" : "opacity-70"}`}
+                      key={tb.id}
+                      className={`flex gap-md rounded-xl border border-surface-container-high p-md ${tb.isActive ? "" : "opacity-70"}`}
                     >
                       <div className="w-24 shrink-0">
-                        {svg ? <QrImage svg={svg} alt={`QR code of table ${t.label}`} /> : null}
+                        {svg ? (
+                          <QrImage svg={svg} alt={t("tableQrAlt", { label: tb.label })} />
+                        ) : null}
                       </div>
                       <div className="flex min-w-0 flex-1 flex-col gap-xs">
                         <div className="flex items-center gap-xs">
                           <p className="truncate text-body-lg font-bold text-on-surface">
-                            {t.label}
+                            {tb.label}
                           </p>
-                          {!t.isActive ? (
+                          {!tb.isActive ? (
                             <span className="rounded-full bg-surface-container-high px-sm text-caption font-semibold text-on-surface-variant">
-                              Off
+                              {t("off")}
                             </span>
                           ) : null}
                         </div>
                         <p className="flex items-center gap-xs text-body-sm text-on-surface-variant">
                           <Icon name={shape?.icon ?? "table_restaurant"} className="text-icon-md" />
-                          {shape?.label} · {t.seats} seat{t.seats === 1 ? "" : "s"}
+                          {t(`shapes.${tb.shape}`)} · {t("seats", { count: tb.seats })}
                         </p>
                         <p className="text-caption text-on-surface-variant">
-                          {t.scans30d} scans · 30 days{t.code ? ` · ${t.code}` : ""}
+                          {t("scansShort", { count: tb.scans30d })}
+                          {tb.code ? ` · ${tb.code}` : ""}
                         </p>
                         <div className="mt-auto flex flex-wrap gap-xs pt-xs">
                           <IconButton
                             icon="edit"
-                            label={`Edit ${t.label}`}
-                            onClick={() => setTableForm(t)}
+                            label={t("editName", { name: tb.label })}
+                            onClick={() => setTableForm(tb)}
                           />
-                          {t.code ? (
+                          {tb.code ? (
                             <QrDownloadMenu
                               iconOnly
-                              name={t.label}
-                              onPick={(k) => download(k, tableQr(t))}
+                              name={tb.label}
+                              onPick={(k) => download(k, tableQr(tb))}
                             />
                           ) : null}
                           <IconButton
                             icon="autorenew"
-                            label={`New QR code for ${t.label}`}
-                            onClick={() => setConfirm({ kind: "new-code", table: t })}
+                            label={t("newQrFor", { name: tb.label })}
+                            onClick={() => setConfirm({ kind: "new-code", table: tb })}
                           />
                           <IconButton
                             icon="delete"
-                            label={`Delete ${t.label}`}
+                            label={t("deleteName", { name: tb.label })}
                             tone="danger"
-                            onClick={() => setConfirm({ kind: "delete-table", table: t })}
+                            onClick={() => setConfirm({ kind: "delete-table", table: tb })}
                           />
                         </div>
                       </div>
@@ -471,26 +507,26 @@ export function TablesManager({
           setAreaForm(null);
           setErrors({});
         }}
-        title={areaForm === "new" ? "Add an area" : "Edit area"}
+        title={areaForm === "new" ? t("addAreaTitle") : t("editAreaTitle")}
         icon="floor"
       >
         {areaForm !== null ? (
           <form id="area-form" onSubmit={submitArea} noValidate className="flex flex-col gap-md">
             <TextField
               id="name"
-              label="Name"
+              label={t("name")}
               required
               maxLength={40}
-              placeholder="e.g. Inside, Terrace"
+              placeholder={t("areaPlaceholder")}
               defaultValue={
-                areaForm === "new" ? (floor.areas.length ? "" : "Inside") : areaForm.name
+                areaForm === "new" ? (floor.areas.length ? "" : t("defaultArea")) : areaForm.name
               }
               error={errors.name}
             />
             <div className="grid grid-cols-2 gap-sm">
               <TextField
                 id="width_m"
-                label="Width (m)"
+                label={t("width")}
                 required
                 type="number"
                 inputMode="decimal"
@@ -502,7 +538,7 @@ export function TablesManager({
               />
               <TextField
                 id="depth_m"
-                label="Depth (m)"
+                label={t("depth")}
                 required
                 type="number"
                 inputMode="decimal"
@@ -513,13 +549,11 @@ export function TablesManager({
                 error={errors.depth_m}
               />
             </div>
-            <p className="text-caption text-on-surface-variant">
-              Approximate size — used for the floor plan.
-            </p>
+            <p className="text-caption text-on-surface-variant">{t("sizeHint")}</p>
             <FormButtons
               pending={pending}
               onCancel={() => setAreaForm(null)}
-              label={areaForm === "new" ? "Add area" : "Save"}
+              label={areaForm === "new" ? t("addArea") : t("save")}
             />
           </form>
         ) : null}
@@ -533,7 +567,11 @@ export function TablesManager({
           setErrors({});
         }}
         title={
-          tableForm === "new" ? "Add a table" : tableForm ? `Edit ${tableForm.label}` : "Edit table"
+          tableForm === "new"
+            ? t("addTableTitle")
+            : tableForm
+              ? t("editName", { name: tableForm.label })
+              : t("editTable")
         }
         icon="table_restaurant"
       >
@@ -560,23 +598,23 @@ export function TablesManager({
         icon={confirm?.kind === "new-code" ? "autorenew" : "delete"}
         title={
           confirm?.kind === "delete-table"
-            ? `Delete table ${confirm.table.label}?`
+            ? t("deleteTableQ", { label: confirm.table.label })
             : confirm?.kind === "delete-area"
-              ? `Delete ${confirm.area.name}?`
+              ? t("deleteAreaQ", { name: confirm.area.name })
               : confirm?.kind === "new-code"
                 ? confirm.table
-                  ? `New QR code for ${confirm.table.label}?`
-                  : "New menu QR code?"
+                  ? t("newCodeForQ", { label: confirm.table.label })
+                  : t("newMenuCodeQ")
                 : ""
         }
         description={
           confirm?.kind === "delete-table"
-            ? "Its printed QR code will stop working. This can't be undone."
+            ? t("deleteTableBody")
             : confirm?.kind === "delete-area"
-              ? "Only empty areas can be deleted."
-              : "Use this if a QR sticker was copied or damaged. The old code will still open your menu, but no longer identifies the table — print and replace it."
+              ? t("deleteAreaBody")
+              : t("newCodeBody")
         }
-        confirmLabel={confirm?.kind === "new-code" ? "Create new code" : "Delete"}
+        confirmLabel={confirm?.kind === "new-code" ? t("createCode") : tc("delete")}
         onConfirm={() => {
           if (!confirm) return;
           const c = confirm;
@@ -618,13 +656,15 @@ function TableFields({
   onSubmit: (e: FormEvent<HTMLFormElement>) => void;
   onCancel: () => void;
 }) {
+  const t = useTranslations("tables");
+  const m = useMsg();
   const [shape, setShape] = useState(table?.shape ?? "square");
   return (
     <form onSubmit={onSubmit} noValidate className="flex flex-col gap-md">
       <div className="grid grid-cols-2 gap-sm">
         <TextField
           id="label"
-          label="Table name"
+          label={t("tableName")}
           required
           maxLength={20}
           defaultValue={table?.label ?? suggestedLabel}
@@ -632,7 +672,7 @@ function TableFields({
         />
         <TextField
           id="seats"
-          label="Seats"
+          label={t("seatsLabel")}
           required
           type="number"
           inputMode="numeric"
@@ -643,7 +683,7 @@ function TableFields({
         />
       </div>
       <fieldset>
-        <legend className="mb-xs text-body-sm font-semibold text-on-surface">Shape</legend>
+        <legend className="mb-xs text-body-sm font-semibold text-on-surface">{t("shape")}</legend>
         <div className="grid grid-cols-2 gap-xs sm:grid-cols-4">
           {TABLE_SHAPES.map((s) => (
             <label
@@ -663,14 +703,14 @@ function TableFields({
                 className="sr-only"
               />
               <Icon name={s.icon} className="text-icon-xl" />
-              {s.label}
+              {t(`shapes.${s.value}`)}
             </label>
           ))}
         </div>
-        {errors.shape ? <p className="mt-xs text-body-xs text-error">{errors.shape}</p> : null}
+        {errors.shape ? <p className="mt-xs text-body-xs text-error">{m(errors.shape)}</p> : null}
       </fieldset>
       <label className="flex flex-col gap-xs text-body-sm font-semibold text-on-surface">
-        Area
+        {t("area")}
         <select
           name="area_id"
           defaultValue={table?.areaId ?? areaId}
@@ -690,9 +730,13 @@ function TableFields({
           defaultChecked={table?.isActive ?? true}
           className="h-4 w-4 accent-primary"
         />
-        In use — its QR code opens the menu with this table
+        {t("inUse")}
       </label>
-      <FormButtons pending={pending} onCancel={onCancel} label={table ? "Save" : "Add table"} />
+      <FormButtons
+        pending={pending}
+        onCancel={onCancel}
+        label={table ? t("save") : t("addTable")}
+      />
     </form>
   );
 }
@@ -800,6 +844,7 @@ function FormButtons({
   onCancel: () => void;
   label: string;
 }) {
+  const tc = useTranslations("common");
   return (
     <div className="mt-xs flex flex-col-reverse gap-sm sm:flex-row sm:justify-end">
       <button
@@ -808,7 +853,7 @@ function FormButtons({
         disabled={pending}
         className="rounded-xl px-lg py-sm font-semibold text-on-surface-variant hover:bg-surface-container disabled:opacity-50"
       >
-        Cancel
+        {tc("cancel")}
       </button>
       <button
         type="submit"

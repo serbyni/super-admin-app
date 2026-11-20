@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { setRequestLocale } from "next-intl/server";
 import { Suspense } from "react";
 import { AdminShell, PageHeader } from "@/components/admin/admin-shell";
 import { ProfileTab } from "@/components/settings/profile-tab";
@@ -14,6 +15,7 @@ async function Settings({
   searchParams: PageProps<"/admin/settings">["searchParams"];
 }) {
   const { user } = await requireAdmin(ROUTES.adminSettings);
+  setRequestLocale("en"); // admin console: English (ProfileTab is shared with owners)
   const { email } = await searchParams;
   return (
     <>

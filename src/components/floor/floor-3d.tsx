@@ -2,6 +2,7 @@
 
 import { OrbitControls } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
+import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
 import { CanvasTexture, SRGBColorSpace } from "three";
 import { Icon } from "@/components/ui/icon";
@@ -176,6 +177,7 @@ function Table3D({
 }
 
 export default function Floor3D({ area, tables, selectedId, onSelect, colors }: Floor3DProps) {
+  const t = useTranslations("tables.floor");
   const size = Math.max(area.widthM, area.depthM);
   const wallH = 0.25;
   const walls: [number, number, number, number, number][] = [
@@ -197,7 +199,7 @@ export default function Floor3D({ area, tables, selectedId, onSelect, colors }: 
           <Icon name="view_in_ar" className="text-icon-lg" /> 3D is not available in this browser.
         </div>
       }
-      aria-label={`3D view of ${area.name}`}
+      aria-label={t("view3d", { name: area.name })}
     >
       <color attach="background" args={["#fbf2ee"]} />
       <hemisphereLight args={["#ffffff", "#e9e1dd", 1.6]} />

@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { passwordStrength } from "@/lib/auth/password-strength";
 
 const BAR: Record<number, string> = {
@@ -6,15 +7,16 @@ const BAR: Record<number, string> = {
   3: "bg-secondary",
   4: "bg-primary",
 };
-const LABEL: Record<string, { text: string; className: string }> = {
-  empty: { text: "Awaiting input", className: "text-secondary" },
-  weak: { text: "Weak", className: "text-error" },
-  fair: { text: "Fair", className: "text-primary-container" },
-  good: { text: "Good", className: "text-secondary" },
-  strong: { text: "Strong", className: "text-primary" },
+const LABEL: Record<string, { className: string }> = {
+  empty: { className: "text-secondary" },
+  weak: { className: "text-error" },
+  fair: { className: "text-primary-container" },
+  good: { className: "text-secondary" },
+  strong: { className: "text-primary" },
 };
 
 export function PasswordStrengthMeter({ password }: { password: string }) {
+  const t = useTranslations("register");
   const { score, label } = passwordStrength(password);
   const l = LABEL[label];
   return (
@@ -24,9 +26,11 @@ export function PasswordStrengthMeter({ password }: { password: string }) {
     >
       <div className="flex items-center justify-between">
         <span className="font-label-sm text-caption tracking-wider text-on-surface-variant uppercase">
-          Password strength
+          {t("strength")}
         </span>
-        <span className={`font-label-sm text-caption ${l.className}`}>{l.text}</span>
+        <span className={`font-label-sm text-caption ${l.className}`}>
+          {t(`strengthLabels.${label}`)}
+        </span>
       </div>
       <div className="grid h-1.5 w-full grid-cols-4 gap-xs">
         {[1, 2, 3, 4].map((i) => (
@@ -36,9 +40,7 @@ export function PasswordStrengthMeter({ password }: { password: string }) {
           />
         ))}
       </div>
-      <p className="font-label-sm text-caption font-normal text-outline">
-        Use 10+ characters with upper case, a digit and a symbol.
-      </p>
+      <p className="font-label-sm text-caption font-normal text-outline">{t("strengthHint")}</p>
     </div>
   );
 }

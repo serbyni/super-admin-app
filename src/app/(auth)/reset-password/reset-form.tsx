@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useActionState, useState } from "react";
 import { FormAlert } from "@/components/auth/form-alert";
 import { PasswordField } from "@/components/auth/password-field";
@@ -10,15 +11,16 @@ import { resetPassword, type ResetState } from "./actions";
 export function ResetPasswordForm() {
   const [state, action] = useActionState<ResetState, FormData>(resetPassword, {});
   const [password, setPassword] = useState("");
+  const t = useTranslations("reset");
   const e = state.errors ?? {};
   return (
     <form action={action} noValidate className="flex flex-col gap-md">
       <FormAlert message={e.form} />
       <PasswordField
         id="password"
-        label="New password"
+        label={t("newPassword")}
         autoComplete="new-password"
-        placeholder="Min. 10 characters"
+        placeholder={t("minChars")}
         required
         value={password}
         onChange={(ev) => setPassword(ev.target.value)}
@@ -26,16 +28,16 @@ export function ResetPasswordForm() {
       />
       <PasswordField
         id="confirmPassword"
-        label="Confirm new password"
+        label={t("confirm")}
         icon="lock_clock"
         autoComplete="new-password"
-        placeholder="Re-enter password"
+        placeholder={t("reenter")}
         required
         error={e.confirmPassword}
       />
       <PasswordStrengthMeter password={password} />
-      <SubmitButton icon="lock_reset" pendingLabel="Saving…">
-        Save new password
+      <SubmitButton icon="lock_reset" pendingLabel={t("saving")}>
+        {t("save")}
       </SubmitButton>
     </form>
   );

@@ -1,6 +1,8 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState } from "react";
+import { useMsg } from "@/i18n/use-msg";
 import { FormAlert } from "@/components/auth/form-alert";
 import { BrandColourPicker } from "@/components/cafe/brand-colour-picker";
 import {
@@ -26,40 +28,30 @@ export function CafeSettingsForm({
   values: CafeDetailsValues & CafeContactValues & { seed: string };
   host: string;
 }) {
+  const t = useTranslations("settings");
+  const m = useMsg();
   const { pending, onSubmit, formRef, errors } = useSettingsForm(action);
   const [seed, setSeed] = useState(values.seed);
   return (
     <form ref={formRef} noValidate onSubmit={onSubmit} className="flex flex-col gap-lg">
       <FormAlert message={errors.form} />
-      <Section
-        title="Café details"
-        icon="storefront"
-        description="Shown on your menu. The currency and time zone are used for prices and orders."
-      >
+      <Section title={t("detailsTitle")} icon="storefront" description={t("detailsBody")}>
         <CafeDetailsFields values={values} errors={errors} options={options} />
       </Section>
-      <Section
-        title="Contact & social"
-        icon="call"
-        description="How customers reach your café: phone and email, plus your Facebook and Instagram pages."
-      >
+      <Section title={t("contactTitle")} icon="call" description={t("contactBody")}>
         <CafeContactFields values={values} errors={errors} />
       </Section>
-      <Section
-        title="Brand colour"
-        icon="palette"
-        description="Your menu's colours are generated from this colour."
-      >
+      <Section title={t("colourTitle")} icon="palette" description={t("colourBody")}>
         <div className="grid grid-cols-1 gap-lg md:grid-cols-2">
           <BrandColourPicker name="seed" value={seed} onChange={setSeed} />
           <MenuPreview
-            name={values.name ?? "Your café"}
+            name={values.name ?? t("yourCafe")}
             host={host}
             seed={seed}
             currency={values.currency ?? "EUR"}
           />
         </div>
-        {errors.seed ? <p className="mt-sm text-body-xs text-error">{errors.seed}</p> : null}
+        {errors.seed ? <p className="mt-sm text-body-xs text-error">{m(errors.seed)}</p> : null}
       </Section>
       <div className="sticky bottom-0 -mx-gutter flex justify-end bg-background/90 px-gutter pb-md backdrop-blur md:static md:mx-0 md:bg-transparent md:p-0 md:backdrop-blur-none">
         <SaveButton pending={pending} />

@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { OwnerIntl } from "@/i18n/owner-intl";
 import { requireTenantOwner } from "@/lib/auth/guards";
 
 /**
@@ -14,7 +15,8 @@ async function TenantGate({
 }) {
   const { tenant } = await params;
   await requireTenantOwner(tenant);
-  return children;
+  // The owner's dashboard language (Settings → Profile), right-to-left in Arabic.
+  return <OwnerIntl>{children}</OwnerIntl>;
 }
 
 export default function TenantLayout({ params, children }: LayoutProps<"/[tenant]">) {

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useId, useRef, type ReactNode } from "react";
 import { Icon } from "./icon";
 
@@ -55,6 +56,7 @@ export function Dialog({
   dismissible = true,
   size = "sm",
 }: DialogProps) {
+  const tc = useTranslations("common");
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   const descId = useId();
@@ -105,7 +107,7 @@ export function Dialog({
             <button
               type="button"
               onClick={onClose}
-              aria-label="Close"
+              aria-label={tc("close")}
               className="-me-xs -mt-xs flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container"
             >
               <Icon name="close" className="text-icon-lg" />
@@ -133,13 +135,14 @@ type ConfirmDialogProps = Omit<DialogProps, "actions" | "children" | "dismissibl
 /** Yes/No question in our design (replaces window.confirm). */
 export function ConfirmDialog({
   confirmLabel,
-  cancelLabel = "Cancel",
+  cancelLabel,
   onConfirm,
   pending = false,
   tone = "primary",
   onClose,
   ...rest
 }: ConfirmDialogProps) {
+  const tc = useTranslations("common");
   return (
     <Dialog
       {...rest}
@@ -154,7 +157,7 @@ export function ConfirmDialog({
             disabled={pending}
             className="rounded-xl px-lg py-sm font-semibold text-on-surface-variant hover:bg-surface-container focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:outline-none disabled:opacity-50"
           >
-            {cancelLabel}
+            {cancelLabel ?? tc("cancel")}
           </button>
           <button
             type="button"

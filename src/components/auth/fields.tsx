@@ -5,6 +5,9 @@ import type {
   TextareaHTMLAttributes,
 } from "react";
 import { Icon } from "@/components/ui/icon";
+import { FieldError } from "./field-error";
+
+export { FieldError };
 
 /*
  * Material 3 "outlined" text fields with a floating label.
@@ -90,15 +93,6 @@ export function FieldLabel({
       {children}
       <RequiredMark required={required} />
     </label>
-  );
-}
-
-export function FieldError({ id, message }: { id: string; message?: string }) {
-  if (!message) return null;
-  return (
-    <p id={`${id}-error`} role="alert" className="mt-1 ps-3 text-body-xs text-error">
-      {message}
-    </p>
   );
 }
 

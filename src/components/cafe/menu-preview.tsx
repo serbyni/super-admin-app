@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale, useTranslations } from "next-intl";
 import { useMemo } from "react";
 import { cafePalette } from "@/lib/cafes/theme";
 
@@ -16,10 +17,16 @@ export function MenuPreview({
   currency: string;
 }) {
   const c = useMemo(() => cafePalette(seed), [seed]);
-  const price = new Intl.NumberFormat("en", { style: "currency", currency }).format;
+  const t = useTranslations("fields");
+  const locale = useLocale();
+  const price = new Intl.NumberFormat(locale === "ar" ? "ar-TN" : locale, {
+    style: "currency",
+    currency,
+  }).format;
+  const [espresso, cappuccino] = t("sampleItems").split("|");
   return (
     <div
-      aria-label="Menu preview"
+      aria-label={t("menuPreview")}
       className="mx-auto w-full max-w-64 overflow-hidden rounded-2xl border-4 border-inverse-surface shadow-card-warm"
       style={{ backgroundColor: c.surface }}
     >
@@ -28,24 +35,26 @@ export function MenuPreview({
         <p className="text-headline-md font-bold">{name}</p>
       </div>
       <div className="-mt-sm flex gap-xs px-md">
-        {["Coffee", "Tea", "Pastries"].map((cat, i) => (
-          <span
-            key={cat}
-            className="rounded-full px-sm py-xs text-caption font-semibold shadow-sm"
-            style={
-              i === 0
-                ? { backgroundColor: c.container, color: c.onContainer }
-                : { backgroundColor: c.variant, color: c.onVariant }
-            }
-          >
-            {cat}
-          </span>
-        ))}
+        {t("sampleCategories")
+          .split("|")
+          .map((cat, i) => (
+            <span
+              key={cat}
+              className="rounded-full px-sm py-xs text-caption font-semibold shadow-sm"
+              style={
+                i === 0
+                  ? { backgroundColor: c.container, color: c.onContainer }
+                  : { backgroundColor: c.variant, color: c.onVariant }
+              }
+            >
+              {cat}
+            </span>
+          ))}
       </div>
       <div className="flex flex-col gap-sm p-md">
         {[
-          ["Espresso", 4.5],
-          ["Cappuccino", 6],
+          [espresso, 4.5],
+          [cappuccino, 6],
         ].map(([item, p]) => (
           <div
             key={item as string}
@@ -62,7 +71,7 @@ export function MenuPreview({
               className="rounded-lg px-sm py-xs text-caption font-bold"
               style={{ backgroundColor: c.primary, color: c.onPrimary }}
             >
-              Add
+              {t("add")}
             </span>
           </div>
         ))}

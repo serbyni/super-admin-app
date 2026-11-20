@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useActionState, useState } from "react";
 import { BusinessFields } from "@/components/auth/business-fields";
 import { FormAlert } from "@/components/auth/form-alert";
@@ -19,6 +20,7 @@ export function CompleteProfileForm({
   businessTypes: BusinessType[];
   maps: MapsClientConfig;
 }) {
+  const t = useTranslations("complete");
   const [state, action] = useActionState<FormState, FormData>(completeOwnerProfile, {});
   const [locationCountry, setLocationCountry] = useState<string | undefined>();
   const errors = state.errors ?? {};
@@ -39,8 +41,8 @@ export function CompleteProfileForm({
         errors={errors}
       />
       <TermsCheckbox error={errors.terms} />
-      <SubmitButton icon="send" pendingLabel="Submitting…">
-        Submit application
+      <SubmitButton icon="send" pendingLabel={t("submitting")}>
+        {t("submit")}
       </SubmitButton>
     </form>
   );

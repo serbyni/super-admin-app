@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import type { Provider } from "@supabase/supabase-js";
 import { browserApi } from "@/lib/data/browser-api";
@@ -39,13 +40,8 @@ const buttonClass =
   "group flex w-full items-center justify-center gap-3 rounded-lg bg-surface-container-low px-4 py-3 text-on-surface shadow-sm transition-all duration-200 hover:scale-101 hover:bg-surface-container active:scale-99 disabled:cursor-wait disabled:opacity-60";
 
 /** Google / Facebook sign-in through Supabase OAuth. New users continue to /register/complete. */
-export function SocialButtons({
-  verb = "Continue",
-  layout = "stack",
-}: {
-  verb?: string;
-  layout?: "stack" | "grid";
-}) {
+export function SocialButtons({ layout = "stack" }: { layout?: "stack" | "grid" }) {
+  const t = useTranslations("social");
   const [pending, setPending] = useState<Provider | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -54,7 +50,7 @@ export function SocialButtons({
     setError(null);
     if (!(await browserApi().startOAuthSignIn(provider))) {
       setPending(null);
-      setError("Could not start sign-in with this provider. Please try again or use email.");
+      setError(t("failed"));
     }
   }
 
@@ -68,7 +64,7 @@ export function SocialButtons({
           onClick={() => signIn("google")}
         >
           <GoogleLogo />
-          <span className="font-semibold">{verb} with Google</span>
+          <span className="font-semibold">{t("continueWith", { provider: "Google" })}</span>
         </button>
         <button
           type="button"
@@ -77,7 +73,7 @@ export function SocialButtons({
           onClick={() => signIn("facebook")}
         >
           <FacebookLogo />
-          <span className="font-semibold">{verb} with Facebook</span>
+          <span className="font-semibold">{t("continueWith", { provider: "Facebook" })}</span>
         </button>
       </div>
       {error ? (

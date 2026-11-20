@@ -5,6 +5,7 @@ import { useActionState, useEffect } from "react";
 import { TextField } from "@/components/auth/fields";
 import { FormAlert } from "@/components/auth/form-alert";
 import { SubmitButton } from "@/components/auth/submit-button";
+import { useTranslations } from "next-intl";
 import { Icon } from "@/components/ui/icon";
 import { useToast } from "@/components/ui/toast";
 import { requestPasswordReset, type ForgotState } from "./actions";
@@ -15,6 +16,7 @@ export function ForgotPasswordForm() {
   const router = useRouter();
   const pathname = usePathname();
   const toast = useToast();
+  const t = useTranslations("forgot");
 
   // /auth/reset sends expired or used links back here.
   useEffect(() => {
@@ -22,11 +24,11 @@ export function ForgotPasswordForm() {
     toast.show({
       id: "reset-link-expired",
       variant: "error",
-      title: "This reset link has expired or was already used",
-      description: "Request a new link below.",
+      title: t("expiredTitle"),
+      description: t("expiredBody"),
     });
     router.replace(pathname, { scroll: false });
-  }, [params, pathname, router, toast]);
+  }, [params, pathname, router, toast, t]);
 
   if (state.sent) {
     return (
@@ -35,15 +37,15 @@ export function ForgotPasswordForm() {
           <Icon name="mark_email_read" className="text-icon-2xl" />
         </span>
         <div>
-          <p className="text-headline-md text-on-surface">Check your inbox</p>
+          <p className="text-headline-md text-on-surface">{t("inboxTitle")}</p>
           <p className="mt-xs text-on-surface-variant">
-            If an account exists for <strong className="text-on-surface">{state.email}</strong>, we
-            sent a link to choose a new password. It expires after a short time.
+            {t.rich("inboxBody", {
+              email: state.email ?? "",
+              b: (c) => <strong className="text-on-surface">{c}</strong>,
+            })}
           </p>
         </div>
-        <p className="text-body-sm text-on-surface-variant">
-          No email after a few minutes? Check your spam folder, or try again in a minute.
-        </p>
+        <p className="text-body-sm text-on-surface-variant">{t("noEmail")}</p>
       </div>
     );
   }
@@ -53,7 +55,7 @@ export function ForgotPasswordForm() {
       <FormAlert message={state.error} />
       <TextField
         id="email"
-        label="Email address"
+        label={t("email")}
         icon="mail"
         type="email"
         autoComplete="email"
@@ -61,13 +63,13 @@ export function ForgotPasswordForm() {
         required
         defaultValue={state.email}
       />
-      <SubmitButton icon="send" pendingLabel="Sending…">
-        Send reset link
+      <SubmitButton icon="send" pendingLabel={t("sending")}>
+        {t("send")}
       </SubmitButton>
       <div className="flex items-center justify-center gap-2 py-1 text-center">
         <Icon name="schedule" className="text-icon-sm text-tertiary" />
         <p className="font-label-sm text-label-sm font-normal text-on-surface-variant">
-          For security, the link expires after a short time.
+          {t("expires")}
         </p>
       </div>
     </form>
