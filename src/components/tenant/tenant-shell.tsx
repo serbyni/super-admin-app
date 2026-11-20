@@ -1,5 +1,6 @@
 import { getTranslations } from "next-intl/server";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
+import { serverApi } from "@/lib/data/server-api";
 import { AppShell, type ShellNavItem } from "@/components/shell/app-shell";
 import { BrandMark } from "@/components/ui/brand-mark";
 import { tenantDashboard } from "@/lib/auth/routes";
@@ -11,6 +12,20 @@ import { cafeRootDomain } from "@/lib/env";
 
 export { PageHeader } from "@/components/shell/app-shell";
 
+/** Count of orders waiting to be accepted (streams in; hidden when zero or on error). */
+async function NewOrdersBadge({ slug }: { slug: string }) {
+  const count = await serverApi()
+    .orders.board(slug, "active")
+    .then((b) => b.orders.filter((o) => o.status === "new").length)
+    .catch(() => 0);
+  if (!count) return null;
+  return (
+    <span className="ms-auto rounded-full bg-cta px-xs text-caption font-bold text-on-cta">
+      {count > 99 ? "99+" : count}
+    </span>
+  );
+}
+
 /** Café dashboard sections. `soon` = not built yet (shown, not clickable). */
 function cafeNav(slug: string, t: (key: NavKey) => string): ShellNavItem[] {
   const base = tenantDashboard(slug).replace(/\/$/, "");
@@ -19,7 +34,16 @@ function cafeNav(slug: string, t: (key: NavKey) => string): ShellNavItem[] {
     { href: `${base}/website`, icon: "web", label: t("website") },
     { href: `${base}/menu`, icon: "restaurant_menu", label: t("menu") },
     { href: `${base}/tables`, icon: "table_restaurant", label: t("tables") },
-    { href: `${base}/orders`, icon: "receipt_long", label: t("orders"), soon: true },
+    {
+      href: `${base}/orders`,
+      icon: "receipt_long",
+      label: t("orders"),
+      badge: (
+        <Suspense fallback={null}>
+          <NewOrdersBadge slug={slug} />
+        </Suspense>
+      ),
+    },
     { href: `${base}/staff`, icon: "group", label: t("staff"), soon: true },
     { href: `${base}/settings`, icon: "settings", label: t("settings") },
   ];

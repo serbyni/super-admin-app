@@ -12,6 +12,8 @@ import { requireTenantOwner } from "@/lib/auth/guards";
 import { tenantDashboard } from "@/lib/auth/routes";
 import { cafePalette } from "@/lib/cafes/theme";
 import { serverApi } from "@/lib/data/server-api";
+import { formatPrice } from "@/lib/menu/schema";
+import { dayTotals } from "@/lib/orders/schema";
 
 export async function generateMetadata(): Promise<Metadata> {
   await applyOwnerLocale();
@@ -41,6 +43,9 @@ async function Dashboard({ params }: { params: PageProps<"/[tenant]/dashboard">[
     api.tables.floor(tenant),
     api.website.get(tenant),
   ]);
+  const today = await api.orders.board(tenant, "day").catch(() => null);
+  const totals = dayTotals(today?.orders ?? []);
+  const newOrders = (today?.orders ?? []).filter((o) => o.status === "new").length;
   const base = tenantDashboard(cafe.slug).replace(/\/$/, "");
   const visibleCats = new Set(menu.categories.filter((x) => x.isVisible).map((x) => x.id));
   const unpriced = menu.items.filter((i) => i.price === null).length;
@@ -52,11 +57,19 @@ async function Dashboard({ params }: { params: PageProps<"/[tenant]/dashboard">[
       ? "unpublishedChanges"
       : "published";
   /** Modules not built yet. */
-  const soon = [
-    { icon: "receipt_long", title: tn("orders"), body: t("ordersBody") },
-    { icon: "group", title: tn("staff"), body: t("staffBody") },
-  ];
+  const soon = [{ icon: "group", title: tn("staff"), body: t("staffBody") }];
   const modules: { href: string; icon: string; title: string; stats: Stat[]; cta: string }[] = [
+    {
+      href: `${base}/orders`,
+      icon: "receipt_long",
+      title: tn("orders"),
+      cta: t("openOrders"),
+      stats: [
+        { label: t("ordersToday"), value: totals.count },
+        { label: t("ordersRevenue"), value: formatPrice(totals.revenue, cafe.currency) },
+        { label: t("ordersNew"), value: newOrders, tone: newOrders ? "warn" : undefined },
+      ],
+    },
     {
       href: `${base}/menu`,
       icon: "restaurant_menu",
@@ -141,7 +154,7 @@ async function Dashboard({ params }: { params: PageProps<"/[tenant]/dashboard">[
           </dl>
         </section>
 
-        <div className="grid grid-cols-1 gap-md md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-md md:grid-cols-2 xl:grid-cols-4">
           {modules.map((m) => (
             <Link
               key={m.href}

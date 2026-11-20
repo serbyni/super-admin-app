@@ -50,6 +50,33 @@ export class BrowserApi {
       void this.db.removeChannel(channel);
     };
   }
+
+  /**
+   * Live updates of a café's orders (private channel 'orders:<cafeId>', café members only):
+   * called with {id, number, status, isNew} on every new order or change.
+   */
+  subscribeToOrders(
+    cafeId: string,
+    onOrder: (e: { id: string; number: number; status: string; isNew: boolean }) => void,
+  ): () => void {
+    const channel = this.db.channel(`orders:${cafeId}`, { config: { private: true } });
+    let cancelled = false;
+    void (async () => {
+      await this.db.realtime.setAuth();
+      if (cancelled) return;
+      channel
+        .on("broadcast", { event: "order" }, ({ payload }) => {
+          const p = payload as { id?: string; number?: number; status?: string; isNew?: boolean };
+          if (p?.id)
+            onOrder({ id: p.id, number: p.number ?? 0, status: p.status ?? "", isNew: !!p.isNew });
+        })
+        .subscribe();
+    })();
+    return () => {
+      cancelled = true;
+      void this.db.removeChannel(channel);
+    };
+  }
 }
 
 /** Browser API (the browser client is a singleton inside @supabase/ssr, so this is cheap). */
