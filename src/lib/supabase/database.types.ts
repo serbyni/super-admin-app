@@ -735,7 +735,8 @@ export type Database = {
       push_new_order_targets: { Args: { p_slug: string; p_token: string }; Returns: Json };
       push_order_update_targets: { Args: { p_order_id: string }; Returns: Json };
       push_drop_subscription: { Args: { p_endpoint: string; p_gone: boolean }; Returns: undefined };
-      receipt_order: { Args: { p_order_id: string }; Returns: Json };
+      receipt_order: { Args: { p_slug: string; p_token: string }; Returns: Json };
+      mark_receipt_sent: { Args: { p_order_id: string }; Returns: boolean };
       get_my_profile: {
         Args: never;
         Returns: {

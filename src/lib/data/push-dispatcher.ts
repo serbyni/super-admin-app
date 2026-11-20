@@ -102,14 +102,39 @@ export async function notifyNewOrder(slug: string, token: string): Promise<void>
   await sendPush(db, subscriptions, (t) => newOrderPush(order, c, t.locale, url));
 }
 
-/** Status change → the customer's phones (every step). */
-export async function notifyOrderUpdate(orderId: string): Promise<void> {
+/**
+ * Status change → the customer's phones (every step). Returns the order's café + token (for
+ * the receipt), or null when the order can't be read.
+ */
+export async function notifyOrderUpdate(
+  orderId: string,
+): Promise<{ slug: string; token: string } | null> {
   const db = createServiceClient();
-  if (!db || !pushConfig()) return;
+  if (!db) return null;
   const { data } = await db.rpc("push_order_update_targets", { p_order_id: orderId });
   const parsed = updateSchema.safeParse(data);
-  if (!parsed.success || parsed.data.subscriptions.length === 0) return;
+  if (!parsed.success) return null;
   const { order, cafe: c, subscriptions } = parsed.data;
-  const url = `${cafeUrl(c.slug)}/order/${order.token}`;
-  await sendPush(db, subscriptions, (t) => orderUpdatePush(order, c, t.locale, url));
+  if (pushConfig() && subscriptions.length) {
+    const url = `${cafeUrl(c.slug)}/order/${order.token}`;
+    await sendPush(db, subscriptions, (t) => orderUpdatePush(order, c, t.locale, url));
+  }
+  return { slug: c.slug, token: order.token };
+}
+
+/**
+ * Asks the receipt route (React Email can't render inside server actions) to e-mail the
+ * receipt. The route only sends for an accepted order with an e-mail, once.
+ */
+export async function requestReceipt(slug: string, token: string): Promise<void> {
+  try {
+    await fetch(siteUrl("/api/orders/receipt"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ slug, token }),
+      cache: "no-store",
+    });
+  } catch {
+    /* no receipt this time; the next accept/retry can send it */
+  }
 }

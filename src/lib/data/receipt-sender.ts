@@ -8,6 +8,7 @@ import { orderSchema } from "@/lib/orders/schema";
 import { createServiceClient } from "@/lib/supabase/service";
 
 const receiptSchema = orderSchema.extend({
+  orderId: z.string(),
   email: z.string().email(),
   token: z.string(),
   cafe: z.object({ name: z.string(), slug: z.string(), timezone: z.string() }),
@@ -20,17 +21,19 @@ function receiptFrom(): string | null {
 }
 
 /**
- * E-mails the receipt of an accepted order to the customer's address (if they gave one). Sent
- * at most once (receipt_order marks it). Direct send — customers have no account, so the
+ * E-mails the receipt of an accepted order to the customer's address (if they gave one). Marked
+ * as sent only after Resend accepted it (receipt_order returns nothing once sent). Direct send — customers have no account, so the
  * event/automation pipeline of the platform e-mails does not apply.
  */
-export async function sendReceipt(orderId: string): Promise<"sent" | "skipped" | "failed"> {
+export async function sendReceipt(
+  slug: string,
+  token: string,
+): Promise<"sent" | "skipped" | "failed"> {
   const config = emailConfig();
   const from = receiptFrom();
   const db = createServiceClient();
-  // Check the settings BEFORE claiming the receipt, so a missing setting doesn't use it up.
   if (!config || !from || !db) return "skipped";
-  const { data } = await db.rpc("receipt_order", { p_order_id: orderId });
+  const { data } = await db.rpc("receipt_order", { p_slug: slug, p_token: token });
   const parsed = receiptSchema.safeParse(data);
   if (!parsed.success) return "skipped";
   const o = parsed.data;
@@ -48,8 +51,10 @@ export async function sendReceipt(orderId: string): Promise<"sent" | "skipped" |
     text,
   });
   if (error) {
+    // Not marked: a later accept or retry can still send it.
     console.error("[receipt] send failed:", error.message);
     return "failed";
   }
+  await db.rpc("mark_receipt_sent", { p_order_id: o.orderId });
   return "sent";
 }

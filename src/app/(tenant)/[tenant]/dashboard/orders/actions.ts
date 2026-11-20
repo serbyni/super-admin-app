@@ -9,8 +9,7 @@ import { tenantDashboard } from "@/lib/auth/routes";
 import { isDataError } from "@/lib/data/errors";
 import { serverApi } from "@/lib/data/server-api";
 import { ORDER_STATUSES, type OrderStatus } from "@/lib/orders/schema";
-import { notifyOrderUpdate } from "@/lib/data/push-dispatcher";
-import { sendReceipt } from "@/lib/data/receipt-sender";
+import { notifyOrderUpdate, requestReceipt } from "@/lib/data/push-dispatcher";
 
 export type OrderResult = { ok: true; message?: string } | { ok: false; message: string };
 
@@ -39,10 +38,11 @@ export async function setOrderStatusAction(
     refresh(slug);
     return failure(e);
   }
-  // Customer's phones (push), after the response so the board stays instant.
-  after(() => notifyOrderUpdate(id));
-  // E-mail receipt when accepted (only if the customer gave an e-mail; once).
-  if (status === "accepted") after(() => sendReceipt(id).then(() => undefined));
+  // Customer's phones (push) + e-mail receipt when accepted — after the response.
+  after(async () => {
+    const o = await notifyOrderUpdate(id);
+    if (o && status === "accepted") await requestReceipt(o.slug, o.token);
+  });
   refresh(slug);
   return { ok: true };
 }
