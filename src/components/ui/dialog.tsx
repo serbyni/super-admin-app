@@ -22,6 +22,8 @@ type DialogProps = {
   actions?: ReactNode;
   /** Block Esc/backdrop closing while something is running. */
   dismissible?: boolean;
+  /** "md" = wider panel for forms (scrolls when taller than the screen). */
+  size?: "sm" | "md";
 };
 
 export type Tone = "primary" | "success" | "danger";
@@ -51,6 +53,7 @@ export function Dialog({
   children,
   actions,
   dismissible = true,
+  size = "sm",
 }: DialogProps) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
@@ -77,7 +80,7 @@ export function Dialog({
         // Click on the backdrop (the dialog element itself, outside the panel).
         if (e.target === e.currentTarget && dismissible) onClose();
       }}
-      className="m-auto w-11/12 max-w-card-sm rounded-xl bg-surface-container-lowest p-0 text-on-surface shadow-card-warm backdrop:bg-inverse-surface/50 backdrop:backdrop-blur-sm"
+      className={`m-auto max-h-screen w-11/12 overflow-y-auto ${size === "md" ? "max-w-card-md" : "max-w-card-sm"} rounded-xl bg-surface-container-lowest p-0 text-on-surface shadow-card-warm backdrop:bg-inverse-surface/50 backdrop:backdrop-blur-sm`}
     >
       <div className="flex flex-col gap-md p-lg">
         <div className="flex items-start gap-md">

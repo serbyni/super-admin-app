@@ -7,7 +7,9 @@ import { requireTenantOwner } from "@/lib/auth/guards";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
 import { cafePalette } from "@/lib/cafes/theme";
 import { serverApi } from "@/lib/data/server-api";
-import { defaultWebsite } from "@/lib/website/schema";
+import { tenantDashboard } from "@/lib/auth/routes";
+import { formatPrice } from "@/lib/menu/schema";
+import { SPECIALTIES_MAX, defaultWebsite, withAllSections } from "@/lib/website/schema";
 import { WebsiteEditor } from "./editor";
 
 export const metadata: Metadata = { title: "Website" };
@@ -18,7 +20,18 @@ async function Website({ params }: { params: PageProps<"/[tenant]/dashboard/webs
   const api = serverApi();
   const cafe = await api.cafes.mine(tenant);
   if (!cafe) notFound();
-  const site = await api.website.get(tenant);
+  const [site, menu] = await Promise.all([api.website.get(tenant), api.menu.get(tenant)]);
+  const visibleCats = new Set(menu.categories.filter((c) => c.isVisible).map((c) => c.id));
+  // Same rule as the café site: featured, visible, priced, in a visible category.
+  const featured = menu.items
+    .filter((i) => i.isFeatured && i.isVisible && i.price !== null && visibleCats.has(i.categoryId))
+    .slice(0, SPECIALTIES_MAX)
+    .map((i) => ({
+      id: i.id,
+      name: i.name,
+      price: formatPrice(i.price!, cafe.currency),
+      image: i.image,
+    }));
 
   return (
     <TenantShell cafe={cafe} email={user.email} active="website">
@@ -38,9 +51,11 @@ async function Website({ params }: { params: PageProps<"/[tenant]/dashboard/webs
             ? (parsePhoneNumberFromString(cafe.phone)?.formatInternational() ?? cafe.phone)
             : null,
         }}
-        initial={site.draft ?? site.published ?? defaultWebsite(cafe)}
-        published={site.published}
+        initial={withAllSections(site.draft ?? site.published ?? defaultWebsite(cafe))}
+        published={site.published ? withAllSections(site.published) : null}
         publishedAt={site.publishedAt}
+        featured={featured}
+        menuHref={`${tenantDashboard(cafe.slug).replace(/\/$/, "")}/menu`}
       />
     </TenantShell>
   );

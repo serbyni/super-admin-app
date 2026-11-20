@@ -16,7 +16,7 @@ function cafeNav(slug: string): ShellNavItem[] {
   return [
     { href: base, icon: "dashboard", label: "Dashboard" },
     { href: `${base}/website`, icon: "web", label: "Website" },
-    { href: `${base}/menu`, icon: "restaurant_menu", label: "Menu", soon: true },
+    { href: `${base}/menu`, icon: "restaurant_menu", label: "Menu" },
     { href: `${base}/tables`, icon: "table_restaurant", label: "Tables & QR" },
     { href: `${base}/orders`, icon: "receipt_long", label: "Orders", soon: true },
     { href: `${base}/staff`, icon: "group", label: "Staff", soon: true },

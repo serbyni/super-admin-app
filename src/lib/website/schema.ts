@@ -24,7 +24,7 @@ export const HIGHLIGHT_ICONS = [
 ] as const;
 const ICON_VALUES = HIGHLIGHT_ICONS.map((i) => i.value) as [string, ...string[]];
 
-export const SECTION_TYPES = ["how_it_works", "story", "gallery"] as const;
+export const SECTION_TYPES = ["how_it_works", "story", "gallery", "specialties"] as const;
 export type SectionType = (typeof SECTION_TYPES)[number];
 
 /** Monday first. */
@@ -87,7 +87,22 @@ const gallerySchema = z.object({
   images: z.array(imageSchema).max(LIMITS.galleryImages),
 });
 
-const sectionSchema = z.discriminatedUnion("type", [howItWorksSchema, storySchema, gallerySchema]);
+/** Signature specialties: the café's FEATURED menu items (read live from the menu, up to 4). */
+const specialtiesSchema = z.object({
+  type: z.literal("specialties"),
+  enabled: z.boolean(),
+  title: required(2, 80, "a title"),
+  text: text(300),
+});
+
+export const SPECIALTIES_MAX = 4;
+
+const sectionSchema = z.discriminatedUnion("type", [
+  howItWorksSchema,
+  storySchema,
+  gallerySchema,
+  specialtiesSchema,
+]);
 
 const daySchema = z
   .object({ closed: z.boolean(), open: time, close: time })
@@ -167,6 +182,12 @@ export function defaultWebsite(cafe: { name: string }): Website {
         quoteAuthor: "",
       },
       { type: "gallery", enabled: false, title: "Gallery", images: [] },
+      {
+        type: "specialties",
+        enabled: false,
+        title: "Signature specialties",
+        text: "Our favourites, prepared fresh every day.",
+      },
     ],
     footer: {
       hours: WEEKDAYS.map((_, i) => ({
@@ -179,6 +200,16 @@ export function defaultWebsite(cafe: { name: string }): Website {
 }
 
 /** Stored JSON → Website; anything unreadable falls back to null (caller shows defaults). */
+/**
+ * Adds sections that did not exist when the website was saved (new section types), switched off,
+ * at the end — so the editor always lists every section.
+ */
+export function withAllSections(w: Website): Website {
+  const have = new Set(w.sections.map((s) => s.type));
+  const missing = defaultWebsite({ name: "" }).sections.filter((s) => !have.has(s.type));
+  return missing.length ? { ...w, sections: [...w.sections, ...missing] } : w;
+}
+
 export function parseWebsite(raw: unknown): Website | null {
   const r = websiteSchema.safeParse(raw);
   return r.success ? r.data : null;
