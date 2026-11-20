@@ -1,4 +1,7 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
+import { applyOwnerLocale } from "@/i18n/owner-locale";
+import { qrCardText, tableTitle } from "@/lib/qr/card-text";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
@@ -11,7 +14,10 @@ import { siteUrl } from "@/lib/env";
 import { qrCardSvg, qrStickerSvg } from "@/lib/qr/card";
 import { PrintButton } from "./print-button";
 
-export const metadata: Metadata = { title: "Print QR codes" };
+export async function generateMetadata(): Promise<Metadata> {
+  await applyOwnerLocale();
+  return { title: (await getTranslations("tables.printPage"))("metaTitle") };
+}
 
 /**
  * A4 sheet printed from the browser — large cards (4 per page) or small table stickers
@@ -30,10 +36,12 @@ async function PrintSheet({
   const { area, menu, size } = await searchParams;
   const small = size === "small";
   await requireTenantOwner(tenant);
+  await applyOwnerLocale();
+  const t = await getTranslations("tables.printPage");
   const api = serverApi();
   const cafe = await api.cafes.mine(tenant);
   if (!cafe) notFound();
-  const floor = await api.tables.floor(tenant);
+  const [floor, text] = await Promise.all([api.tables.floor(tenant), qrCardText(cafe.locale)]);
   const p = cafePalette(cafe.seed);
   const colors = {
     primary: p.primary,
@@ -63,15 +71,16 @@ async function PrintSheet({
             svg: small
               ? qrStickerSvg({
                   url: url(floor.menu.code),
-                  label: "Menu",
+                  label: text.menu,
                   code: floor.menu.code,
                   colors,
                 })
               : qrCardSvg({
                   url: url(floor.menu.code),
                   cafeName: cafe.name,
-                  title: "Menu",
-                  subtitle: "Scan to see our menu",
+                  title: text.menu,
+                  subtitle: text.menuSubtitle,
+                  footer: text.poweredBy,
                   code: floor.menu.code,
                   colors,
                 }),
@@ -84,8 +93,9 @@ async function PrintSheet({
         : qrCardSvg({
             url: url(t.code!),
             cafeName: cafe.name,
-            title: `Table ${t.label}`,
-            subtitle: "Scan to order",
+            title: tableTitle(text, t.label),
+            subtitle: text.tableSubtitle,
+            footer: text.poweredBy,
             code: t.code!,
             colors,
           }),
@@ -107,14 +117,14 @@ async function PrintSheet({
           href={back}
           className="inline-flex items-center gap-xs text-body-sm font-semibold text-primary"
         >
-          <Icon name="arrow_back" className="text-icon-md" flipRtl /> Tables & QR
+          <Icon name="arrow_back" className="text-icon-md" flipRtl /> {t("back")}
         </Link>
-        <nav aria-label="Which cards" className="flex flex-wrap gap-xs text-body-sm">
+        <nav aria-label={t("which")} className="flex flex-wrap gap-xs text-body-sm">
           <Link
             href={filterLink({})}
             className={`rounded-full px-md py-xs ${!areaFilter ? "bg-primary text-on-primary" : "bg-surface-container"}`}
           >
-            All areas
+            {t("allAreas")}
           </Link>
           {floor.areas.map((a) => (
             <Link
@@ -126,27 +136,36 @@ async function PrintSheet({
             </Link>
           ))}
         </nav>
-        <nav aria-label="Size" className="flex rounded-xl bg-surface-container p-xs text-body-sm">
+        <nav
+          aria-label={t("size")}
+          className="flex rounded-xl bg-surface-container p-xs text-body-sm"
+        >
           <Link
             href={sizeLink(false)}
             aria-current={!small ? "page" : undefined}
             className={`rounded-lg px-md py-xs font-semibold ${!small ? "bg-surface-container-lowest text-primary shadow-sm" : "text-on-surface-variant"}`}
           >
-            Cards · 4/page
+            {t("cards")}
           </Link>
           <Link
             href={sizeLink(true)}
             aria-current={small ? "page" : undefined}
             className={`rounded-lg px-md py-xs font-semibold ${small ? "bg-surface-container-lowest text-primary shadow-sm" : "text-on-surface-variant"}`}
           >
-            Stickers · 20/page
+            {t("stickers")}
           </Link>
         </nav>
-        <PrintButton count={cards.length} noun={small ? "sticker" : "card"} />
+        <PrintButton
+          label={
+            small
+              ? t("printStickers", { count: cards.length })
+              : t("printCards", { count: cards.length })
+          }
+          disabled={cards.length === 0}
+        />
       </div>
       <p className="px-gutter pt-sm text-caption text-on-surface-variant print:hidden">
-        {small ? "A4, 20 stickers per page (about 5 × 6 cm)." : "A4, 4 cards per page."}{" "}
-        Switched-off tables are not printed. Cut along the edges.
+        {small ? t("smallNote") : t("cardsNote")} {t("note")}
       </p>
       <div
         className={`mx-auto grid max-w-4xl p-lg print:max-w-none print:p-0 ${small ? "grid-cols-4 gap-md print:gap-sm" : "grid-cols-2 gap-lg print:gap-md"}`}

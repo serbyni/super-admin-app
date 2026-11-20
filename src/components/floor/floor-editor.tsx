@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { Icon } from "@/components/ui/icon";
 import {
@@ -37,6 +38,8 @@ const NUDGE = 0.1;
 const pos = (t: CafeTable): Placement => ({ id: t.id, x: t.x, y: t.y, rotation: t.rotation });
 
 export function FloorEditor({ area, tables, saving, onSave, onOpen, onDirtyChange }: Props) {
+  const t = useTranslations("tables.floor");
+  const tt = useTranslations("tables");
   const svg = useRef<SVGSVGElement>(null);
   const saved = useMemo(() => Object.fromEntries(tables.map((t) => [t.id, pos(t)])), [tables]);
   const [layout, setLayout] = useState<Record<string, Placement>>(saved);
@@ -163,20 +166,22 @@ export function FloorEditor({ area, tables, saving, onSave, onOpen, onDirtyChang
               </span>
               <ToolButton
                 icon="rotate_left"
-                label="Rotate left 15°"
+                label={t("rotateLeft")}
                 onClick={() => rotate(sel.id, -15)}
               />
               <ToolButton
                 icon="rotate_right"
-                label="Rotate right 15°"
+                label={t("rotateRight")}
                 onClick={() => rotate(sel.id, 15)}
               />
-              <ToolButton icon="edit" label={`Edit ${sel.label}`} onClick={() => onOpen(sel)} />
+              <ToolButton
+                icon="edit"
+                label={tt("editName", { name: sel.label })}
+                onClick={() => onOpen(sel)}
+              />
             </>
           ) : (
-            <span className="text-on-surface-variant">
-              Drag tables to place them. Select one to rotate it — or use the arrow keys and R.
-            </span>
+            <span className="text-on-surface-variant">{t("help")}</span>
           )}
         </div>
         <div className="flex flex-wrap items-center gap-sm">
@@ -187,7 +192,7 @@ export function FloorEditor({ area, tables, saving, onSave, onOpen, onDirtyChang
               onChange={(e) => setSnapOn(e.target.checked)}
               className="h-4 w-4 accent-primary"
             />
-            Snap to 25 cm
+            {t("snap")}
           </label>
           <button
             type="button"
@@ -195,7 +200,7 @@ export function FloorEditor({ area, tables, saving, onSave, onOpen, onDirtyChang
             onClick={() => setLayout(saved)}
             className="rounded-xl px-md py-sm text-body-sm font-semibold text-on-surface-variant hover:bg-surface-container disabled:opacity-50"
           >
-            Undo changes
+            {t("undo")}
           </button>
           <button
             type="button"
@@ -209,7 +214,7 @@ export function FloorEditor({ area, tables, saving, onSave, onOpen, onDirtyChang
               name={saving ? "progress_activity" : "save"}
               className={`text-icon-md ${saving ? "animate-spin" : ""}`}
             />
-            {dirty ? "Save layout" : "Layout saved"}
+            {dirty ? t("save") : t("saved")}
           </button>
         </div>
       </div>
@@ -227,7 +232,7 @@ export function FloorEditor({ area, tables, saving, onSave, onOpen, onDirtyChang
           viewBox={`-0.3 -0.3 ${area.widthM + 0.6} ${area.depthM + 0.6}`}
           className="block h-auto w-full min-w-2xl touch-none select-none"
           role="application"
-          aria-label={`Floor plan of ${area.name}, ${area.widthM} by ${area.depthM} metres`}
+          aria-label={t("planLabel", { name: area.name, width: area.widthM, depth: area.depthM })}
           onPointerDown={(e) => {
             if (e.target === e.currentTarget) setSelected(null);
           }}
@@ -246,10 +251,10 @@ export function FloorEditor({ area, tables, saving, onSave, onOpen, onDirtyChang
           {[
             ...placed.filter((t) => t.id !== selected),
             ...placed.filter((t) => t.id === selected),
-          ].map((t) => {
-            const f = footprint(t.shape, t.seats);
-            const isSel = t.id === selected;
-            const bad = clash.has(t.id);
+          ].map((tb) => {
+            const f = footprint(tb.shape, tb.seats);
+            const isSel = tb.id === selected;
+            const bad = clash.has(tb.id);
             const top = bad
               ? "fill-error-container stroke-error"
               : isSel
@@ -257,22 +262,30 @@ export function FloorEditor({ area, tables, saving, onSave, onOpen, onDirtyChang
                 : "fill-surface-container-lowest stroke-outline";
             return (
               <g
-                key={t.id}
+                key={tb.id}
                 role="button"
                 tabIndex={0}
-                aria-label={`${t.label}, ${t.seats} seats, at ${t.x.toFixed(1)} by ${t.y.toFixed(1)} metres, rotated ${t.rotation} degrees${bad ? ", overlaps another table" : ""}`}
+                aria-label={
+                  t("tableLabel", {
+                    label: tb.label,
+                    seats: tb.seats,
+                    x: tb.x.toFixed(1),
+                    y: tb.y.toFixed(1),
+                    rotation: tb.rotation,
+                  }) + (bad ? t("overlaps") : "")
+                }
                 aria-pressed={isSel}
-                transform={`translate(${t.x} ${t.y}) rotate(${t.rotation})`}
-                className={`cursor-grab focus:outline-none active:cursor-grabbing ${t.isActive ? "" : "opacity-50"}`}
-                onPointerDown={(e) => onPointerDown(e, t)}
+                transform={`translate(${tb.x} ${tb.y}) rotate(${tb.rotation})`}
+                className={`cursor-grab focus:outline-none active:cursor-grabbing ${tb.isActive ? "" : "opacity-50"}`}
+                onPointerDown={(e) => onPointerDown(e, tb)}
                 onPointerMove={onPointerMove}
                 onPointerUp={onPointerUp}
                 onPointerCancel={onPointerUp}
-                onFocus={() => setSelected(t.id)}
-                onKeyDown={(e) => onKey(e, t)}
-                onDoubleClick={() => onOpen(t)}
+                onFocus={() => setSelected(tb.id)}
+                onKeyDown={(e) => onKey(e, tb)}
+                onDoubleClick={() => onOpen(tb)}
               >
-                {chairs(t.shape, t.seats).map((c, i) => (
+                {chairs(tb.shape, tb.seats).map((c, i) => (
                   <rect
                     key={i}
                     x={c.x - 0.2}
@@ -300,14 +313,14 @@ export function FloorEditor({ area, tables, saving, onSave, onOpen, onDirtyChang
                 )}
                 {/* Label stays upright whatever the table's rotation. */}
                 <text
-                  transform={`rotate(${-t.rotation})`}
+                  transform={`rotate(${-tb.rotation})`}
                   textAnchor="middle"
                   dominantBaseline="central"
                   fontSize={Math.min(0.32, f.w / 2.6)}
                   fontWeight={700}
                   className="pointer-events-none fill-on-surface"
                 >
-                  {t.label}
+                  {tb.label}
                 </text>
                 {isSel ? (
                   <circle
@@ -323,8 +336,7 @@ export function FloorEditor({ area, tables, saving, onSave, onOpen, onDirtyChang
         </svg>
       </div>
       <p className="text-caption text-on-surface-variant">
-        {area.name}: {area.widthM} × {area.depthM} m · grid 50 cm. Double-click a table (or press
-        Enter) to edit it.
+        {t("footer", { name: area.name, width: area.widthM, depth: area.depthM })}
       </p>
     </div>
   );

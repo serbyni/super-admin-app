@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { msg } from "@/i18n/msg";
 
 /* Tables & QR codes: shapes, form rules and the floor data returned by get_my_floor. */
 
@@ -15,27 +16,35 @@ export const LIMITS = { areas: 20, tables: 200 } as const;
 
 /** Area form (sizes in metres). */
 export const areaSchema = z.object({
-  name: z.string().trim().min(1, "Enter a name").max(40, "At most 40 characters"),
+  name: z
+    .string()
+    .trim()
+    .min(1, msg("enterName"))
+    .max(40, msg("maxChars", { max: 40 })),
   width_m: z.coerce
-    .number({ error: "Enter a number" })
-    .min(3, "At least 3 m")
-    .max(60, "At most 60 m"),
+    .number({ error: msg("enterNumber") })
+    .min(3, msg("minMetres", { min: 3 }))
+    .max(60, msg("maxMetres", { max: 60 })),
   depth_m: z.coerce
-    .number({ error: "Enter a number" })
-    .min(3, "At least 3 m")
-    .max(60, "At most 60 m"),
+    .number({ error: msg("enterNumber") })
+    .min(3, msg("minMetres", { min: 3 }))
+    .max(60, msg("maxMetres", { max: 60 })),
 });
 
 /** Table form. */
 export const tableSchema = z.object({
-  area_id: z.uuid("Choose an area"),
-  label: z.string().trim().min(1, "Enter a name, e.g. T1").max(20, "At most 20 characters"),
+  area_id: z.uuid(msg("chooseArea")),
+  label: z
+    .string()
+    .trim()
+    .min(1, msg("enterTableName"))
+    .max(20, msg("maxChars", { max: 20 })),
   seats: z.coerce
-    .number({ error: "Enter a number" })
+    .number({ error: msg("enterNumber") })
     .int()
-    .min(1, "At least 1")
-    .max(20, "At most 20"),
-  shape: z.enum(SHAPES, { error: "Choose a shape" }),
+    .min(1, msg("minNumber", { min: 1 }))
+    .max(20, msg("maxNumber", { max: 20 })),
+  shape: z.enum(SHAPES, { error: msg("chooseShape") }),
   is_active: z.preprocess((v) => v === "on" || v === "true" || v === true, z.boolean()),
 });
 

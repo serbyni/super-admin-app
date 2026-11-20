@@ -29,6 +29,8 @@ export type QrCardInput = {
   colors: QrColors;
   /** Brand mark in the middle of the code (default true). */
   logo?: boolean;
+  /** Small line at the bottom (default "Powered by Serbi"; the café's language when printed). */
+  footer?: string;
 };
 
 export type QrStickerInput = Pick<QrCardInput, "url" | "code" | "colors" | "logo"> & {
@@ -105,7 +107,7 @@ export function qrCardSvg(c: QrCardInput): string {
 ${qrBlock(c.url, qrX, qrY, qrBox, c.logo ?? true)}
 <text x="${W / 2}" y="${qrY + qrBox + 62}" text-anchor="middle" font-family="${FONT}" font-size="34" font-weight="800" fill="${c.colors.primary}">${esc(fit(c.title, 18))}</text>
 <text x="${W / 2}" y="${qrY + qrBox + 92}" text-anchor="middle" font-family="${FONT}" font-size="13" letter-spacing="3" fill="#82746d">CODE ${esc(c.code)}</text>
-<text x="${W / 2}" y="${H - 36}" text-anchor="middle" font-family="${FONT}" font-size="11" fill="#82746d">Powered by Serbi</text>
+<text x="${W / 2}" y="${H - 36}" text-anchor="middle" font-family="${FONT}" font-size="11" fill="#82746d">${esc(c.footer ?? "Powered by Serbi")}</text>
 </svg>`;
 }
 

@@ -6,6 +6,7 @@ import { requireTenantOwner } from "@/lib/auth/guards";
 import { tenantDashboard } from "@/lib/auth/routes";
 import { inputField, isDataError } from "@/lib/data/errors";
 import { serverApi } from "@/lib/data/server-api";
+import { msg } from "@/i18n/msg";
 import { zodErrors } from "@/lib/settings/schema";
 import { areaSchema, tableSchema } from "@/lib/tables/schema";
 
@@ -19,12 +20,12 @@ const refresh = (slug: string) => revalidatePath(`${tenantDashboard(slug)}/table
 
 function failure(e: unknown, fallback: string, labels: Record<string, string> = {}): TablesResult {
   const field = inputField(e);
-  if (field === "limit") return { ok: false, message: "You reached the limit for this café." };
+  if (field === "limit") return { ok: false, message: msg("limitReached") };
   if (field)
     return {
       ok: false,
-      message: "Please check the form.",
-      errors: { [field]: labels[field] ?? "Please check this value." },
+      message: msg("checkForm"),
+      errors: { [field]: labels[field] ?? msg("checkValue") },
     };
   if (isDataError(e, "conflict"))
     return {
@@ -32,9 +33,8 @@ function failure(e: unknown, fallback: string, labels: Record<string, string> = 
       message: fallback,
       errors: labels.conflict ? { [labels.conflictField ?? "name"]: labels.conflict } : undefined,
     };
-  if (isDataError(e, "in_use"))
-    return { ok: false, message: "Move or delete the tables of this area first." };
-  if (isDataError(e)) return { ok: false, message: "Something went wrong. Please try again." };
+  if (isDataError(e, "in_use")) return { ok: false, message: msg("areaNotEmpty") };
+  if (isDataError(e)) return { ok: false, message: msg("somethingWrong") };
   throw e;
 }
 
@@ -46,7 +46,7 @@ export async function saveAreaAction(
   await requireTenantOwner(slug);
   const parsed = areaSchema.safeParse(values(form));
   if (!parsed.success)
-    return { ok: false, message: "Please check the form.", errors: zodErrors(parsed.error) };
+    return { ok: false, message: msg("checkForm"), errors: zodErrors(parsed.error) };
   try {
     const areaId = await serverApi().tables.saveArea(slug, id, {
       name: parsed.data.name,
@@ -54,10 +54,10 @@ export async function saveAreaAction(
       depthM: parsed.data.depth_m,
     });
     refresh(slug);
-    return { ok: true, id: areaId, message: id ? "Area saved" : "Area added" };
+    return { ok: true, id: areaId, message: id ? msg("areaSaved") : msg("areaAdded") };
   } catch (e) {
-    return failure(e, "This name is already used.", {
-      conflict: "Another area has this name",
+    return failure(e, msg("nameTaken"), {
+      conflict: msg("areaNameTaken"),
       conflictField: "name",
     });
   }
@@ -68,9 +68,9 @@ export async function deleteAreaAction(slug: string, id: string): Promise<Tables
   try {
     await serverApi().tables.deleteArea(slug, id);
     refresh(slug);
-    return { ok: true, message: "Area deleted" };
+    return { ok: true, message: msg("areaDeleted") };
   } catch (e) {
-    return failure(e, "Could not delete the area.");
+    return failure(e, msg("areaDeleteFailed"));
   }
 }
 
@@ -82,7 +82,7 @@ export async function saveTableAction(
   await requireTenantOwner(slug);
   const parsed = tableSchema.safeParse(values(form));
   if (!parsed.success)
-    return { ok: false, message: "Please check the form.", errors: zodErrors(parsed.error) };
+    return { ok: false, message: msg("checkForm"), errors: zodErrors(parsed.error) };
   const d = parsed.data;
   try {
     const tableId = await serverApi().tables.saveTable(slug, id, {
@@ -93,10 +93,14 @@ export async function saveTableAction(
       isActive: d.is_active,
     });
     refresh(slug);
-    return { ok: true, id: tableId, message: id ? "Table saved" : `Table ${d.label} added` };
+    return {
+      ok: true,
+      id: tableId,
+      message: id ? msg("tableSaved") : msg("tableAdded", { label: d.label }),
+    };
   } catch (e) {
-    return failure(e, "This table name is already used.", {
-      conflict: "Another table has this name",
+    return failure(e, msg("tableNameTakenForm"), {
+      conflict: msg("tableNameTaken"),
       conflictField: "label",
     });
   }
@@ -107,9 +111,9 @@ export async function deleteTableAction(slug: string, id: string): Promise<Table
   try {
     await serverApi().tables.deleteTable(slug, id);
     refresh(slug);
-    return { ok: true, message: "Table deleted" };
+    return { ok: true, message: msg("tableDeleted") };
   } catch (e) {
-    return failure(e, "Could not delete the table.");
+    return failure(e, msg("tableDeleteFailed"));
   }
 }
 
@@ -122,9 +126,9 @@ export async function regenerateCodeAction(
   try {
     await serverApi().tables.regenerateCode(slug, tableId);
     refresh(slug);
-    return { ok: true, message: "New QR code created — print and replace the old one" };
+    return { ok: true, message: msg("codeCreated") };
   } catch (e) {
-    return failure(e, "Could not create a new code.");
+    return failure(e, msg("codeFailed"));
   }
 }
 
@@ -143,13 +147,12 @@ const layoutSchema = z
 export async function saveLayoutAction(slug: string, layout: unknown): Promise<TablesResult> {
   await requireTenantOwner(slug);
   const parsed = layoutSchema.safeParse(layout);
-  if (!parsed.success)
-    return { ok: false, message: "Could not save the layout. Reload and try again." };
+  if (!parsed.success) return { ok: false, message: msg("layoutReload") };
   try {
     await serverApi().tables.saveLayout(slug, parsed.data);
     refresh(slug);
-    return { ok: true, message: "Floor plan saved" };
+    return { ok: true, message: msg("layoutSaved") };
   } catch (e) {
-    return failure(e, "Could not save the layout.");
+    return failure(e, msg("layoutFailed"));
   }
 }
