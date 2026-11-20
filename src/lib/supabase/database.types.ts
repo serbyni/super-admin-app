@@ -152,6 +152,8 @@ export type Database = {
       };
       cafes: {
         Row: {
+          extra_locales: string[];
+          locales: string[];
           address: string | null;
           agreed_at: string;
           city: string | null;
@@ -230,6 +232,7 @@ export type Database = {
       };
       menu_categories: {
         Row: {
+          i18n: Json;
           cafe_id: string;
           created_at: string;
           id: string;
@@ -260,6 +263,7 @@ export type Database = {
       };
       menu_items: {
         Row: {
+          i18n: Json;
           cafe_id: string;
           category_id: string;
           created_at: string;
@@ -556,6 +560,7 @@ export type Database = {
           status: string;
           theme: Json;
           website: Json;
+          locales: string[];
         }[];
       };
       get_my_website: {
@@ -605,13 +610,20 @@ export type Database = {
       get_my_menu: { Args: { p_slug: string }; Returns: Json };
       get_public_menu: { Args: { p_slug: string }; Returns: Json };
       save_my_menu_category: {
-        Args: { p_id: string | null; p_is_visible: boolean; p_name: string; p_slug: string };
+        Args: {
+          p_i18n?: Json;
+          p_id: string | null;
+          p_is_visible: boolean;
+          p_name: string;
+          p_slug: string;
+        };
         Returns: string;
       };
       delete_my_menu_category: { Args: { p_id: string; p_slug: string }; Returns: undefined };
       reorder_my_menu_categories: { Args: { p_ids: string[]; p_slug: string }; Returns: undefined };
       save_my_menu_item: {
         Args: {
+          p_i18n?: Json;
           p_category_id: string;
           p_description: string;
           p_id: string | null;
@@ -636,6 +648,36 @@ export type Database = {
         Returns: undefined;
       };
       apply_my_menu_template: { Args: { p_slug: string }; Returns: undefined };
+      get_my_languages: { Args: { p_slug: string }; Returns: Json };
+      set_my_languages: { Args: { p_locales: string[]; p_slug: string }; Returns: undefined };
+      request_my_language: {
+        Args: { p_locale: string; p_note: string; p_slug: string };
+        Returns: string;
+      };
+      admin_list_language_requests: {
+        Args: { p_status?: string };
+        Returns: {
+          cafe_name: string;
+          cafe_slug: string;
+          created_at: string;
+          decided_at: string;
+          decision_note: string;
+          id: string;
+          locale: string;
+          note: string;
+          owner_email: string;
+          status: string;
+        }[];
+      };
+      admin_decide_language_request: {
+        Args: { p_approve: boolean; p_id: string; p_note: string };
+        Returns: undefined;
+      };
+      admin_get_cafe_languages: { Args: { p_slug: string }; Returns: Json };
+      admin_set_cafe_extra_locales: {
+        Args: { p_locales: string[]; p_slug: string };
+        Returns: undefined;
+      };
       get_my_owner: {
         Args: never;
         Returns: {
