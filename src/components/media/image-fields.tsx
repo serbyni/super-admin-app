@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useRef } from "react";
 import { Icon } from "@/components/ui/icon";
 import { ACCEPTED_IMAGE_TYPES } from "@/lib/media/image";
@@ -22,6 +23,7 @@ function Picker({
   busy: boolean;
   onFiles: (files: File[]) => void;
 }) {
+  const t = useTranslations("media");
   const input = useRef<HTMLInputElement>(null);
   return (
     <>
@@ -48,13 +50,14 @@ function Picker({
           name={busy ? "progress_activity" : "add_photo_alternate"}
           className={`text-icon-lg ${busy ? "animate-spin" : ""}`}
         />
-        {busy ? "Uploading…" : label}
+        {busy ? t("uploading") : label}
       </button>
     </>
   );
 }
 
 function Thumb({ image, onRemove }: { image: MediaImage; onRemove: () => void }) {
+  const t = useTranslations("media");
   return (
     <div className="group relative aspect-video overflow-hidden rounded-lg bg-surface-container">
       {/* eslint-disable-next-line @next/next/no-img-element -- user photo from Supabase Storage */}
@@ -62,7 +65,7 @@ function Thumb({ image, onRemove }: { image: MediaImage; onRemove: () => void })
       <button
         type="button"
         onClick={onRemove}
-        aria-label="Remove photo"
+        aria-label={t("remove")}
         className="absolute end-xs top-xs flex h-8 w-8 items-center justify-center rounded-full bg-surface-container-lowest text-error shadow-sm"
       >
         <Icon name="delete" className="text-icon-md" />
@@ -85,6 +88,7 @@ export function ImageField({
   onChange: (v: MediaImage | null) => void;
   error?: string;
 }) {
+  const t = useTranslations("media");
   const { busy, upload } = useMediaUpload(cafeId);
   return (
     <div className="flex flex-col gap-sm">
@@ -99,7 +103,7 @@ export function ImageField({
       ) : null}
       <div>
         <Picker
-          label={value ? "Replace photo" : "Upload photo"}
+          label={value ? t("replace") : t("upload")}
           busy={busy}
           onFiles={async (files) => {
             const [img] = await upload(files.slice(0, 1));
@@ -126,6 +130,7 @@ export function GalleryField({
   onChange: (v: MediaImage[]) => void;
   error?: string;
 }) {
+  const t = useTranslations("media");
   const { busy, upload } = useMediaUpload(cafeId);
   const left = max - value.length;
   return (
@@ -143,7 +148,7 @@ export function GalleryField({
       ) : null}
       <div className="flex flex-wrap items-center gap-sm">
         <Picker
-          label="Add photos"
+          label={t("addPhotos")}
           multiple
           busy={busy}
           disabled={left <= 0}
@@ -164,9 +169,10 @@ export function GalleryField({
 }
 
 function AltInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const t = useTranslations("media");
   return (
     <label className="flex flex-col gap-xs text-caption text-on-surface-variant">
-      Photo description (for screen readers)
+      {t("alt")}
       <input
         value={value}
         maxLength={150}

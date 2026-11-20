@@ -35,7 +35,9 @@ export function BrandColourPicker({
                 style={{ backgroundColor: p.seed }}
               />
               <span className="text-caption text-on-surface-variant">
-                {t.has(`colours.${p.name}`) ? t(`colours.${p.name}` as "colours.Sage") : p.name}
+                {t.has(`colours.${p.name}` as "colours.Sage")
+                  ? t(`colours.${p.name}` as "colours.Sage")
+                  : p.name}
               </span>
             </button>
           ))}

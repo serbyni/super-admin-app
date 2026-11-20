@@ -1,5 +1,7 @@
 /* Browser-only photo processing for uploads (canvas + Web Crypto). */
 
+import { msg } from "@/i18n/msg";
+
 export class MediaError extends Error {}
 
 export const ACCEPTED_IMAGE_TYPES = [
@@ -23,7 +25,7 @@ export async function resizeImage(
   quality = 0.82,
 ): Promise<{ blob: Blob; ext: "webp" | "jpg" }> {
   const bitmap = await createImageBitmap(file).catch(() => {
-    throw new MediaError("This file can't be read as a photo. Use JPG, PNG or WebP.");
+    throw new MediaError(msg("mediaUnreadable"));
   });
   const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
   const canvas = document.createElement("canvas");
@@ -36,6 +38,6 @@ export async function resizeImage(
   const webp = await encode("image/webp");
   if (webp && webp.type === "image/webp") return { blob: webp, ext: "webp" };
   const jpg = await encode("image/jpeg");
-  if (!jpg) throw new MediaError("This photo could not be processed.");
+  if (!jpg) throw new MediaError(msg("mediaProcessFailed"));
   return { blob: jpg, ext: "jpg" };
 }

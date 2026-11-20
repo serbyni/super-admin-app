@@ -18,13 +18,16 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useTranslations } from "next-intl";
 import { useId, useMemo, useState, useTransition, type FormEvent, type ReactNode } from "react";
 import { TextAreaField, TextField } from "@/components/auth/fields";
 import { ImageField } from "@/components/media/image-fields";
 import { ConfirmDialog, Dialog } from "@/components/ui/dialog";
 import { Icon } from "@/components/ui/icon";
 import { useToast } from "@/components/ui/toast";
-import { isRtlLanguage, languageLabel } from "@/lib/i18n/languages";
+import { useLanguageLabel } from "@/i18n/use-language-label";
+import { useMsg } from "@/i18n/use-msg";
+import { isRtlLanguage } from "@/lib/i18n/languages";
 import { mediaUrl } from "@/lib/media/config";
 import {
   MENU_LIMITS,
@@ -62,14 +65,18 @@ type Confirm = { kind: "item"; item: MenuItem } | { kind: "category"; category: 
 
 const ALL = "all";
 
-const STATUS: Record<ReturnType<typeof itemStatus>, { label: string; className: string }> = {
-  available: { label: "Available", className: "bg-success-container text-success" },
-  sold_out: { label: "Sold out", className: "bg-inverse-surface text-inverse-on-surface" },
-  hidden: { label: "Hidden", className: "bg-surface-container-high text-on-surface-variant" },
-  no_price: { label: "No price", className: "bg-warning-container text-on-warning-container" },
-};
+const STATUS = {
+  available: { label: "statusAvailable", className: "bg-success-container text-success" },
+  sold_out: { label: "statusSoldOut", className: "bg-inverse-surface text-inverse-on-surface" },
+  hidden: { label: "statusHidden", className: "bg-surface-container-high text-on-surface-variant" },
+  no_price: { label: "statusNoPrice", className: "bg-warning-container text-on-warning-container" },
+} as const satisfies Record<ReturnType<typeof itemStatus>, { label: string; className: string }>;
 
 export function MenuManager({ slug, cafeId, currency, menu, languages }: Props) {
+  const t = useTranslations("menu");
+  const tc = useTranslations("common");
+  const m = useMsg();
+  const languageLabel = useLanguageLabel();
   const toast = useToast();
   const [pending, start] = useTransition();
   const [categoryId, setCategoryId] = useState<string>(menu.categories[0]?.id ?? ALL);
@@ -126,11 +133,11 @@ export function MenuManager({ slug, cafeId, currency, menu, languages }: Props) 
       if (!r.ok) {
         setErrors(r.errors ?? {});
         setConfirm(null); // a refused delete is explained by the toast; keep forms open to fix fields
-        toast.show({ variant: "error", title: r.message });
+        toast.show({ variant: "error", title: m(r.message) });
         return;
       }
       setErrors({});
-      if (r.message && !quiet) toast.show({ variant: "success", title: r.message });
+      if (r.message && !quiet) toast.show({ variant: "success", title: m(r.message) });
       after?.(r);
     });
 
@@ -157,21 +164,18 @@ export function MenuManager({ slug, cafeId, currency, menu, languages }: Props) 
           <span className="flex h-16 w-16 items-center justify-center rounded-full bg-secondary-container text-primary">
             <Icon name="restaurant_menu" className="text-icon-2xl" />
           </span>
-          <h2 className="text-headline-md text-on-surface">Your menu is empty</h2>
-          <p className="max-w-card-md text-body-md text-on-surface-variant">
-            Start from a ready-made café menu (Coffee, Tea, Pastries, Cold drinks — in your menu
-            language) and edit it, or start empty. Items show to customers once they have a price.
-          </p>
+          <h2 className="text-headline-md text-on-surface">{t("emptyTitle")}</h2>
+          <p className="max-w-card-md text-body-md text-on-surface-variant">{t("emptyBody")}</p>
           <div className="flex flex-wrap justify-center gap-sm">
             <PrimaryButton
               icon="auto_awesome"
               disabled={pending}
               onClick={() => run(() => applyTemplateAction(slug))}
             >
-              Start from a template
+              {t("startTemplate")}
             </PrimaryButton>
             <OutlineButton icon="add" onClick={() => setCategoryForm("new")}>
-              Start empty
+              {t("startEmpty")}
             </OutlineButton>
           </div>
         </section>
@@ -200,15 +204,14 @@ export function MenuManager({ slug, cafeId, currency, menu, languages }: Props) 
       {notPriced ? (
         <p className="bg-warning-container text-on-warning-container flex items-center gap-sm rounded-xl px-md py-sm text-body-sm">
           <Icon name="sell" className="text-icon-lg" />
-          {notPriced} item{notPriced === 1 ? " has" : "s have"} no price yet — customers don&apos;t
-          see {notPriced === 1 ? "it" : "them"} until you set one.
+          {t("notPriced", { count: notPriced })}
         </p>
       ) : null}
 
       {languages.others.length && menu.items.length ? (
         <div className="flex flex-wrap items-center gap-xs text-body-sm">
           <span className="flex items-center gap-xs text-on-surface-variant">
-            <Icon name="translate" className="text-icon-md" /> Translated:
+            <Icon name="translate" className="text-icon-md" /> {t("translated")}
           </span>
           {languages.others.map((l) => {
             const done = menu.items.filter((i) => i.i18n[l]?.name).length;
@@ -233,26 +236,30 @@ export function MenuManager({ slug, cafeId, currency, menu, languages }: Props) 
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search menu items…"
-            aria-label="Search menu items"
+            placeholder={t("search")}
+            aria-label={t("searchLabel")}
             className="min-w-0 flex-1 bg-transparent text-body-md text-on-surface placeholder:text-outline focus:outline-none"
           />
         </label>
         {menu.items.length < MENU_LIMITS.items ? (
           <PrimaryButton icon="add" onClick={() => setItemForm("new")}>
-            Add item
+            {t("addItem")}
           </PrimaryButton>
         ) : null}
       </div>
 
       {/* Categories (drag to reorder) */}
-      <div className="flex flex-wrap items-center gap-xs" role="tablist" aria-label="Categories">
+      <div
+        className="flex flex-wrap items-center gap-xs"
+        role="tablist"
+        aria-label={t("categories")}
+      >
         <Chip
           active={categoryId === ALL}
           onClick={() => setCategoryId(ALL)}
           count={menu.items.length}
         >
-          All items
+          {t("allItems")}
         </Chip>
         <DndContext
           id={catDndId}
@@ -281,7 +288,7 @@ export function MenuManager({ slug, cafeId, currency, menu, languages }: Props) 
             onClick={() => setCategoryForm("new")}
             className="inline-flex items-center gap-xs rounded-full border border-dashed border-outline-variant px-md py-xs text-body-sm font-semibold text-primary hover:bg-secondary-container"
           >
-            <Icon name="add" className="text-icon-md" /> Category
+            <Icon name="add" className="text-icon-md" /> {t("categoryButton")}
           </button>
         ) : null}
       </div>
@@ -290,12 +297,12 @@ export function MenuManager({ slug, cafeId, currency, menu, languages }: Props) 
         <div className="flex flex-wrap items-center justify-between gap-sm">
           <p className="text-body-sm text-on-surface-variant">
             <span className="font-semibold text-on-surface">{category.name}</span>
-            {category.isVisible ? "" : " · hidden from customers"}
-            {canReorderItems && itemsOf(category.id).length > 1 ? " · drag items to reorder" : ""}
+            {category.isVisible ? "" : t("hiddenFromCustomers")}
+            {canReorderItems && itemsOf(category.id).length > 1 ? t("dragToReorder") : ""}
           </p>
           <div className="flex flex-wrap gap-xs">
             <OutlineButton icon="edit" onClick={() => setCategoryForm(category)}>
-              Rename
+              {tc("rename")}
             </OutlineButton>
             <OutlineButton
               icon={category.isVisible ? "visibility_off" : "visibility"}
@@ -303,14 +310,14 @@ export function MenuManager({ slug, cafeId, currency, menu, languages }: Props) 
                 run(() => saveCategoryAction(slug, category.id, category.name, !category.isVisible))
               }
             >
-              {category.isVisible ? "Hide" : "Show"}
+              {category.isVisible ? tc("hide") : tc("show")}
             </OutlineButton>
             <OutlineButton
               icon="delete"
               tone="danger"
               onClick={() => setConfirm({ kind: "category", category })}
             >
-              Delete
+              {tc("delete")}
             </OutlineButton>
           </div>
         </div>
@@ -319,7 +326,7 @@ export function MenuManager({ slug, cafeId, currency, menu, languages }: Props) 
       {/* Items */}
       {visibleItems.length === 0 && q ? (
         <p className="rounded-xl bg-surface-container-lowest p-lg text-center text-on-surface-variant">
-          No item matches “{query}”.
+          {t("noMatch", { query })}
         </p>
       ) : (
         <DndContext
@@ -352,7 +359,7 @@ export function MenuManager({ slug, cafeId, currency, menu, languages }: Props) 
                   >
                     <Icon name="add_circle" className="text-icon-2xl" />
                     <span className="font-semibold">
-                      Add {category ? `to ${category.name}` : "an item"}
+                      {category ? t("addTo", { category: category.name }) : t("addAnItem")}
                     </span>
                   </button>
                 </li>
@@ -389,7 +396,13 @@ export function MenuManager({ slug, cafeId, currency, menu, languages }: Props) 
           setItemForm(null);
           setErrors({});
         }}
-        title={itemForm === "new" ? "Add an item" : itemForm ? `Edit ${itemForm.name}` : ""}
+        title={
+          itemForm === "new"
+            ? t("addAnItem")
+            : itemForm
+              ? t("editName", { name: itemForm.name })
+              : ""
+        }
         icon="restaurant_menu"
         size="md"
       >
@@ -423,17 +436,14 @@ export function MenuManager({ slug, cafeId, currency, menu, languages }: Props) 
         icon="delete"
         title={
           confirm?.kind === "item"
-            ? `Delete ${confirm.item.name}?`
+            ? t("deleteQuestion", { name: confirm.item.name })
             : confirm
-              ? `Delete ${confirm.category.name}?`
+              ? t("deleteQuestion", { name: confirm.category.name })
               : ""
         }
-        description={
-          confirm?.kind === "category"
-            ? "Only empty categories can be deleted. Move or delete its items first."
-            : "It disappears from your menu. This can't be undone."
-        }
-        confirmLabel="Delete"
+        description={confirm?.kind === "category" ? t("deleteCategoryBody") : t("deleteItemBody")}
+        confirmLabel={tc("delete")}
+        cancelLabel={tc("cancel")}
         onConfirm={() => {
           if (!confirm) return;
           const c = confirm;
@@ -487,9 +497,11 @@ function ItemCard({
     id: item.id,
     disabled: !sortable,
   });
+  const t = useTranslations("menu");
+  const tt = useTranslations("tags");
   const status = itemStatus(item);
   const s = STATUS[status];
-  const tags = MENU_TAGS.filter((t) => item.tags.includes(t.value));
+  const tags = MENU_TAGS.filter((tag) => item.tags.includes(tag.value));
   return (
     <li
       ref={setNodeRef}
@@ -513,11 +525,11 @@ function ItemCard({
         <span
           className={`absolute end-sm top-sm rounded-full px-sm py-xs text-caption font-bold uppercase ${s.className}`}
         >
-          {s.label}
+          {t(s.label)}
         </span>
         {item.isFeatured ? (
           <span className="absolute start-sm top-sm flex items-center gap-xs rounded-full bg-surface-container-lowest px-sm py-xs text-caption font-semibold text-primary shadow-sm">
-            <Icon name="star" filled className="text-icon-sm" /> Featured
+            <Icon name="star" filled className="text-icon-sm" /> {t("featured")}
           </span>
         ) : null}
         {sortable ? (
@@ -526,7 +538,7 @@ function ItemCard({
             type="button"
             {...attributes}
             {...listeners}
-            aria-label={`Reorder ${item.name}`}
+            aria-label={t("reorder", { name: item.name })}
             className="absolute start-sm bottom-sm flex h-9 w-9 cursor-grab touch-none items-center justify-center rounded-lg bg-surface-container-lowest/90 text-on-surface-variant shadow-sm active:cursor-grabbing"
           >
             <Icon name="drag_indicator" className="text-icon-lg" />
@@ -545,22 +557,22 @@ function ItemCard({
         </p>
         {tags.length ? (
           <ul className="flex flex-wrap gap-xs">
-            {tags.map((t) => (
+            {tags.map((tag) => (
               <li
-                key={t.value}
+                key={tag.value}
                 className="inline-flex items-center gap-xs rounded-full bg-surface-container px-sm text-caption text-on-surface-variant"
               >
-                <Icon name={t.icon} className="text-icon-sm" /> {t.label}
+                <Icon name={tag.icon} className="text-icon-sm" /> {tt(tag.value)}
               </li>
             ))}
           </ul>
         ) : null}
         <div className="mt-auto flex items-center justify-between gap-xs border-t border-surface-container-high pt-sm">
           <div className="flex gap-xs">
-            <IconButton icon="edit" label={`Edit ${item.name}`} onClick={onEdit} />
+            <IconButton icon="edit" label={t("editName", { name: item.name })} onClick={onEdit} />
             <IconButton
               icon="delete"
-              label={`Delete ${item.name}`}
+              label={t("deleteName", { name: item.name })}
               onClick={onDelete}
               tone="danger"
             />
@@ -580,7 +592,7 @@ function ItemCard({
               name={item.isAvailable ? "remove_shopping_cart" : "check_circle"}
               className="text-icon-md"
             />
-            {item.isAvailable ? "Mark sold out" : "Back on menu"}
+            {item.isAvailable ? t("markSoldOut") : t("backOnMenu")}
           </button>
         </div>
       </div>
@@ -611,6 +623,9 @@ function ItemFields({
   onSubmit: (input: Record<string, unknown>) => void;
   onCancel: () => void;
 }) {
+  const t = useTranslations("menu");
+  const tt = useTranslations("tags");
+  const languageLabel = useLanguageLabel();
   const digits = currencyDigits(currency);
   const [tab, setTab] = useState(languages.main);
   const [i18n, setI18n] = useState<I18nState>(() => structuredClone(item?.i18n ?? {}) as I18nState);
@@ -654,28 +669,30 @@ function ItemFields({
         tab === l ? (
           <div key={l} className="flex flex-col gap-md" lang={l}>
             <p className="text-body-sm text-on-surface-variant">
-              {languageLabel(l)} translation. Empty fields show the {languageLabel(languages.main)}{" "}
-              text.
+              {t("translationNote", {
+                language: languageLabel(l),
+                main: languageLabel(languages.main),
+              })}
             </p>
             <TextField
               id={`name-${l}`}
-              label={`Name in ${languageLabel(l)}`}
+              label={t("nameIn", { language: languageLabel(l) })}
               maxLength={80}
               dir={isRtlLanguage(l) ? "rtl" : "ltr"}
               value={tr(l, "name")}
               onChange={(e) => setTr(l, "name", e.target.value)}
-              hint={mainName ? `Original: ${mainName}` : undefined}
+              hint={mainName ? t("original", { text: mainName }) : undefined}
               error={errors.i18n}
             />
             <TextAreaField
               id={`description-${l}`}
-              label={`Description in ${languageLabel(l)}`}
+              label={t("descriptionIn", { language: languageLabel(l) })}
               rows={3}
               maxLength={500}
               dir={isRtlLanguage(l) ? "rtl" : "ltr"}
               value={tr(l, "description")}
               onChange={(e) => setTr(l, "description", e.target.value)}
-              hint={mainDesc ? `Original: ${mainDesc}` : undefined}
+              hint={mainDesc ? t("original", { text: mainDesc }) : undefined}
             />
           </div>
         ) : null,
@@ -684,7 +701,7 @@ function ItemFields({
       <div className="flex flex-col gap-md" hidden={tab !== languages.main}>
         <TextField
           id="name"
-          label="Name"
+          label={t("name")}
           required
           maxLength={80}
           defaultValue={item?.name ?? ""}
@@ -694,17 +711,17 @@ function ItemFields({
         <div className="grid grid-cols-1 gap-sm sm:grid-cols-2">
           <TextField
             id="price"
-            label={`Price (${currency})`}
+            label={t("price", { currency })}
             inputMode="decimal"
             placeholder={(4.5).toFixed(digits)}
             defaultValue={
               item?.price === null || item?.price === undefined ? "" : item.price.toFixed(digits)
             }
             error={errors.price}
-            hint="Leave empty to keep it hidden for now"
+            hint={t("priceHint")}
           />
           <label className="flex flex-col gap-xs text-body-sm font-semibold text-on-surface">
-            Category
+            {t("category")}
             <select
               name="category_id"
               defaultValue={item?.categoryId ?? defaultCategory}
@@ -720,7 +737,7 @@ function ItemFields({
         </div>
         <TextAreaField
           id="description"
-          label="Description (optional)"
+          label={t("description")}
           rows={3}
           maxLength={500}
           defaultValue={item?.description ?? ""}
@@ -729,23 +746,23 @@ function ItemFields({
         />
         <ImageField
           cafeId={cafeId}
-          label="Photo"
+          label={t("photo")}
           value={image}
           onChange={setImage}
           error={errors.image ?? errors.image_path}
         />
         <fieldset>
-          <legend className="mb-xs text-body-sm font-semibold text-on-surface">Tags</legend>
+          <legend className="mb-xs text-body-sm font-semibold text-on-surface">{t("tags")}</legend>
           <div className="flex flex-wrap gap-xs">
-            {MENU_TAGS.map((t) => {
-              const on = tags.includes(t.value);
+            {MENU_TAGS.map((tag) => {
+              const on = tags.includes(tag.value);
               return (
                 <button
-                  key={t.value}
+                  key={tag.value}
                   type="button"
                   aria-pressed={on}
                   onClick={() =>
-                    setTags((x) => (on ? x.filter((v) => v !== t.value) : [...x, t.value]))
+                    setTags((x) => (on ? x.filter((v) => v !== tag.value) : [...x, tag.value]))
                   }
                   className={`inline-flex items-center gap-xs rounded-full border px-sm py-xs text-body-sm ${
                     on
@@ -753,7 +770,7 @@ function ItemFields({
                       : "border-outline-variant text-on-surface-variant"
                   }`}
                 >
-                  <Icon name={t.icon} className="text-icon-md" /> {t.label}
+                  <Icon name={tag.icon} className="text-icon-md" /> {tt(tag.value)}
                 </button>
               );
             })}
@@ -761,17 +778,17 @@ function ItemFields({
         </fieldset>
         <div className="flex flex-col gap-sm rounded-lg bg-surface-container-low p-md text-body-sm text-on-surface">
           <Check name="is_available" defaultChecked={item?.isAvailable ?? true}>
-            Available — uncheck when it&apos;s sold out
+            {t("availableCheck")}
           </Check>
           <Check name="is_visible" defaultChecked={item?.isVisible ?? true}>
-            Show on the menu
+            {t("visibleCheck")}
           </Check>
           <Check name="is_featured" defaultChecked={item?.isFeatured ?? false}>
-            Featured — shown on your website&apos;s &quot;Signature specialties&quot;
+            {t("featuredCheck")}
           </Check>
         </div>
       </div>
-      <FormButtons pending={pending} onCancel={onCancel} label={item ? "Save" : "Add item"} />
+      <FormButtons pending={pending} onCancel={onCancel} label={item ? t("save") : t("addItem")} />
     </form>
   );
 }
@@ -829,6 +846,7 @@ function Chip({
   dragProps?: object;
   label?: string;
 }) {
+  const t = useTranslations("menu");
   return (
     <span
       className={`inline-flex items-center rounded-full text-body-sm font-semibold transition-colors ${
@@ -841,7 +859,7 @@ function Chip({
         <button
           type="button"
           {...dragProps}
-          aria-label={`Reorder ${label}`}
+          aria-label={t("reorder", { name: label ?? "" })}
           className="flex cursor-grab touch-none items-center ps-sm active:cursor-grabbing"
         >
           <Icon name="drag_indicator" className="text-icon-md opacity-70" />
@@ -877,11 +895,13 @@ function CategoryDialog({
   onSubmit: (name: string, i18n: I18nState) => void;
   languages: { main: string; others: string[] };
 }) {
+  const t = useTranslations("menu");
+  const languageLabel = useLanguageLabel();
   return (
     <Dialog
       open={form !== null}
       onClose={onClose}
-      title={form === "new" ? "Add a category" : "Rename category"}
+      title={form === "new" ? t("addCategoryTitle") : t("renameCategory")}
       icon="category"
     >
       {form !== null ? (
@@ -900,10 +920,10 @@ function CategoryDialog({
         >
           <TextField
             id="name"
-            label="Name"
+            label={t("name")}
             required
             maxLength={60}
-            placeholder="e.g. Coffee, Brunch"
+            placeholder={t("categoryPlaceholder")}
             defaultValue={form === "new" ? "" : form.name}
             error={errors.name}
           />
@@ -911,7 +931,7 @@ function CategoryDialog({
             <TextField
               key={l}
               id={`name-${l}`}
-              label={`Name in ${languageLabel(l)} (optional)`}
+              label={t("nameInOptional", { language: languageLabel(l) })}
               maxLength={60}
               dir={isRtlLanguage(l) ? "rtl" : "ltr"}
               defaultValue={form === "new" ? "" : (form.i18n[l]?.name ?? "")}
@@ -920,7 +940,7 @@ function CategoryDialog({
           <FormButtons
             pending={pending}
             onCancel={onClose}
-            label={form === "new" ? "Add category" : "Save"}
+            label={form === "new" ? t("addCategory") : t("save")}
           />
         </form>
       ) : null}
@@ -944,10 +964,12 @@ function LanguageTabs({
   onChange: (l: string) => void;
   done: (l: string) => boolean;
 }) {
+  const t = useTranslations("menu");
+  const languageLabel = useLanguageLabel();
   return (
     <div
       role="tablist"
-      aria-label="Language"
+      aria-label={t("language")}
       className="flex flex-wrap gap-xs border-b border-surface-container-high pb-xs"
     >
       {[main, ...others].map((l) => (
@@ -965,7 +987,7 @@ function LanguageTabs({
         >
           {languageLabel(l)}
           {l === main ? (
-            <span className="opacity-75">· main</span>
+            <span className="opacity-75">{t("main")}</span>
           ) : done(l) ? (
             <Icon name="check" className="text-icon-sm" />
           ) : null}
@@ -1075,6 +1097,7 @@ function FormButtons({
   onCancel: () => void;
   label: string;
 }) {
+  const tc = useTranslations("common");
   return (
     <div className="mt-xs flex flex-col-reverse gap-sm sm:flex-row sm:justify-end">
       <button
@@ -1083,7 +1106,7 @@ function FormButtons({
         disabled={pending}
         className="rounded-xl px-lg py-sm font-semibold text-on-surface-variant hover:bg-surface-container disabled:opacity-50"
       >
-        Cancel
+        {tc("cancel")}
       </button>
       <button
         type="submit"

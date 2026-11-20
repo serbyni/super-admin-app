@@ -1,6 +1,8 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState } from "react";
+import { useMsg } from "@/i18n/use-msg";
 import { useToast } from "@/components/ui/toast";
 import { browserApi } from "@/lib/data/browser-api";
 import { MediaError } from "@/lib/media/image";
@@ -15,6 +17,8 @@ export type MediaImage = { path: string; alt: string };
  */
 export function useMediaUpload(cafeId: string) {
   const toast = useToast();
+  const t = useTranslations("media");
+  const m = useMsg();
   const [busy, setBusy] = useState(false);
 
   const upload = async (files: File[]): Promise<MediaImage[]> => {
@@ -30,15 +34,12 @@ export function useMediaUpload(cafeId: string) {
       if (reused)
         toast.show({
           variant: "info",
-          title:
-            reused === 1
-              ? "This photo was already uploaded — reused it"
-              : `${reused} photos were already uploaded — reused them`,
+          title: t("reused", { count: reused }),
         });
     } catch (e) {
       toast.show({
         variant: "error",
-        title: e instanceof MediaError ? e.message : "Upload failed. Please try again.",
+        title: e instanceof MediaError ? m(e.message) : t("failed"),
       });
     } finally {
       setBusy(false);

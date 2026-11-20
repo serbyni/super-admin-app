@@ -6,8 +6,9 @@ import { requireTenantOwner } from "@/lib/auth/guards";
 import { tenantDashboard } from "@/lib/auth/routes";
 import { inputField, isDataError } from "@/lib/data/errors";
 import { serverApi } from "@/lib/data/server-api";
+import { msg } from "@/i18n/msg";
 import { cleanI18n } from "@/lib/i18n/languages";
-import { categoryI18nSchema, categorySchema, itemSchema } from "@/lib/menu/schema";
+import { categoryI18nSchema, categorySchema, currencyDigits, itemSchema } from "@/lib/menu/schema";
 import { zodErrors } from "@/lib/settings/schema";
 
 export type MenuResult =
@@ -16,24 +17,38 @@ export type MenuResult =
 
 const refresh = (slug: string) => revalidatePath(`${tenantDashboard(slug)}/menu`);
 
+/** Message per invalid field (the menu schema is shared with cafe-app: its texts stay English). */
 const FIELD_LABELS: Record<string, string> = {
-  name: "Please check the name.",
-  price: "Please check the price.",
-  description: "Please check the description.",
-  image: "Upload the photo again.",
-  i18n: "Please check the translations.",
-  category_id: "Choose a category.",
-  tags: "Please check the tags.",
+  name: msg("menuName"),
+  price: msg("menuPrice"),
+  description: msg("menuDescription"),
+  image: msg("menuPhoto"),
+  image_path: msg("menuPhoto"),
+  i18n: msg("menuTranslations"),
+  category_id: msg("menuCategory"),
+  tags: msg("menuTags"),
 };
+
+/** Schema errors → translatable messages per field (price: with an example in the café's currency). */
+function fieldErrors(error: z.ZodError, currency?: string): Record<string, string> {
+  return Object.fromEntries(
+    Object.keys(zodErrors(error)).map((f) => [
+      f,
+      f === "price" && currency
+        ? msg("menuPriceFormat", { example: (4.5).toFixed(currencyDigits(currency)) })
+        : (FIELD_LABELS[f] ?? msg("checkValue")),
+    ]),
+  );
+}
 
 function failure(e: unknown, fallback: string, conflictField?: string): MenuResult {
   const field = inputField(e);
-  if (field === "limit") return { ok: false, message: "You reached the limit for this café." };
+  if (field === "limit") return { ok: false, message: msg("limitReached") };
   if (field)
     return {
       ok: false,
-      message: FIELD_LABELS[field] ?? "Please check the form.",
-      errors: { [field]: FIELD_LABELS[field] ?? "Please check this value." },
+      message: FIELD_LABELS[field] ?? msg("checkForm"),
+      errors: { [field]: FIELD_LABELS[field] ?? msg("checkValue") },
     };
   if (isDataError(e, "conflict"))
     return {
@@ -41,13 +56,10 @@ function failure(e: unknown, fallback: string, conflictField?: string): MenuResu
       message: fallback,
       errors: conflictField ? { [conflictField]: fallback } : undefined,
     };
-  if (isDataError(e, "in_use"))
-    return { ok: false, message: "Move or delete the items of this category first." };
-  if (isDataError(e, "stale_list"))
-    return { ok: false, message: "The menu changed meanwhile. Reload the page." };
-  if (isDataError(e, "invalid_state"))
-    return { ok: false, message: "The template is only for an empty menu." };
-  if (isDataError(e)) return { ok: false, message: "Something went wrong. Please try again." };
+  if (isDataError(e, "in_use")) return { ok: false, message: msg("categoryNotEmpty") };
+  if (isDataError(e, "stale_list")) return { ok: false, message: msg("changedMeanwhile") };
+  if (isDataError(e, "invalid_state")) return { ok: false, message: msg("templateOnlyEmpty") };
+  if (isDataError(e)) return { ok: false, message: msg("somethingWrong") };
   throw e;
 }
 
@@ -61,9 +73,9 @@ export async function saveCategoryAction(
   await requireTenantOwner(slug);
   const parsed = categorySchema.safeParse({ name });
   if (!parsed.success)
-    return { ok: false, message: "Please check the name.", errors: zodErrors(parsed.error) };
+    return { ok: false, message: msg("menuName"), errors: fieldErrors(parsed.error) };
   const tr = i18n === undefined ? undefined : categoryI18nSchema.safeParse(i18n);
-  if (tr && !tr.success) return { ok: false, message: "Please check the translations." };
+  if (tr && !tr.success) return { ok: false, message: msg("menuTranslations") };
   try {
     const cid = await serverApi().menu.saveCategory(
       slug,
@@ -73,9 +85,9 @@ export async function saveCategoryAction(
       tr?.success ? (cleanI18n(tr.data) as Record<string, Record<string, string>>) : undefined,
     );
     refresh(slug);
-    return { ok: true, id: cid, message: id ? "Category saved" : "Category added" };
+    return { ok: true, id: cid, message: id ? msg("categorySaved") : msg("categoryAdded") };
   } catch (e) {
-    return failure(e, "Another category has this name.", "name");
+    return failure(e, msg("categoryNameTaken"), "name");
   }
 }
 
@@ -84,9 +96,9 @@ export async function deleteCategoryAction(slug: string, id: string): Promise<Me
   try {
     await serverApi().menu.deleteCategory(slug, id);
     refresh(slug);
-    return { ok: true, message: "Category deleted" };
+    return { ok: true, message: msg("categoryDeleted") };
   } catch (e) {
-    return failure(e, "Could not delete the category.");
+    return failure(e, msg("categoryDeleteFailed"));
   }
 }
 
@@ -95,13 +107,13 @@ const ids = z.array(z.uuid()).max(500);
 export async function reorderCategoriesAction(slug: string, order: unknown): Promise<MenuResult> {
   await requireTenantOwner(slug);
   const parsed = ids.safeParse(order);
-  if (!parsed.success) return { ok: false, message: "Could not save the order." };
+  if (!parsed.success) return { ok: false, message: msg("orderFailed") };
   try {
     await serverApi().menu.reorderCategories(slug, parsed.data);
     refresh(slug);
     return { ok: true };
   } catch (e) {
-    return failure(e, "Could not save the order.");
+    return failure(e, msg("orderFailed"));
   }
 }
 
@@ -113,13 +125,13 @@ export async function reorderItemsAction(
   await requireTenantOwner(slug);
   const parsed = ids.safeParse(order);
   if (!parsed.success || !z.uuid().safeParse(categoryId).success)
-    return { ok: false, message: "Could not save the order." };
+    return { ok: false, message: msg("orderFailed") };
   try {
     await serverApi().menu.reorderItems(slug, categoryId, parsed.data);
     refresh(slug);
     return { ok: true };
   } catch (e) {
-    return failure(e, "Could not save the order.");
+    return failure(e, msg("orderFailed"));
   }
 }
 
@@ -132,13 +144,13 @@ export async function saveItemAction(
   await requireTenantOwner(slug);
   const api = serverApi();
   const cafe = await api.cafes.mine(slug);
-  if (!cafe) return { ok: false, message: "Café not found." };
+  if (!cafe) return { ok: false, message: msg("cafeNotFound") };
   const parsed = itemSchema(cafe.currency).safeParse(input);
   if (!parsed.success)
     return {
       ok: false,
-      message: "Some fields need your attention.",
-      errors: zodErrors(parsed.error),
+      message: msg("fieldsNeedAttention"),
+      errors: fieldErrors(parsed.error, cafe.currency),
     };
   const d = parsed.data;
   try {
@@ -155,9 +167,13 @@ export async function saveItemAction(
       i18n: cleanI18n(d.i18n) as Record<string, Record<string, string>>,
     });
     refresh(slug);
-    return { ok: true, id: itemId, message: id ? "Item saved" : `${d.name} added` };
+    return {
+      ok: true,
+      id: itemId,
+      message: id ? msg("itemSaved") : msg("itemAdded", { name: d.name }),
+    };
   } catch (e) {
-    return failure(e, "Could not save the item.");
+    return failure(e, msg("itemSaveFailed"));
   }
 }
 
@@ -170,9 +186,9 @@ export async function setAvailableAction(
   try {
     await serverApi().menu.setAvailable(slug, id, available);
     refresh(slug);
-    return { ok: true, message: available ? "Back on the menu" : "Marked as sold out" };
+    return { ok: true, message: available ? msg("itemBackOnMenu") : msg("itemSoldOut") };
   } catch (e) {
-    return failure(e, "Could not update the item.");
+    return failure(e, msg("itemUpdateFailed"));
   }
 }
 
@@ -181,9 +197,9 @@ export async function deleteItemAction(slug: string, id: string): Promise<MenuRe
   try {
     await serverApi().menu.deleteItem(slug, id);
     refresh(slug);
-    return { ok: true, message: "Item deleted" };
+    return { ok: true, message: msg("itemDeleted") };
   } catch (e) {
-    return failure(e, "Could not delete the item.");
+    return failure(e, msg("itemDeleteFailed"));
   }
 }
 
@@ -192,8 +208,8 @@ export async function applyTemplateAction(slug: string): Promise<MenuResult> {
   try {
     await serverApi().menu.applyTemplate(slug);
     refresh(slug);
-    return { ok: true, message: "Starter menu added — set your prices to show items" };
+    return { ok: true, message: msg("templateAdded") };
   } catch (e) {
-    return failure(e, "Could not add the starter menu.");
+    return failure(e, msg("templateFailed"));
   }
 }
