@@ -153,7 +153,9 @@
     "orderMoveRefused": "Cette commande a déjà avancé. Le tableau est actualisé.",
     "orderUpdateFailed": "Impossible de mettre à jour la commande. Réessayez.",
     "orderingOn": "Vous acceptez les commandes",
-    "orderingOff": "Les commandes sont désactivées"
+    "orderingOff": "Les commandes sont désactivées",
+    "pushOn": "Notifications activées sur cet appareil",
+    "pushOff": "Notifications désactivées sur cet appareil"
   },
   "common": {
     "save": "Enregistrer",
@@ -983,6 +985,35 @@
     "colStatus": "Statut",
     "colTotal": "Total",
     "noHistory": "Aucune commande ce jour-là.",
-    "weekdays": "lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche"
+    "weekdays": "lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche",
+    "push": {
+      "title": "Notifications sur cet appareil",
+      "body": "Recevez une notification avec son à chaque nouvelle commande, même quand cette page est fermée.",
+      "enable": "Activer",
+      "disable": "Désactiver",
+      "on": "Activées sur cet appareil",
+      "blocked": "Les notifications sont bloquées pour ce site. Autorisez-les dans les réglages du site de votre navigateur, puis rechargez.",
+      "unsupported": "Ce navigateur ne peut pas recevoir de notifications. Utilisez Chrome, Edge ou Firefox, ou l'app Serbi sur votre téléphone.",
+      "install": "Sur iPhone, ajoutez d'abord Serbi à l'écran d'accueil : touchez Partager puis « Sur l'écran d'accueil », ouvrez Serbi depuis l'écran d'accueil et activez les notifications.",
+      "denied": "Les notifications n'ont pas été autorisées."
+    }
+  },
+  "push": {
+    "newOrderTitle": "Nouvelle commande n°{number}",
+    "newOrderTable": "Table {label} · {total}",
+    "newOrderTakeaway": "À emporter · {name} · {total}",
+    "customerTitle": "{cafe} — commande n°{number}",
+    "status": {
+      "new": "Votre commande est envoyée.",
+      "accepted": "Le café a accepté votre commande.",
+      "preparing": "Votre commande est en préparation.",
+      "ready": "Votre commande est prête !",
+      "served": "Bon appétit ! Votre commande a été servie.",
+      "declined": "Le café a refusé votre commande.",
+      "cancelled": "Votre commande a été annulée."
+    },
+    "readyTable": "Votre commande est prête — elle arrive à la table {label}.",
+    "readyTakeaway": "Votre commande est prête — récupérez-la au comptoir, {name}.",
+    "reason": "Motif : {reason}"
   }
 }

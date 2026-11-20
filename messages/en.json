@@ -153,7 +153,9 @@
     "orderMoveRefused": "This order has already moved on. The board is refreshed.",
     "orderUpdateFailed": "Could not update the order. Please try again.",
     "orderingOn": "You are accepting orders",
-    "orderingOff": "Ordering is switched off"
+    "orderingOff": "Ordering is switched off",
+    "pushOn": "Notifications are on for this device",
+    "pushOff": "Notifications are off for this device"
   },
   "common": {
     "save": "Save",
@@ -983,6 +985,35 @@
     "colStatus": "Status",
     "colTotal": "Total",
     "noHistory": "No orders on this day.",
-    "weekdays": "Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday"
+    "weekdays": "Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday",
+    "push": {
+      "title": "Notifications on this device",
+      "body": "Get a notification with sound for every new order, even when this page is closed.",
+      "enable": "Turn on",
+      "disable": "Turn off",
+      "on": "On for this device",
+      "blocked": "Notifications are blocked for this site. Allow them in your browser's site settings, then reload.",
+      "unsupported": "This browser can't receive notifications. Use Chrome, Edge or Firefox, or the Serbi app on your phone.",
+      "install": "On iPhone, add Serbi to your Home Screen first: tap Share, then “Add to Home Screen”, open Serbi from there and turn notifications on.",
+      "denied": "Notifications were not allowed."
+    }
+  },
+  "push": {
+    "newOrderTitle": "New order #{number}",
+    "newOrderTable": "Table {label} · {total}",
+    "newOrderTakeaway": "Takeaway · {name} · {total}",
+    "customerTitle": "{cafe} — order #{number}",
+    "status": {
+      "new": "Your order was sent.",
+      "accepted": "The café accepted your order.",
+      "preparing": "Your order is being prepared.",
+      "ready": "Your order is ready!",
+      "served": "Enjoy! Your order was served.",
+      "declined": "The café declined your order.",
+      "cancelled": "Your order was cancelled."
+    },
+    "readyTable": "Your order is ready — it's coming to table {label}.",
+    "readyTakeaway": "Your order is ready — pick it up at the counter, {name}.",
+    "reason": "Reason: {reason}"
   }
 }
