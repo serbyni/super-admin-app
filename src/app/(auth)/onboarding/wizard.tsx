@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useEffect, useRef, useState, useTransition, type FormEvent } from "react";
 import { useMsg } from "@/i18n/use-msg";
@@ -50,6 +51,8 @@ export function OnboardingWizard({
   dpaVersion,
   options,
 }: Props) {
+  const m = useMsg();
+  const t = useTranslations("onboarding");
   const toast = useToast();
   const [step, setStep] = useState<WizardStep>(
     Math.min(Math.max(initial.step, 1), REVIEW_STEP) as WizardStep,
@@ -108,10 +111,8 @@ export function OnboardingWizard({
         if (r.step) show(r.step as WizardStep);
         toast.show({
           variant: "error",
-          title: r.errors.slug
-            ? "This café address is no longer available"
-            : "Your café could not be created",
-          description: r.errors.slug ?? r.errors.form ?? "Check the highlighted step.",
+          title: r.errors.slug ? t("addressGone") : t("createFailed"),
+          description: m(r.errors.slug ?? r.errors.form ?? "") || t("checkStep"),
         });
       }
     });
@@ -183,8 +184,9 @@ export function OnboardingWizard({
 /* ── Stepper ──────────────────────────────────────────────────────────────── */
 
 function Stepper({ current, onGo }: { current: WizardStep; onGo: (s: WizardStep) => void }) {
+  const t = useTranslations("onboarding");
   return (
-    <ol className="flex items-center gap-xs" aria-label="Onboarding progress">
+    <ol className="flex items-center gap-xs" aria-label={t("progress")}>
       {WIZARD_STEPS.map((s, i) => {
         const done = s.step < current;
         const active = s.step === current;
@@ -213,7 +215,7 @@ function Stepper({ current, onGo }: { current: WizardStep; onGo: (s: WizardStep)
                   active ? "text-primary" : "text-on-surface-variant"
                 }`}
               >
-                {s.label}
+                {t(`steps.${s.key}`)}
               </span>
             </button>
             {i < WIZARD_STEPS.length - 1 ? (
@@ -240,7 +242,7 @@ function StepHeader({ title, description }: { title: string; description: string
 function Actions({
   pending,
   onBack,
-  nextLabel = "Next",
+  nextLabel,
   nextIcon = "arrow_forward",
   disabled = false,
 }: {
@@ -250,6 +252,7 @@ function Actions({
   nextIcon?: string;
   disabled?: boolean;
 }) {
+  const t = useTranslations("onboarding");
   return (
     <div className="mt-lg flex flex-col-reverse gap-sm sm:flex-row sm:justify-between">
       {onBack ? (
@@ -260,7 +263,7 @@ function Actions({
           className="inline-flex items-center justify-center gap-xs rounded-xl px-lg py-sm font-semibold text-on-surface-variant hover:bg-surface-container"
         >
           <Icon name="arrow_back" className="text-icon-lg" flipRtl />
-          Back
+          {t("back")}
         </button>
       ) : (
         <span />
@@ -271,7 +274,7 @@ function Actions({
         className="inline-flex items-center justify-center gap-xs rounded-xl bg-primary px-xl py-sm font-semibold text-on-primary shadow-button-warm transition-all hover:bg-primary-container disabled:opacity-60"
       >
         {pending ? <Icon name="progress_activity" className="animate-spin text-icon-lg" /> : null}
-        {nextLabel}
+        {nextLabel ?? t("next_")}
         {pending ? null : <Icon name={nextIcon} className="text-icon-lg" flipRtl />}
       </button>
     </div>
@@ -296,6 +299,7 @@ function DetailsStep({
   pending: boolean;
   onSubmit: (v: Record<string, string>) => void;
 }) {
+  const t = useTranslations("onboarding");
   return (
     <form
       noValidate
@@ -304,10 +308,7 @@ function DetailsStep({
         onSubmit(formValues(e));
       }}
     >
-      <StepHeader
-        title="Your café"
-        description="These details appear on your menu. We filled them in from your registration — check and adjust."
-      />
+      <StepHeader title={t("detailsTitle")} description={t("detailsBody")} />
       <FormAlert message={errors.form} />
       <CafeDetailsFields values={draft} errors={errors} options={options} />
       <Actions pending={pending} />
@@ -330,6 +331,7 @@ function ContactStep({
   onBack: () => void;
   onSubmit: (v: Record<string, string>) => void;
 }) {
+  const t = useTranslations("onboarding");
   return (
     <form
       noValidate
@@ -338,10 +340,7 @@ function ContactStep({
         onSubmit(formValues(e));
       }}
     >
-      <StepHeader
-        title="Contact"
-        description="How customers reach your café. Shown on your menu — we filled in your registration details, change them if the café has its own."
-      />
+      <StepHeader title={t("contactTitle")} description={t("contactBody")} />
       <FormAlert message={errors.form} />
       <CafeContactFields values={draft} errors={errors} />
       <Actions pending={pending} onBack={onBack} />
@@ -366,6 +365,8 @@ function AddressStep({
   onBack: () => void;
   onSubmit: (v: Record<string, string>) => void;
 }) {
+  const m = useMsg();
+  const t = useTranslations("onboarding");
   const [value, setValue] = useState(draft.slug ?? normalizeSlug(draft.name ?? ""));
   // Server answer for one specific address (stale answers are ignored by comparing slugs).
   const [result, setResult] = useState<{ slug: string; check: SlugCheck | null } | null>(null);
@@ -406,10 +407,7 @@ function AddressStep({
         onSubmit({ slug: normalized });
       }}
     >
-      <StepHeader
-        title="Your café address"
-        description="Customers open your menu at this address. Use your café name — short and easy to type."
-      />
+      <StepHeader title={t("addressTitle")} description={t("addressBody")} />
       <div className="flex flex-col gap-sm">
         <div className="relative">
           <div
@@ -434,7 +432,7 @@ function AddressStep({
               onChange={(e) => setValue(e.target.value)}
               aria-invalid={problem ? true : undefined}
               aria-describedby="slug-status"
-              placeholder="your-cafe"
+              placeholder={t("slugPlaceholder")}
               className="min-w-0 flex-1 bg-transparent px-sm py-3.5 text-body-md font-semibold text-on-surface placeholder:font-normal placeholder:text-outline focus:outline-none"
             />
             <span className="flex items-center bg-surface-container px-md text-body-sm text-on-surface-variant">
@@ -449,27 +447,31 @@ function AddressStep({
         >
           {checking ? (
             <span className="flex items-center gap-xs text-on-surface-variant">
-              <Icon name="progress_activity" className="animate-spin text-icon-md" /> Checking…
+              <Icon name="progress_activity" className="animate-spin text-icon-md" />{" "}
+              {t("checking")}
             </span>
           ) : problem ? (
             <span className="flex items-center gap-xs text-error">
-              <Icon name="error" className="text-icon-md" /> {problem}
+              <Icon name="error" className="text-icon-md" /> {m(problem)}
             </span>
           ) : available ? (
             <span className="flex items-center gap-xs text-success">
               <Icon name="check_circle" filled className="text-icon-md" />{" "}
-              {cafeHost(normalized, rootDomain)} is available
+              {t("available", { host: cafeHost(normalized, rootDomain) })}
             </span>
           ) : null}
         </p>
         {value && normalized !== value.trim() ? (
           <p className="text-caption text-on-surface-variant">
-            Will be saved as <strong className="text-on-surface">{normalized || "—"}</strong>
+            {t.rich("savedAs", {
+              slug: normalized || "—",
+              b: (c) => <strong className="text-on-surface">{c}</strong>,
+            })}
           </p>
         ) : null}
         {suggestions.length > 0 ? (
           <div className="flex flex-wrap items-center gap-xs">
-            <span className="text-body-sm text-on-surface-variant">Try:</span>
+            <span className="text-body-sm text-on-surface-variant">{t("try")}</span>
             {suggestions.map((s) => (
               <button
                 key={s}
@@ -484,8 +486,7 @@ function AddressStep({
         ) : null}
         <p className="mt-sm flex items-start gap-xs rounded-lg bg-surface-container-low p-sm text-caption text-on-surface-variant">
           <Icon name="info" className="text-icon-sm" />
-          We keep this address for you for 30 minutes while you finish. Your printed QR codes never
-          change, even if the address changes later.
+          {t("holdNote")}
         </p>
       </div>
       <Actions pending={pending} onBack={onBack} disabled={!available} />
@@ -508,6 +509,7 @@ function LookStep({
   onBack: () => void;
   onSubmit: (v: Record<string, string>) => void;
 }) {
+  const t = useTranslations("onboarding");
   const [seed, setSeed] = useState(draft.seed ?? DEFAULT_BRAND_SEED);
   return (
     <form
@@ -517,14 +519,11 @@ function LookStep({
         onSubmit({ seed });
       }}
     >
-      <StepHeader
-        title="Your café's colour"
-        description="We build your menu's colours from one brand colour. You can change it later; logo upload comes with your dashboard settings."
-      />
+      <StepHeader title={t("lookTitle")} description={t("lookBody")} />
       <div className="grid grid-cols-1 gap-lg md:grid-cols-2">
         <BrandColourPicker value={seed} onChange={setSeed} />
         <MenuPreview
-          name={draft.name ?? "Your café"}
+          name={draft.name ?? t("yourCafe")}
           host={cafeHost(draft.slug ?? "", rootDomain)}
           seed={seed}
           currency={draft.currency ?? FALLBACK_CURRENCY}
@@ -554,6 +553,7 @@ function AgreementStep({
   onBack: () => void;
   onSubmit: (v: Record<string, unknown>) => void;
 }) {
+  const t = useTranslations("onboarding");
   const m = useMsg();
   return (
     <form
@@ -564,23 +564,20 @@ function AgreementStep({
         onSubmit({ terms: f.get("terms") === "on", dpa: f.get("dpa") === "on" });
       }}
     >
-      <StepHeader
-        title="Agreements"
-        description="Your café's data (menu, orders, customers) belongs to your café. Serbi processes it for you under these agreements."
-      />
+      <StepHeader title={t("agreementsTitle")} description={t("agreementsBody")} />
       <div className="flex flex-col gap-sm">
         {[
           {
             name: "terms",
             href: "/terms",
-            label: "Terms of Service",
+            label: t("termsName"),
             version: termsVersion,
             error: errors.terms,
           },
           {
             name: "dpa",
             href: "/dpa",
-            label: "Data Processing Agreement",
+            label: t("dpaName"),
             version: dpaVersion,
             error: errors.dpa,
           },
@@ -597,13 +594,17 @@ function AgreementStep({
               />
               <span>
                 <span className="block font-semibold text-on-surface">
-                  I accept the{" "}
-                  <Link href={a.href} target="_blank" className="text-primary underline">
-                    {a.label}
-                  </Link>
+                  {t.rich("accept", {
+                    name: a.label,
+                    link: (c) => (
+                      <Link href={a.href} target="_blank" className="text-primary underline">
+                        {c}
+                      </Link>
+                    ),
+                  })}
                 </span>
                 <span className="block text-caption text-on-surface-variant">
-                  Version {a.version}
+                  {t("version", { version: a.version })}
                 </span>
               </span>
             </label>
@@ -635,11 +636,12 @@ function ReviewStep({
   onEdit: (s: WizardStep) => void;
   onCreate: () => void;
 }) {
+  const t = useTranslations("onboarding");
   const rows: { step: WizardStep; label: string; value: string }[] = [
-    { step: 1, label: "Café name", value: draft.name ?? "—" },
+    { step: 1, label: t("rows.name"), value: draft.name ?? "—" },
     {
       step: 1,
-      label: "Location",
+      label: t("rows.location"),
       value:
         [draft.address, draft.city, draft.country_code && countryLabel(options, draft.country_code)]
           .filter(Boolean)
@@ -647,28 +649,36 @@ function ReviewStep({
     },
     {
       step: 1,
-      label: "Currency · time zone · language",
+      label: t("rows.settings"),
       value: `${draft.currency ?? "—"} · ${draft.timezone ?? "—"} · ${CAFE_LOCALES.find((l) => l.value === draft.locale)?.label ?? "—"}`,
     },
     {
       step: 2,
-      label: "Phone · email",
+      label: t("rows.contact"),
       value: [draft.phone, draft.email].filter(Boolean).join(" · ") || "—",
     },
     {
       step: 2,
-      label: "Social pages",
+      label: t("rows.social"),
       value:
         [
           draft.facebook && `Facebook ${socialHandle(draft.facebook)}`,
           draft.instagram && `Instagram ${socialHandle(draft.instagram)}`,
         ]
           .filter(Boolean)
-          .join(" · ") || "None",
+          .join(" · ") || t("none"),
     },
-    { step: 3, label: "Address", value: draft.slug ? cafeHost(draft.slug, rootDomain) : "—" },
-    { step: 4, label: "Brand colour", value: draft.seed ?? "—" },
-    { step: 5, label: "Agreements", value: draft.terms && draft.dpa ? "Accepted" : "Not accepted" },
+    {
+      step: 3,
+      label: t("rows.address"),
+      value: draft.slug ? cafeHost(draft.slug, rootDomain) : "—",
+    },
+    { step: 4, label: t("rows.colour"), value: draft.seed ?? "—" },
+    {
+      step: 5,
+      label: t("rows.agreements"),
+      value: draft.terms && draft.dpa ? t("accepted") : t("notAccepted"),
+    },
   ];
   return (
     <form
@@ -678,10 +688,7 @@ function ReviewStep({
         onCreate();
       }}
     >
-      <StepHeader
-        title="Review"
-        description="Check everything, then create your café. You can change most of it later in your dashboard."
-      />
+      <StepHeader title={t("reviewTitle")} description={t("reviewBody")} />
       <FormAlert message={errors.form} />
       <dl className="divide-y divide-surface-container-high rounded-lg border border-surface-container-high">
         {rows.map((r) => (
@@ -701,7 +708,7 @@ function ReviewStep({
               onClick={() => onEdit(r.step)}
               className="shrink-0 rounded-lg px-sm py-xs text-body-sm font-semibold text-primary hover:bg-secondary-container"
             >
-              Edit
+              {t("edit")}
             </button>
           </div>
         ))}
@@ -709,7 +716,7 @@ function ReviewStep({
       <Actions
         pending={pending}
         onBack={() => onEdit(5)}
-        nextLabel="Create my café"
+        nextLabel={t("create")}
         nextIcon="rocket_launch"
       />
     </form>

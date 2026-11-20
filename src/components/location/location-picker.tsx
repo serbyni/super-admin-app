@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useId, useRef, useState, type MouseEvent } from "react";
 import { FieldError, FloatingLabel, outlinedBox, TextField } from "@/components/auth/fields";
@@ -59,6 +60,7 @@ async function getJson<T>(url: string, init?: RequestInit): Promise<T | null> {
  * Submits `location` (JSON) plus editable `street`, `postal_code`, `city`.
  */
 export function LocationPicker({ initial, errors = {}, maps, onCountryChange }: Props) {
+  const t = useTranslations("location");
   const mapsEnabled = maps.enabled;
   const [loc, setLoc] = useState<Partial<BusinessLocation>>(initial ?? {});
   const update = useCallback(
@@ -99,16 +101,14 @@ export function LocationPicker({ initial, errors = {}, maps, onCountryChange }: 
 
   return (
     <fieldset className="flex flex-col gap-md rounded-xl border border-surface-container-high p-md">
-      <legend className="sr-only">Business location</legend>
+      <legend className="sr-only">{t("legend")}</legend>
       <div className="flex items-center gap-sm">
         <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-secondary-container text-primary">
           <Icon name="storefront" className="text-icon-md" />
         </span>
         <div>
-          <p className="text-body-md font-semibold text-on-surface">Business location</p>
-          <p className="text-caption text-on-surface-variant">
-            Where customers find you. Used for your café page and maps.
-          </p>
+          <p className="text-body-md font-semibold text-on-surface">{t("legend")}</p>
+          <p className="text-caption text-on-surface-variant">{t("body")}</p>
         </div>
       </div>
       <input type="hidden" name="location" value={JSON.stringify(loc)} />
@@ -162,6 +162,7 @@ function PlaceSearch({
   onPlace: (place: Partial<BusinessLocation>) => void;
   error?: string;
 }) {
+  const t = useTranslations("location");
   const listId = useId();
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -224,7 +225,7 @@ function PlaceSearch({
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => visible.length > 0 && setOpen(true)}
           onBlur={() => setTimeout(() => setOpen(false), 150)}
-          placeholder="Café name or address, e.g. Artisan Brew Tunis"
+          placeholder={t("searchPlaceholder")}
           className={`${outlinedBox(error)} ps-11 pe-4`}
         />
         <Icon
@@ -232,7 +233,7 @@ function PlaceSearch({
           className={`pointer-events-none absolute start-3.5 text-icon-lg text-on-surface-variant ${busy ? "animate-spin" : ""}`}
         />
         <FloatingLabel htmlFor="placeSearch" required error={error} withIcon>
-          Find your business on the map
+          {t("find")}
         </FloatingLabel>
       </div>
       {open && visible.length > 0 ? (
@@ -279,6 +280,7 @@ function StaticMapPicker({
   attribution?: string;
   onPick: (lat: number, lng: number) => void;
 }) {
+  const t = useTranslations("location");
   const hasPin = typeof loc.lat === "number" && typeof loc.lng === "number";
   const center = hasPin ? { lat: loc.lat!, lng: loc.lng! } : DEFAULT_MAP_CENTER;
   const [zoom, setZoom] = useState(hasPin ? PLACE_ZOOM : DEFAULT_MAP_ZOOM);
@@ -309,14 +311,14 @@ function StaticMapPicker({
         <button
           type="button"
           onClick={onClick}
-          aria-label="Map — click to place your business pin"
+          aria-label={t("mapLabel")}
           className="block aspect-map w-full cursor-crosshair"
         >
           {/* eslint-disable-next-line @next/next/no-img-element -- proxied Google Static Map, not a static asset */}
           <img
             key={src}
             src={src}
-            alt={hasPin ? "Map of your business location" : "Map — click to place your business"}
+            alt={hasPin ? t("mapAltPin") : t("mapAlt")}
             className={`h-full w-full object-cover transition-opacity ${loading ? "opacity-60" : "opacity-100"}`}
             onLoad={() => setLoading(false)}
             onError={() => setLoading(false)}
@@ -331,7 +333,7 @@ function StaticMapPicker({
               setZoom((z) => Math.min(MAX_ZOOM, z + 1));
             }}
             disabled={zoom >= MAX_ZOOM}
-            aria-label="Zoom in"
+            aria-label={t("zoomIn")}
             className="flex h-9 w-9 items-center justify-center text-on-surface hover:bg-surface-container disabled:opacity-40"
           >
             <Icon name="add" className="text-icon-lg" />
@@ -343,7 +345,7 @@ function StaticMapPicker({
               setZoom((z) => Math.max(MIN_ZOOM, z - 1));
             }}
             disabled={zoom <= MIN_ZOOM}
-            aria-label="Zoom out"
+            aria-label={t("zoomOut")}
             className="flex h-9 w-9 items-center justify-center border-t border-surface-container-high text-on-surface hover:bg-surface-container disabled:opacity-40"
           >
             <Icon name="remove" className="text-icon-lg" />
@@ -352,18 +354,19 @@ function StaticMapPicker({
         {!hasPin ? (
           <div className="pointer-events-none absolute inset-x-0 bottom-sm flex justify-center">
             <span className="rounded-full bg-surface-container-lowest/95 px-md py-xs text-caption font-semibold text-on-surface shadow-sm">
-              Search above or click the map to place your pin
+              {t("placeHint")}
             </span>
           </div>
         ) : null}
       </div>
       {attribution ? (
-        <p className="text-end text-caption text-on-surface-variant">Map {attribution}</p>
+        <p className="text-end text-caption text-on-surface-variant">
+          {t("mapAttribution", { attribution })}
+        </p>
       ) : null}
       <p className="flex items-start gap-xs text-caption text-on-surface-variant">
         <Icon name="touch_app" className="text-icon-sm" />
-        Pin in the wrong place? Click the exact spot on the map — it re-centres on your pin. Use + /
-        − to zoom.
+        {t("wrongPlace")}
       </p>
     </div>
   );
@@ -384,6 +387,7 @@ function ManualCoordinates({
   update?: (l: Partial<BusinessLocation>) => void;
   withCountry?: boolean;
 }) {
+  const t = useTranslations("location");
   const [lat, setLat] = useState(loc.lat?.toString() ?? "");
   const [lng, setLng] = useState(loc.lng?.toString() ?? "");
   const la = Number(lat);
@@ -407,7 +411,7 @@ function ManualCoordinates({
       <div className={`grid grid-cols-1 gap-sm ${onSet ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
         <TextField
           id="latInput"
-          label="Latitude"
+          label={t("latitude")}
           icon="explore"
           inputMode="decimal"
           placeholder="36.8065"
@@ -417,7 +421,7 @@ function ManualCoordinates({
         />
         <TextField
           id="lngInput"
-          label="Longitude"
+          label={t("longitude")}
           icon="explore"
           inputMode="decimal"
           placeholder="10.1815"
@@ -434,7 +438,7 @@ function ManualCoordinates({
               className="flex w-full items-center justify-center gap-xs rounded-lg bg-secondary-container px-md py-3 text-body-sm font-semibold text-on-secondary-container transition-colors hover:bg-secondary-fixed-dim disabled:opacity-50"
             >
               <Icon name="pin_drop" className="text-icon-md" />
-              Place pin
+              {t("placePin")}
             </button>
           </div>
         ) : null}
@@ -442,7 +446,7 @@ function ManualCoordinates({
       {withCountry ? (
         <TextField
           id="countryCodeInput"
-          label="Country code"
+          label={t("countryCode")}
           icon="public"
           placeholder="TN"
           maxLength={2}
@@ -459,15 +463,13 @@ function ManualCoordinates({
   return onSet ? (
     <details className="rounded-lg bg-surface-container-lowest p-sm">
       <summary className="cursor-pointer text-body-sm font-semibold text-primary">
-        Not on the map? Enter coordinates
+        {t("notOnMap")}
       </summary>
       <div className="pt-sm">{body}</div>
     </details>
   ) : (
     <div>
-      <p className="mb-sm text-caption text-on-surface-variant">
-        Map search is not configured. Enter your business coordinates and address.
-      </p>
+      <p className="mb-sm text-caption text-on-surface-variant">{t("noSearch")}</p>
       {body}
     </div>
   );
@@ -484,6 +486,7 @@ function AddressFields({
   update: (l: Partial<BusinessLocation>) => void;
   errors: Errors;
 }) {
+  const t = useTranslations("location");
   return (
     <div className="flex flex-col gap-sm">
       {loc.formatted_address || loc.country ? (
@@ -491,7 +494,7 @@ function AddressFields({
           <Icon name="location_on" filled className="mt-0.5 text-icon-lg text-primary" />
           <div className="text-body-sm">
             <p className="font-semibold text-on-surface">
-              {loc.formatted_address ?? "Selected location"}
+              {loc.formatted_address ?? t("selected")}
             </p>
             <p className="text-on-surface-variant">
               {[loc.region, loc.country && `${loc.country} (${loc.country_code})`]
@@ -504,7 +507,7 @@ function AddressFields({
       ) : null}
       <TextField
         id="street"
-        label="Street and number"
+        label={t("street")}
         icon="signpost"
         autoComplete="street-address"
         placeholder="10 Rue de Marseille"
@@ -515,7 +518,7 @@ function AddressFields({
       <div className="grid grid-cols-1 gap-sm sm:grid-cols-2">
         <TextField
           id="postal_code"
-          label="Postal code"
+          label={t("postalCode")}
           icon="markunread_mailbox"
           autoComplete="postal-code"
           placeholder="1000"
@@ -525,7 +528,7 @@ function AddressFields({
         />
         <TextField
           id="city"
-          label="City"
+          label={t("city")}
           icon="location_city"
           autoComplete="address-level2"
           placeholder="Tunis"

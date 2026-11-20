@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { fieldErrors, newPasswordSchema } from "@/lib/auth/register-schema";
+import { msg } from "@/i18n/msg";
 import { serverApi } from "@/lib/data/server-api";
 
 export type ResetState = {
@@ -9,9 +10,9 @@ export type ResetState = {
 };
 
 const AUTH_ERRORS: Record<string, string> = {
-  same_password: "Choose a password different from your current one.",
-  weak_password: "This password is too weak or has appeared in a data breach. Choose another.",
-  session_not_found: "Your reset link has expired. Request a new one.",
+  same_password: msg("resetSamePassword"),
+  weak_password: msg("passwordWeak"),
+  session_not_found: msg("resetExpired"),
 };
 
 /** Sets the new password, signs out everywhere, then shows the success page. */
@@ -24,7 +25,7 @@ export async function resetPassword(_prev: ResetState, formData: FormData): Prom
 
   const result = await api.auth.updatePassword(parsed.data.password);
   if (!result.ok) {
-    const message = AUTH_ERRORS[result.code] ?? "Could not change the password. Please try again.";
+    const message = AUTH_ERRORS[result.code] ?? msg("resetFailed");
     return { errors: result.code === "same_password" ? { password: message } : { form: message } };
   }
   await api.auth.signOutEverywhere();

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -50,6 +51,7 @@ function placeIcon(icon: string, selected: boolean) {
  * restaurants from /api/places/nearby — the provider key stays on the server.
  */
 export default function InteractiveMap({ loc, attribution, onPick, onSelectPlace }: Props) {
+  const t = useTranslations("location");
   const hasPin = typeof loc.lat === "number" && typeof loc.lng === "number";
   const [initial] = useState(() =>
     hasPin
@@ -120,11 +122,7 @@ export default function InteractiveMap({ loc, attribution, onPick, onSelectPlace
           {loadingPlaces ? (
             <Icon name="progress_activity" className="animate-spin text-icon-sm" />
           ) : null}
-          {zoom < NEARBY_MIN_ZOOM
-            ? "Zoom in to see cafés and restaurants"
-            : hasPin
-              ? "Tap a café to select it, or drag the pin"
-              : "Tap a café to select it, or tap the map to place your pin"}
+          {zoom < NEARBY_MIN_ZOOM ? t("zoomToSee") : hasPin ? t("tapOrDrag") : t("tapOrPlace")}
         </span>
       </div>
     </div>
@@ -132,6 +130,7 @@ export default function InteractiveMap({ loc, attribution, onPick, onSelectPlace
 }
 
 function PlacePopup({ place, onSelect }: { place: NearbyPlace; onSelect: () => void }) {
+  const t = useTranslations("location");
   const map = useMap();
   return (
     <div className="flex flex-col gap-xs font-sans">
@@ -148,7 +147,7 @@ function PlacePopup({ place, onSelect }: { place: NearbyPlace; onSelect: () => v
         className="mt-xs flex items-center justify-center gap-xs rounded-lg bg-primary px-sm py-xs text-body-sm font-semibold text-on-primary hover:bg-primary-container"
       >
         <Icon name="check" className="text-icon-md" />
-        This is my business
+        {t("thisIsMine")}
       </button>
     </div>
   );

@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { SelectField, TextField } from "./fields";
 import { PhoneField } from "./phone-field";
 import type { FieldErrors } from "@/lib/auth/register-schema";
@@ -20,16 +21,17 @@ export function BusinessFields({
   withEmail = false,
   phoneCountryHint,
 }: Props) {
+  const t = useTranslations("register");
   const options = businessTypes.map((t) => ({ value: t.slug, label: localizedName(t.name) }));
   return (
     <>
       <div className="grid grid-cols-1 gap-md sm:grid-cols-2">
         <TextField
           id="fullName"
-          label="Full name"
+          label={t("fullName")}
           icon="person"
           autoComplete="name"
-          placeholder="e.g. Amira Ben Salah"
+          placeholder={t("fullNamePlaceholder")}
           required
           defaultValue={values.fullName}
           error={errors.fullName}
@@ -37,7 +39,7 @@ export function BusinessFields({
         <PhoneField
           key={values.phone ?? ""}
           id="phone"
-          label="Phone"
+          label={t("phone")}
           required
           defaultValue={values.phone}
           error={errors.phone}
@@ -47,7 +49,7 @@ export function BusinessFields({
       {withEmail ? (
         <TextField
           id="email"
-          label="Email address"
+          label={t("email")}
           icon="mail"
           type="email"
           autoComplete="email"
@@ -60,10 +62,10 @@ export function BusinessFields({
       <div className="grid grid-cols-1 gap-md sm:grid-cols-2">
         <TextField
           id="businessName"
-          label="Business name"
+          label={t("businessName")}
           icon="storefront"
           autoComplete="organization"
-          placeholder="e.g. Artisan Brew"
+          placeholder={t("businessNamePlaceholder")}
           required
           defaultValue={values.businessName}
           error={errors.businessName}
@@ -71,9 +73,9 @@ export function BusinessFields({
         <SelectField
           key={values.businessType ?? ""}
           id="businessType"
-          label="Business type"
+          label={t("businessType")}
           icon="restaurant"
-          placeholder="Select type"
+          placeholder={t("selectType")}
           options={options}
           required
           defaultValue={values.businessType}

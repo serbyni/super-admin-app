@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
+import { applyOwnerLocale } from "@/i18n/owner-locale";
 import { Suspense } from "react";
 import { signOut } from "@/app/auth/actions";
 import { AuthShell } from "@/components/auth/auth-shell";
@@ -11,60 +13,32 @@ import { describeNotification } from "@/components/notifications/notification-li
 import { LiveNotificationsForUser } from "@/components/notifications/live-notifications-for-user";
 import { serverApi } from "@/lib/data/server-api";
 
+// Static title: these pages are prerendered (the visible texts follow the language).
 export const metadata: Metadata = { title: "Application status" };
 
-const COPY: Partial<
-  Record<OwnerStatus, { icon: string; eyebrow: string; title: string; body: string }>
-> = {
-  pending_approval: {
-    icon: "hourglass_top",
-    eyebrow: "Application received",
-    title: "We're reviewing your application",
-    body: "Thanks for joining Serbi. Our team reviews new cafés, usually within 24 hours. We'll email you as soon as you're approved.",
-  },
-  approved: {
-    icon: "verified",
-    eyebrow: "Approved",
-    title: "You're approved!",
-    body: "Your account is approved. Café setup (choosing your subdomain) is coming next.",
-  },
-  rejected: {
-    icon: "block",
-    eyebrow: "Application not approved",
-    title: "We couldn't approve your application",
-    body: "We sent you an email with the reason. Contact us if you think this is a mistake.",
-  },
-  onboarding: {
-    icon: "construction",
-    eyebrow: "Setup in progress",
-    title: "Finish setting up your café",
-    body: "Café setup is coming next.",
-  },
-  active: {
-    icon: "storefront",
-    eyebrow: "Active",
-    title: "Your café is live",
-    body: "Your café dashboard opens on your own subdomain.",
-  },
-  suspended: {
-    icon: "pause_circle",
-    eyebrow: "Suspended",
-    title: "Your account is suspended",
-    body: "Please contact the Serbi team.",
-  },
+type Shown = Exclude<OwnerStatus, "profile_incomplete" | "email_unverified">;
+const ICON: Record<Shown, string> = {
+  pending_approval: "hourglass_top",
+  approved: "verified",
+  rejected: "block",
+  onboarding: "construction",
+  active: "storefront",
+  suspended: "pause_circle",
 };
 
 async function Status() {
   const { user, status } = await requireOwnerStage(["pending_approval", "rejected", "suspended"]);
-  const c = COPY[status as OwnerStatus]!;
+  const locale = await applyOwnerLocale();
+  const [t, tn] = await Promise.all([getTranslations("pending"), getTranslations("notifications")]);
+  const st = status as Shown;
   // In-app notifications (e.g. "You're approved!") until the owner dismisses them.
   const unread = (await serverApi().notifications.list(5)).filter((n) => !n.readAt);
   return (
-    <StatusCard icon={c.icon} eyebrow={c.eyebrow} title={c.title}>
+    <StatusCard icon={ICON[st]} eyebrow={t(`${st}.eyebrow`)} title={t(`${st}.title`)}>
       {unread.length > 0 ? (
         <div role="status" className="flex flex-col gap-sm rounded-lg bg-success-container p-md">
           {unread.map((n) => {
-            const d = describeNotification(n);
+            const d = describeNotification(n, tn, locale);
             return (
               <div key={n.id} className="flex items-start gap-sm">
                 <Icon name={d.icon} filled className="text-icon-xl text-success" />
@@ -81,12 +55,12 @@ async function Status() {
               type="submit"
               className="rounded-lg px-sm py-xs text-body-sm font-semibold text-success hover:bg-surface-container-lowest"
             >
-              Got it
+              {t("gotIt")}
             </button>
           </form>
         </div>
       ) : null}
-      <p className="text-center text-on-surface-variant">{c.body}</p>
+      <p className="text-center text-on-surface-variant">{t(`${st}.body`)}</p>
       <div className="flex items-center justify-center gap-sm rounded-lg bg-surface-container-low p-sm text-body-sm text-on-surface-variant">
         <Icon name="account_circle" className="text-icon-md text-tertiary" />
         {user.email}
@@ -97,22 +71,32 @@ async function Status() {
           className="inline-flex items-center gap-xs font-label-sm text-label-sm tracking-wider text-primary uppercase hover:text-primary-container"
         >
           <Icon name="logout" className="text-icon-md" flipRtl />
-          Sign out
+          {t("signOut")}
         </button>
       </form>
     </StatusCard>
   );
 }
 
-export default function PendingPage() {
+async function PendingPageContent() {
+  await applyOwnerLocale();
+  const t = await getTranslations("pending");
   return (
     <AuthShell>
       <Suspense fallback={null}>
         <LiveNotificationsForUser />
       </Suspense>
-      <Suspense fallback={<p className="text-on-surface-variant">Loading…</p>}>
+      <Suspense fallback={<p className="text-on-surface-variant">{t("loading")}</p>}>
         <Status />
       </Suspense>
     </AuthShell>
+  );
+}
+
+export default function PendingPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-background" />}>
+      <PendingPageContent />
+    </Suspense>
   );
 }

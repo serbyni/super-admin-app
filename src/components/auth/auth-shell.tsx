@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
+import { LanguagePicker } from "./language-picker";
 import { BrandMark } from "@/components/ui/brand-mark";
 import { Icon } from "@/components/ui/icon";
 
@@ -7,7 +9,8 @@ import { Icon } from "@/components/ui/icon";
 const YEAR = new Date().getFullYear();
 
 /** Page frame shared by all auth screens: glass header, ambient glows, footer. */
-export function AuthShell({ children }: { children: ReactNode }) {
+export async function AuthShell({ children }: { children: ReactNode }) {
+  const t = await getTranslations("authShell");
   return (
     <div className="flex min-h-screen flex-col justify-between">
       <header className="z-50 w-full bg-surface/70 shadow-header backdrop-blur-xl">
@@ -19,19 +22,20 @@ export function AuthShell({ children }: { children: ReactNode }) {
             </span>
           </Link>
           <nav className="flex items-center gap-lg">
+            <LanguagePicker />
             <Link
               href="/"
               className="flex items-center gap-xs font-label-sm text-label-sm tracking-wider text-on-surface-variant uppercase transition-colors hover:text-on-surface"
             >
               <Icon name="arrow_back" className="text-icon-sm" flipRtl />
-              <span className="hidden sm:inline">Public site</span>
+              <span className="hidden sm:inline">{t("publicSite")}</span>
             </Link>
             <Link
               href="/contact"
               className="flex items-center gap-xs font-label-sm text-label-sm tracking-wider text-on-surface-variant uppercase transition-colors hover:text-on-surface"
             >
               <Icon name="help_outline" className="text-icon-sm" />
-              <span className="hidden sm:inline">Help</span>
+              <span className="hidden sm:inline">{t("help")}</span>
             </Link>
           </nav>
         </div>
@@ -46,20 +50,20 @@ export function AuthShell({ children }: { children: ReactNode }) {
       <footer className="w-full bg-surface-container-low/80 py-md backdrop-blur-md">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-sm px-gutter text-center sm:flex-row sm:text-start lg:px-container-margin-desktop">
           <p className="font-label-sm text-label-sm text-on-surface-variant">
-            © {YEAR} Serbi. All rights reserved.
+            {t("rights", { year: YEAR })}
           </p>
           <div className="flex items-center gap-md">
             <Link
               href="/privacy"
               className="font-label-sm text-label-sm text-on-surface-variant transition-colors hover:text-on-surface"
             >
-              Privacy Policy
+              {t("privacy")}
             </Link>
             <Link
               href="/terms"
               className="font-label-sm text-label-sm text-on-surface-variant transition-colors hover:text-on-surface"
             >
-              Terms of Service
+              {t("terms")}
             </Link>
           </div>
         </div>

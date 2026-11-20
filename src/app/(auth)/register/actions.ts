@@ -9,6 +9,8 @@ import {
 } from "@/lib/auth/register-schema";
 import { isDataError } from "@/lib/data/errors";
 import { kickEmailDispatch } from "@/lib/data/kick-email";
+import { msg } from "@/i18n/msg";
+import { ownerLocale } from "@/i18n/owner-locale";
 import { serverApi } from "@/lib/data/server-api";
 import { locationFromForm } from "@/lib/location/schema";
 
@@ -22,8 +24,7 @@ function locationErrors(error: {
     if (key === "city" || key === "street" || key === "postal_code" || key === "country_code") {
       out[key] ??= issue.message;
     } else {
-      out.location ??=
-        "Choose your business location: search on the map, drop a pin or enter coordinates.";
+      out.location ??= msg("locationRequired");
     }
   }
   return out;
@@ -48,11 +49,11 @@ function keepValues(raw: Record<string, FormDataEntryValue>): Record<string, str
 }
 
 const AUTH_ERRORS: Record<string, string> = {
-  over_email_send_rate_limit: "Too many emails were sent. Please wait a few minutes and try again.",
-  over_request_rate_limit: "Too many attempts. Please wait a few minutes and try again.",
-  weak_password: "This password is too weak or has appeared in a data breach. Choose another.",
-  email_address_invalid: "This email address cannot be used.",
-  signup_disabled: "Sign-ups are temporarily closed.",
+  over_email_send_rate_limit: msg("signupEmailLimit"),
+  over_request_rate_limit: msg("signupRequestLimit"),
+  weak_password: msg("passwordWeak"),
+  email_address_invalid: msg("signupEmailInvalid"),
+  signup_disabled: msg("signupClosed"),
 };
 
 /** Email sign-up for café owners → verification email → /register/check-email. */
@@ -74,7 +75,7 @@ export async function registerOwner(_prev: FormState, formData: FormData): Promi
   const api = serverApi();
   if (!(await api.businessTypes.isActive(d.businessType))) {
     return {
-      errors: { businessType: "Choose a business type from the list" },
+      errors: { businessType: msg("businessTypeFromList") },
       values: keepValues(raw),
     };
   }
@@ -86,12 +87,12 @@ export async function registerOwner(_prev: FormState, formData: FormData): Promi
     businessName: d.businessName,
     businessType: d.businessType,
     location: location.data,
-    locale: "en",
+    locale: await ownerLocale(),
   });
   if (!result.ok) {
     return {
       errors: {
-        form: AUTH_ERRORS[result.code] ?? "Could not create the account. Please try again.",
+        form: AUTH_ERRORS[result.code] ?? msg("signupFailed"),
       },
       values: keepValues(raw),
     };
@@ -109,10 +110,10 @@ export async function resendConfirmation(
   const email = String(formData.get("email") ?? "")
     .trim()
     .toLowerCase();
-  if (!email) return { error: "Missing email address." };
+  if (!email) return { error: msg("missingEmail") };
   const result = await serverApi().owners.resendSignupEmail(email);
   if (!result.ok) {
-    return { error: AUTH_ERRORS[result.code] ?? "Could not resend the email. Try again later." };
+    return { error: AUTH_ERRORS[result.code] ?? msg("resendFailed") };
   }
   return { sent: true };
 }
@@ -139,7 +140,7 @@ export async function completeOwnerProfile(
   const api = serverApi();
   if (!(await api.businessTypes.isActive(d.businessType))) {
     return {
-      errors: { businessType: "Choose a business type from the list" },
+      errors: { businessType: msg("businessTypeFromList") },
       values: keepValues(raw),
     };
   }
@@ -150,7 +151,7 @@ export async function completeOwnerProfile(
       businessName: d.businessName,
       businessType: d.businessType,
       location: location.data,
-      locale: "en",
+      locale: await ownerLocale(),
     });
   } catch (e) {
     if (!isDataError(e)) throw e;
@@ -159,8 +160,8 @@ export async function completeOwnerProfile(
     return {
       errors:
         e.code === "invalid_location"
-          ? { location: "Choose your business location on the map." }
-          : { form: "Could not save your details. Please try again." },
+          ? { location: msg("locationOnMap") }
+          : { form: msg("detailsSaveFailed") },
       values: keepValues(raw),
     };
   }
