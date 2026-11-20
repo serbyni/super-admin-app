@@ -1,0 +1,122 @@
+import { z } from "zod";
+import { MEDIA_PATH } from "@/lib/media/config";
+
+/*
+ * Menu: tags, form rules, prices and the data returned by get_my_menu.
+ * cafe-app keeps a copy of the price/tag helpers (lib/menu/schema.ts) — keep them in sync.
+ */
+
+export const MENU_TAGS = [
+  { value: "popular", label: "Popular", icon: "local_fire_department" },
+  { value: "new", label: "New", icon: "new_releases" },
+  { value: "vegetarian", label: "Vegetarian", icon: "eco" },
+  { value: "vegan", label: "Vegan", icon: "spa" },
+  { value: "gluten_free", label: "Gluten-free", icon: "grain" },
+  { value: "spicy", label: "Spicy", icon: "whatshot" },
+] as const;
+export type MenuTag = (typeof MENU_TAGS)[number]["value"];
+const TAG_VALUES = MENU_TAGS.map((t) => t.value) as [MenuTag, ...MenuTag[]];
+
+export const MENU_LIMITS = { categories: 50, items: 500 } as const;
+
+/** Decimals used by a currency (ISO 4217 minor units; default 2). */
+const MINOR_UNITS: Record<string, number> = {
+  TND: 3,
+  KWD: 3,
+  BHD: 3,
+  OMR: 3,
+  JOD: 3,
+  IQD: 3,
+  LYD: 3,
+  JPY: 0,
+  KRW: 0,
+  VND: 0,
+  CLP: 0,
+  ISK: 0,
+  XOF: 0,
+  XAF: 0,
+  UGX: 0,
+  RWF: 0,
+};
+export const currencyDigits = (currency: string) => MINOR_UNITS[currency.toUpperCase()] ?? 2;
+
+/**
+ * Price as shown everywhere, e.g. "4.500 TND", "3.20 EUR". Deterministic on purpose (no Intl
+ * currency formatting: Node and browsers format differently → hydration mismatches).
+ */
+export function formatPrice(price: number, currency: string): string {
+  return `${price.toFixed(currencyDigits(currency))} ${currency.toUpperCase()}`;
+}
+
+/** "4,5" / "4.500" / " 4.5 " → 4.5; "" → null (not priced); invalid → NaN. */
+export function parsePrice(raw: string): number | null {
+  const s = raw.trim().replace(/\s/g, "").replace(",", ".");
+  if (s === "") return null;
+  return /^\d{1,6}(\.\d{1,3})?$/.test(s) ? Number(s) : Number.NaN;
+}
+
+/** Item form (price as typed; checked against the café currency's decimals). */
+export function itemSchema(currency: string) {
+  const digits = currencyDigits(currency);
+  return z.object({
+    category_id: z.uuid("Choose a category"),
+    name: z.string().trim().min(1, "Enter a name").max(80, "At most 80 characters"),
+    description: z.string().trim().max(500, "At most 500 characters"),
+    price: z.string().transform((v, ctx) => {
+      const p = parsePrice(v);
+      if (p === null) return null;
+      const decimals = (v.trim().replace(",", ".").split(".")[1] ?? "").length;
+      if (Number.isNaN(p) || decimals > digits) {
+        ctx.addIssue({
+          code: "custom",
+          message: digits ? `Enter a price like ${(4.5).toFixed(digits)}` : "Enter a whole number",
+        });
+        return z.NEVER;
+      }
+      return p;
+    }),
+    image_path: z.union([z.literal(""), z.string().regex(MEDIA_PATH, "Upload the photo again")]),
+    image_alt: z.string().trim().max(150),
+    tags: z.array(z.enum(TAG_VALUES)).max(TAG_VALUES.length),
+    is_available: z.boolean(),
+    is_visible: z.boolean(),
+    is_featured: z.boolean(),
+  });
+}
+export type ItemForm = z.infer<ReturnType<typeof itemSchema>>;
+
+export const categorySchema = z.object({
+  name: z.string().trim().min(1, "Enter a name").max(60, "At most 60 characters"),
+});
+
+const num = z.coerce.number();
+export const menuSchema = z.object({
+  categories: z.array(
+    z.object({ id: z.string(), name: z.string(), sortOrder: num, isVisible: z.boolean() }),
+  ),
+  items: z.array(
+    z.object({
+      id: z.string(),
+      categoryId: z.string(),
+      name: z.string(),
+      description: z.string(),
+      price: num.nullable(),
+      image: z.object({ path: z.string(), alt: z.string().catch("") }).nullable(),
+      tags: z.array(z.enum(TAG_VALUES)).catch([]),
+      isAvailable: z.boolean(),
+      isVisible: z.boolean(),
+      isFeatured: z.boolean(),
+      sortOrder: num,
+    }),
+  ),
+});
+export type Menu = z.infer<typeof menuSchema>;
+export type MenuCategory = Menu["categories"][number];
+export type MenuItem = Menu["items"][number];
+
+/** What customers see for an item: hidden (owner choice), not priced, sold out or on sale. */
+export function itemStatus(i: Pick<MenuItem, "isVisible" | "price" | "isAvailable">) {
+  if (!i.isVisible) return "hidden" as const;
+  if (i.price === null) return "no_price" as const;
+  return i.isAvailable ? ("available" as const) : ("sold_out" as const);
+}

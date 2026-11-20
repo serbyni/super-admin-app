@@ -19,7 +19,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useId, useState, useTransition } from "react";
 import { Icon } from "@/components/ui/icon";
 import { localizedName, type AdminBusinessType } from "@/lib/business-types/schema";
 import { reorderBusinessTypes } from "./actions";
@@ -106,6 +106,7 @@ export function SortableBusinessTypes({ initial }: { initial: AdminBusinessType[
     null,
   );
   const [, startTransition] = useTransition();
+  const dndId = useId(); // stable across server/browser (dnd-kit ids)
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
@@ -156,6 +157,7 @@ export function SortableBusinessTypes({ initial }: { initial: AdminBusinessType[
       </div>
       <div className="overflow-x-auto rounded-xl bg-surface-container-lowest shadow-sm">
         <DndContext
+          id={dndId}
           sensors={sensors}
           collisionDetection={closestCenter}
           modifiers={[restrictToVerticalAxis]}
