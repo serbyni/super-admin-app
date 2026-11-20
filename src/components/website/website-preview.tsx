@@ -17,16 +17,21 @@ function Photo({ image, className }: { image: WebsiteImage; className: string })
   );
 }
 
+/** A featured menu item as the website shows it (price already formatted). */
+export type FeaturedItem = { id: string; name: string; price: string; image: WebsiteImage | null };
+
 export function WebsitePreview({
   website,
   palette,
   cafeName,
   contact,
+  featured = [],
 }: {
   website: Website;
   palette: CafePalette;
   cafeName: string;
   contact: { address: string | null; phone: string | null };
+  featured?: FeaturedItem[];
 }) {
   const primary: CSSProperties = { color: palette.primary };
   const soft: CSSProperties = { backgroundColor: palette.container, color: palette.onContainer };
@@ -82,7 +87,8 @@ export function WebsitePreview({
       </section>
 
       {website.sections
-        .filter((s) => s.enabled)
+        // Specialties without featured items are not shown (same rule as the café site).
+        .filter((s) => s.enabled && (s.type !== "specialties" || featured.length > 0))
         .map((s) => (
           <section
             key={s.type}
@@ -136,6 +142,31 @@ export function WebsitePreview({
                     ) : null}
                   </blockquote>
                 ) : null}
+              </>
+            ) : null}
+            {s.type === "specialties" ? (
+              <>
+                {s.text ? <p className="text-body-sm opacity-80">{s.text}</p> : null}
+                <div className="flex flex-col gap-xs">
+                  {featured.map((f) => (
+                    <div
+                      key={f.id}
+                      className="flex items-center gap-sm rounded-lg bg-surface-container-lowest p-xs shadow-sm"
+                    >
+                      {f.image ? (
+                        <Photo image={f.image} className="h-12 w-12 shrink-0 rounded-md" />
+                      ) : (
+                        <span className="h-12 w-12 shrink-0 rounded-md" style={soft} />
+                      )}
+                      <span className="min-w-0 flex-1 truncate text-body-sm font-semibold">
+                        {f.name}
+                      </span>
+                      <span className="shrink-0 text-body-sm font-bold" style={primary}>
+                        {f.price}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </>
             ) : null}
             {s.type === "gallery" ? (

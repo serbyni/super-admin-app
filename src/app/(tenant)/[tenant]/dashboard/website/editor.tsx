@@ -6,11 +6,12 @@ import { ConfirmDialog } from "@/components/ui/dialog";
 import { Icon } from "@/components/ui/icon";
 import { useToast } from "@/components/ui/toast";
 import { GalleryField, ImageField } from "@/components/media/image-fields";
-import { WebsitePreview } from "@/components/website/website-preview";
+import { WebsitePreview, type FeaturedItem } from "@/components/website/website-preview";
 import type { CafePalette } from "@/lib/cafes/theme";
 import {
   HIGHLIGHT_ICONS,
   LIMITS,
+  SPECIALTIES_MAX,
   WEEKDAYS,
   websiteErrors,
   websiteSchema,
@@ -41,6 +42,11 @@ const SECTION_META: Record<WebsiteSection["type"], { label: string; icon: string
       icon: "photo_library",
       hint: `Up to ${LIMITS.galleryImages} photos of your place and products.`,
     },
+    specialties: {
+      label: "Signature specialties",
+      icon: "stars",
+      hint: `Up to ${SPECIALTIES_MAX} featured items from your menu, with photos and prices.`,
+    },
   };
 
 type Props = {
@@ -53,6 +59,10 @@ type Props = {
   /** Website as customers see it now (null = never published). */
   published: Website | null;
   publishedAt: string | null;
+  /** Featured, visible, priced menu items (the "Signature specialties"), max 4. */
+  featured: FeaturedItem[];
+  /** Owner's Menu page (to mark items as Featured). */
+  menuHref: string;
 };
 
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
@@ -68,6 +78,8 @@ export function WebsiteEditor({
   initial,
   published,
   publishedAt,
+  featured,
+  menuHref,
 }: Props) {
   const toast = useToast();
   const [doc, setDoc] = useState<Website>(initial);
@@ -527,6 +539,48 @@ export function WebsiteEditor({
                         />
                       </>
                     ) : null}
+                    {s.type === "specialties" ? (
+                      <>
+                        <TextAreaField
+                          id="s-spec-text"
+                          label="Introduction (optional)"
+                          rows={2}
+                          maxLength={300}
+                          value={s.text}
+                          error={err(k("text"))}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            set((x) => {
+                              if (x.type === "specialties") x.text = v;
+                            });
+                          }}
+                        />
+                        <div className="rounded-lg bg-surface-container-low p-md text-body-sm">
+                          {featured.length ? (
+                            <>
+                              <p className="font-semibold text-on-surface">
+                                Shown: {featured.map((f) => f.name).join(", ")}
+                              </p>
+                              <p className="mt-xs text-on-surface-variant">
+                                These are the items marked <strong>Featured</strong> in your menu.
+                              </p>
+                            </>
+                          ) : (
+                            <p className="text-on-surface-variant">
+                              No featured items yet. The section stays hidden on your website until
+                              you mark items as <strong>Featured</strong> in your menu (they also
+                              need a price).
+                            </p>
+                          )}
+                          <a
+                            href={menuHref}
+                            className="mt-xs inline-flex items-center gap-xs font-semibold text-primary hover:underline"
+                          >
+                            <Icon name="restaurant_menu" className="text-icon-md" /> Open the menu
+                          </a>
+                        </div>
+                      </>
+                    ) : null}
                     {s.type === "gallery" ? (
                       <GalleryField
                         cafeId={cafeId}
@@ -639,7 +693,13 @@ export function WebsiteEditor({
             <p className="mb-sm flex items-center gap-xs text-body-sm font-semibold text-on-surface-variant">
               <Icon name="smartphone" className="text-icon-md" /> Preview (draft)
             </p>
-            <WebsitePreview website={doc} palette={palette} cafeName={cafeName} contact={contact} />
+            <WebsitePreview
+              website={doc}
+              palette={palette}
+              cafeName={cafeName}
+              contact={contact}
+              featured={featured}
+            />
           </div>
         </aside>
       </div>
