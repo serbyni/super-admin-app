@@ -6,7 +6,8 @@ import { requireTenantOwner } from "@/lib/auth/guards";
 import { tenantDashboard } from "@/lib/auth/routes";
 import { inputField, isDataError } from "@/lib/data/errors";
 import { serverApi } from "@/lib/data/server-api";
-import { categorySchema, itemSchema } from "@/lib/menu/schema";
+import { cleanI18n } from "@/lib/i18n/languages";
+import { categoryI18nSchema, categorySchema, itemSchema } from "@/lib/menu/schema";
 import { zodErrors } from "@/lib/settings/schema";
 
 export type MenuResult =
@@ -20,6 +21,7 @@ const FIELD_LABELS: Record<string, string> = {
   price: "Please check the price.",
   description: "Please check the description.",
   image: "Upload the photo again.",
+  i18n: "Please check the translations.",
   category_id: "Choose a category.",
   tags: "Please check the tags.",
 };
@@ -54,13 +56,22 @@ export async function saveCategoryAction(
   id: string | null,
   name: string,
   isVisible: boolean,
+  i18n?: unknown,
 ): Promise<MenuResult> {
   await requireTenantOwner(slug);
   const parsed = categorySchema.safeParse({ name });
   if (!parsed.success)
     return { ok: false, message: "Please check the name.", errors: zodErrors(parsed.error) };
+  const tr = i18n === undefined ? undefined : categoryI18nSchema.safeParse(i18n);
+  if (tr && !tr.success) return { ok: false, message: "Please check the translations." };
   try {
-    const cid = await serverApi().menu.saveCategory(slug, id, parsed.data.name, isVisible);
+    const cid = await serverApi().menu.saveCategory(
+      slug,
+      id,
+      parsed.data.name,
+      isVisible,
+      tr?.success ? (cleanI18n(tr.data) as Record<string, Record<string, string>>) : undefined,
+    );
     refresh(slug);
     return { ok: true, id: cid, message: id ? "Category saved" : "Category added" };
   } catch (e) {
@@ -141,6 +152,7 @@ export async function saveItemAction(
       isAvailable: d.is_available,
       isVisible: d.is_visible,
       isFeatured: d.is_featured,
+      i18n: cleanI18n(d.i18n) as Record<string, Record<string, string>>,
     });
     refresh(slug);
     return { ok: true, id: itemId, message: id ? "Item saved" : `${d.name} added` };

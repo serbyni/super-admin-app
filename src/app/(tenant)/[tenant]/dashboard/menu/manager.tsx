@@ -24,6 +24,7 @@ import { ImageField } from "@/components/media/image-fields";
 import { ConfirmDialog, Dialog } from "@/components/ui/dialog";
 import { Icon } from "@/components/ui/icon";
 import { useToast } from "@/components/ui/toast";
+import { isRtlLanguage, languageLabel } from "@/lib/i18n/languages";
 import { mediaUrl } from "@/lib/media/config";
 import {
   MENU_LIMITS,
@@ -48,7 +49,15 @@ import {
   type MenuResult,
 } from "./actions";
 
-type Props = { slug: string; cafeId: string; currency: string; menu: Menu };
+type Props = {
+  slug: string;
+  cafeId: string;
+  currency: string;
+  menu: Menu;
+  /** Menu language and the other languages the café offers (translation tabs). */
+  languages: { main: string; others: string[] };
+};
+type I18nState = Record<string, Record<string, string>>;
 type Confirm = { kind: "item"; item: MenuItem } | { kind: "category"; category: MenuCategory };
 
 const ALL = "all";
@@ -60,7 +69,7 @@ const STATUS: Record<ReturnType<typeof itemStatus>, { label: string; className: 
   no_price: { label: "No price", className: "bg-warning-container text-on-warning-container" },
 };
 
-export function MenuManager({ slug, cafeId, currency, menu }: Props) {
+export function MenuManager({ slug, cafeId, currency, menu, languages }: Props) {
   const toast = useToast();
   const [pending, start] = useTransition();
   const [categoryId, setCategoryId] = useState<string>(menu.categories[0]?.id ?? ALL);
@@ -171,9 +180,10 @@ export function MenuManager({ slug, cafeId, currency, menu }: Props) {
           errors={errors}
           pending={pending}
           onClose={() => setCategoryForm(null)}
-          onSubmit={(name) =>
+          languages={languages}
+          onSubmit={(name, i18n) =>
             run(
-              () => saveCategoryAction(slug, null, name, true),
+              () => saveCategoryAction(slug, null, name, true, i18n),
               (r) => {
                 setCategoryForm(null);
                 if (r.id) setCategoryId(r.id);
@@ -193,6 +203,26 @@ export function MenuManager({ slug, cafeId, currency, menu }: Props) {
           {notPriced} item{notPriced === 1 ? " has" : "s have"} no price yet — customers don&apos;t
           see {notPriced === 1 ? "it" : "them"} until you set one.
         </p>
+      ) : null}
+
+      {languages.others.length && menu.items.length ? (
+        <div className="flex flex-wrap items-center gap-xs text-body-sm">
+          <span className="flex items-center gap-xs text-on-surface-variant">
+            <Icon name="translate" className="text-icon-md" /> Translated:
+          </span>
+          {languages.others.map((l) => {
+            const done = menu.items.filter((i) => i.i18n[l]?.name).length;
+            const all = done === menu.items.length;
+            return (
+              <span
+                key={l}
+                className={`rounded-full px-sm py-xs font-semibold ${all ? "bg-success-container text-success" : "bg-surface-container text-on-surface-variant"}`}
+              >
+                {languageLabel(l)} {done}/{menu.items.length}
+              </span>
+            );
+          })}
+        </div>
       ) : null}
 
       {/* Search + add */}
@@ -340,10 +370,11 @@ export function MenuManager({ slug, cafeId, currency, menu }: Props) {
           setCategoryForm(null);
           setErrors({});
         }}
-        onSubmit={(name) => {
+        languages={languages}
+        onSubmit={(name, i18n) => {
           const c = categoryForm !== "new" ? categoryForm : null;
           run(
-            () => saveCategoryAction(slug, c?.id ?? null, name, c?.isVisible ?? true),
+            () => saveCategoryAction(slug, c?.id ?? null, name, c?.isVisible ?? true, i18n),
             (r) => {
               setCategoryForm(null);
               if (!c && r.id) setCategoryId(r.id);
@@ -370,6 +401,7 @@ export function MenuManager({ slug, cafeId, currency, menu }: Props) {
             defaultCategory={category?.id ?? categories[0].id}
             cafeId={cafeId}
             currency={currency}
+            languages={languages}
             errors={errors}
             pending={pending}
             onCancel={() => setItemForm(null)}
@@ -562,6 +594,7 @@ function ItemFields({
   defaultCategory,
   cafeId,
   currency,
+  languages,
   errors,
   pending,
   onSubmit,
@@ -572,12 +605,21 @@ function ItemFields({
   defaultCategory: string;
   cafeId: string;
   currency: string;
+  languages: { main: string; others: string[] };
   errors: Record<string, string>;
   pending: boolean;
   onSubmit: (input: Record<string, unknown>) => void;
   onCancel: () => void;
 }) {
   const digits = currencyDigits(currency);
+  const [tab, setTab] = useState(languages.main);
+  const [i18n, setI18n] = useState<I18nState>(() => structuredClone(item?.i18n ?? {}) as I18nState);
+  // Main texts (shown as reference in the translation tabs).
+  const [mainName, setMainName] = useState(item?.name ?? "");
+  const [mainDesc, setMainDesc] = useState(item?.description ?? "");
+  const tr = (l: string, f: string) => i18n[l]?.[f] ?? "";
+  const setTr = (l: string, f: string, v: string) =>
+    setI18n((x) => ({ ...x, [l]: { ...(x[l] ?? {}), [f]: v } }));
   const [image, setImage] = useState(item?.image ?? null);
   const [tags, setTags] = useState<MenuTag[]>(item?.tags ?? []);
   const submit = (e: FormEvent<HTMLFormElement>) => {
@@ -594,95 +636,140 @@ function ItemFields({
       is_available: f.get("is_available") === "on",
       is_visible: f.get("is_visible") === "on",
       is_featured: f.get("is_featured") === "on",
+      i18n,
     });
   };
   return (
     <form onSubmit={submit} noValidate className="flex flex-col gap-md">
-      <TextField
-        id="name"
-        label="Name"
-        required
-        maxLength={80}
-        defaultValue={item?.name ?? ""}
-        error={errors.name}
-      />
-      <div className="grid grid-cols-1 gap-sm sm:grid-cols-2">
-        <TextField
-          id="price"
-          label={`Price (${currency})`}
-          inputMode="decimal"
-          placeholder={(4.5).toFixed(digits)}
-          defaultValue={
-            item?.price === null || item?.price === undefined ? "" : item.price.toFixed(digits)
-          }
-          error={errors.price}
-          hint="Leave empty to keep it hidden for now"
+      {languages.others.length ? (
+        <LanguageTabs
+          main={languages.main}
+          others={languages.others}
+          active={tab}
+          onChange={setTab}
+          done={(l) => !!tr(l, "name")}
         />
-        <label className="flex flex-col gap-xs text-body-sm font-semibold text-on-surface">
-          Category
-          <select
-            name="category_id"
-            defaultValue={item?.categoryId ?? defaultCategory}
-            className="rounded-lg border border-outline-variant bg-transparent px-sm py-3.5 font-normal"
-          >
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
-      <TextAreaField
-        id="description"
-        label="Description (optional)"
-        rows={3}
-        maxLength={500}
-        defaultValue={item?.description ?? ""}
-        error={errors.description}
-      />
-      <ImageField
-        cafeId={cafeId}
-        label="Photo"
-        value={image}
-        onChange={setImage}
-        error={errors.image ?? errors.image_path}
-      />
-      <fieldset>
-        <legend className="mb-xs text-body-sm font-semibold text-on-surface">Tags</legend>
-        <div className="flex flex-wrap gap-xs">
-          {MENU_TAGS.map((t) => {
-            const on = tags.includes(t.value);
-            return (
-              <button
-                key={t.value}
-                type="button"
-                aria-pressed={on}
-                onClick={() =>
-                  setTags((x) => (on ? x.filter((v) => v !== t.value) : [...x, t.value]))
-                }
-                className={`inline-flex items-center gap-xs rounded-full border px-sm py-xs text-body-sm ${
-                  on
-                    ? "border-primary bg-secondary-container text-primary"
-                    : "border-outline-variant text-on-surface-variant"
-                }`}
-              >
-                <Icon name={t.icon} className="text-icon-md" /> {t.label}
-              </button>
-            );
-          })}
+      ) : null}
+      {languages.others.map((l) =>
+        tab === l ? (
+          <div key={l} className="flex flex-col gap-md" lang={l}>
+            <p className="text-body-sm text-on-surface-variant">
+              {languageLabel(l)} translation. Empty fields show the {languageLabel(languages.main)}{" "}
+              text.
+            </p>
+            <TextField
+              id={`name-${l}`}
+              label={`Name in ${languageLabel(l)}`}
+              maxLength={80}
+              dir={isRtlLanguage(l) ? "rtl" : "ltr"}
+              value={tr(l, "name")}
+              onChange={(e) => setTr(l, "name", e.target.value)}
+              hint={mainName ? `Original: ${mainName}` : undefined}
+              error={errors.i18n}
+            />
+            <TextAreaField
+              id={`description-${l}`}
+              label={`Description in ${languageLabel(l)}`}
+              rows={3}
+              maxLength={500}
+              dir={isRtlLanguage(l) ? "rtl" : "ltr"}
+              value={tr(l, "description")}
+              onChange={(e) => setTr(l, "description", e.target.value)}
+              hint={mainDesc ? `Original: ${mainDesc}` : undefined}
+            />
+          </div>
+        ) : null,
+      )}
+      {/* Main language: always mounted (its inputs are part of the form), hidden on other tabs. */}
+      <div className="flex flex-col gap-md" hidden={tab !== languages.main}>
+        <TextField
+          id="name"
+          label="Name"
+          required
+          maxLength={80}
+          defaultValue={item?.name ?? ""}
+          onChange={(e) => setMainName(e.target.value)}
+          error={errors.name}
+        />
+        <div className="grid grid-cols-1 gap-sm sm:grid-cols-2">
+          <TextField
+            id="price"
+            label={`Price (${currency})`}
+            inputMode="decimal"
+            placeholder={(4.5).toFixed(digits)}
+            defaultValue={
+              item?.price === null || item?.price === undefined ? "" : item.price.toFixed(digits)
+            }
+            error={errors.price}
+            hint="Leave empty to keep it hidden for now"
+          />
+          <label className="flex flex-col gap-xs text-body-sm font-semibold text-on-surface">
+            Category
+            <select
+              name="category_id"
+              defaultValue={item?.categoryId ?? defaultCategory}
+              className="rounded-lg border border-outline-variant bg-transparent px-sm py-3.5 font-normal"
+            >
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
-      </fieldset>
-      <div className="flex flex-col gap-sm rounded-lg bg-surface-container-low p-md text-body-sm text-on-surface">
-        <Check name="is_available" defaultChecked={item?.isAvailable ?? true}>
-          Available — uncheck when it&apos;s sold out
-        </Check>
-        <Check name="is_visible" defaultChecked={item?.isVisible ?? true}>
-          Show on the menu
-        </Check>
-        <Check name="is_featured" defaultChecked={item?.isFeatured ?? false}>
-          Featured — shown on your website&apos;s &quot;Signature specialties&quot;
-        </Check>
+        <TextAreaField
+          id="description"
+          label="Description (optional)"
+          rows={3}
+          maxLength={500}
+          defaultValue={item?.description ?? ""}
+          error={errors.description}
+          onChange={(e) => setMainDesc(e.target.value)}
+        />
+        <ImageField
+          cafeId={cafeId}
+          label="Photo"
+          value={image}
+          onChange={setImage}
+          error={errors.image ?? errors.image_path}
+        />
+        <fieldset>
+          <legend className="mb-xs text-body-sm font-semibold text-on-surface">Tags</legend>
+          <div className="flex flex-wrap gap-xs">
+            {MENU_TAGS.map((t) => {
+              const on = tags.includes(t.value);
+              return (
+                <button
+                  key={t.value}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() =>
+                    setTags((x) => (on ? x.filter((v) => v !== t.value) : [...x, t.value]))
+                  }
+                  className={`inline-flex items-center gap-xs rounded-full border px-sm py-xs text-body-sm ${
+                    on
+                      ? "border-primary bg-secondary-container text-primary"
+                      : "border-outline-variant text-on-surface-variant"
+                  }`}
+                >
+                  <Icon name={t.icon} className="text-icon-md" /> {t.label}
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
+        <div className="flex flex-col gap-sm rounded-lg bg-surface-container-low p-md text-body-sm text-on-surface">
+          <Check name="is_available" defaultChecked={item?.isAvailable ?? true}>
+            Available — uncheck when it&apos;s sold out
+          </Check>
+          <Check name="is_visible" defaultChecked={item?.isVisible ?? true}>
+            Show on the menu
+          </Check>
+          <Check name="is_featured" defaultChecked={item?.isFeatured ?? false}>
+            Featured — shown on your website&apos;s &quot;Signature specialties&quot;
+          </Check>
+        </div>
       </div>
       <FormButtons pending={pending} onCancel={onCancel} label={item ? "Save" : "Add item"} />
     </form>
@@ -781,12 +868,14 @@ function CategoryDialog({
   pending,
   onClose,
   onSubmit,
+  languages,
 }: {
   form: MenuCategory | "new" | null;
   errors: Record<string, string>;
   pending: boolean;
   onClose: () => void;
-  onSubmit: (name: string) => void;
+  onSubmit: (name: string, i18n: I18nState) => void;
+  languages: { main: string; others: string[] };
 }) {
   return (
     <Dialog
@@ -802,7 +891,11 @@ function CategoryDialog({
           className="flex flex-col gap-md"
           onSubmit={(e) => {
             e.preventDefault();
-            onSubmit(String(new FormData(e.currentTarget).get("name") ?? ""));
+            const f = new FormData(e.currentTarget);
+            const i18n: I18nState = Object.fromEntries(
+              languages.others.map((l) => [l, { name: String(f.get(`name-${l}`) ?? "") }]),
+            );
+            onSubmit(String(f.get("name") ?? ""), i18n);
           }}
         >
           <TextField
@@ -814,6 +907,16 @@ function CategoryDialog({
             defaultValue={form === "new" ? "" : form.name}
             error={errors.name}
           />
+          {languages.others.map((l) => (
+            <TextField
+              key={l}
+              id={`name-${l}`}
+              label={`Name in ${languageLabel(l)} (optional)`}
+              maxLength={60}
+              dir={isRtlLanguage(l) ? "rtl" : "ltr"}
+              defaultValue={form === "new" ? "" : (form.i18n[l]?.name ?? "")}
+            />
+          ))}
           <FormButtons
             pending={pending}
             onCancel={onClose}
@@ -826,6 +929,51 @@ function CategoryDialog({
 }
 
 /* ── Small UI pieces ────────────────────────────────────────────────────── */
+
+/** "French (main) | English ✓ | Arabic" tabs of a form with translations. */
+function LanguageTabs({
+  main,
+  others,
+  active,
+  onChange,
+  done,
+}: {
+  main: string;
+  others: string[];
+  active: string;
+  onChange: (l: string) => void;
+  done: (l: string) => boolean;
+}) {
+  return (
+    <div
+      role="tablist"
+      aria-label="Language"
+      className="flex flex-wrap gap-xs border-b border-surface-container-high pb-xs"
+    >
+      {[main, ...others].map((l) => (
+        <button
+          key={l}
+          type="button"
+          role="tab"
+          aria-selected={active === l}
+          onClick={() => onChange(l)}
+          className={`inline-flex items-center gap-xs rounded-full px-md py-xs text-body-sm font-semibold ${
+            active === l
+              ? "bg-primary text-on-primary"
+              : "bg-surface-container text-on-surface-variant hover:bg-surface-container-high"
+          }`}
+        >
+          {languageLabel(l)}
+          {l === main ? (
+            <span className="opacity-75">· main</span>
+          ) : done(l) ? (
+            <Icon name="check" className="text-icon-sm" />
+          ) : null}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 function Check({
   name,

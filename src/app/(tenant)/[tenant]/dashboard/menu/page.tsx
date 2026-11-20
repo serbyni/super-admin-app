@@ -15,7 +15,7 @@ async function MenuPage({ params }: { params: PageProps<"/[tenant]/dashboard/men
   const api = serverApi();
   const cafe = await api.cafes.mine(tenant);
   if (!cafe) notFound();
-  const menu = await api.menu.get(tenant);
+  const [menu, langs] = await Promise.all([api.menu.get(tenant), api.languages.mine(tenant)]);
   const items = menu.items.length;
 
   return (
@@ -29,7 +29,13 @@ async function MenuPage({ params }: { params: PageProps<"/[tenant]/dashboard/men
         }
         actions={<CafePageLink slug={cafe.slug} />}
       />
-      <MenuManager slug={cafe.slug} cafeId={cafe.id} currency={cafe.currency} menu={menu} />
+      <MenuManager
+        slug={cafe.slug}
+        cafeId={cafe.id}
+        currency={cafe.currency}
+        menu={menu}
+        languages={{ main: langs.main, others: langs.offered.filter((l) => l !== langs.main) }}
+      />
     </TenantShell>
   );
 }

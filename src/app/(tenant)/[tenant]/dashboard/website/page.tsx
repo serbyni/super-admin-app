@@ -20,7 +20,11 @@ async function Website({ params }: { params: PageProps<"/[tenant]/dashboard/webs
   const api = serverApi();
   const cafe = await api.cafes.mine(tenant);
   if (!cafe) notFound();
-  const [site, menu] = await Promise.all([api.website.get(tenant), api.menu.get(tenant)]);
+  const [site, menu, langs] = await Promise.all([
+    api.website.get(tenant),
+    api.menu.get(tenant),
+    api.languages.mine(tenant),
+  ]);
   const visibleCats = new Set(menu.categories.filter((c) => c.isVisible).map((c) => c.id));
   // Same rule as the café site: featured, visible, priced, in a visible category.
   const featured = menu.items
@@ -56,6 +60,7 @@ async function Website({ params }: { params: PageProps<"/[tenant]/dashboard/webs
         publishedAt={site.publishedAt}
         featured={featured}
         menuHref={`${tenantDashboard(cafe.slug).replace(/\/$/, "")}/menu`}
+        languages={{ main: langs.main, others: langs.offered.filter((l) => l !== langs.main) }}
       />
     </TenantShell>
   );

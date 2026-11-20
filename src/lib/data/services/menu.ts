@@ -14,6 +14,8 @@ export type MenuItemInput = {
   isAvailable: boolean;
   isVisible: boolean;
   isFeatured: boolean;
+  /** Translations by language (empty texts already removed). */
+  i18n: Record<string, Record<string, string>>;
 };
 
 /**
@@ -29,7 +31,13 @@ export class MenuService {
     return menuSchema.parse(raw);
   }
 
-  async saveCategory(slug: string, id: string | null, name: string, isVisible: boolean) {
+  async saveCategory(
+    slug: string,
+    id: string | null,
+    name: string,
+    isVisible: boolean,
+    i18n?: Record<string, Record<string, string>>,
+  ) {
     return unwrap(
       "save_my_menu_category",
       await (
@@ -39,6 +47,7 @@ export class MenuService {
         p_id: id,
         p_name: name,
         p_is_visible: isVisible,
+        ...(i18n ? { p_i18n: i18n as unknown as Json } : {}),
       }),
     );
   }
@@ -74,6 +83,7 @@ export class MenuService {
         p_is_available: i.isAvailable,
         p_is_visible: i.isVisible,
         p_is_featured: i.isFeatured,
+        p_i18n: i.i18n as unknown as Json,
       }),
     );
   }

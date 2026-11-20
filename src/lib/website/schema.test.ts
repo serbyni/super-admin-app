@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   defaultWebsite,
+  translatableFields,
+  translateWebsite,
   groupHours,
   parseWebsite,
   websiteErrors,
@@ -73,5 +75,32 @@ describe("groupHours", () => {
       { days: "Saturday", hours: "09:00 – 20:00" },
       { days: "Sunday", hours: "Closed" },
     ]);
+  });
+});
+
+describe("website translations", () => {
+  it("lists visitor-facing texts with stable keys", () => {
+    const keys = translatableFields(base()).map((f) => f.key);
+    expect(keys).toContain("hero.title");
+    expect(keys).toContain("sections.how_it_works.text");
+    // hidden story is still translatable once it has text; empty texts are skipped
+    expect(keys).not.toContain("hero.badge");
+  });
+
+  it("translates with fallback to the main text", () => {
+    const w = base();
+    w.i18n = { en: { "hero.title": "Welcome!", "sections.how_it_works.title": "  " } };
+    const en = translateWebsite(w, "en");
+    expect(en.hero.title).toBe("Welcome!");
+    expect(en.hero.subtitle).toBe(w.hero.subtitle);
+    expect(en.sections[0].title).toBe(w.sections[0].title);
+    expect(translateWebsite(w, "ar")).toBe(w);
+  });
+
+  it("accepts translations in the document", () => {
+    const w = base();
+    w.i18n = { en: { "hero.title": "Hi" } };
+    expect(websiteSchema.safeParse(w).success).toBe(true);
+    expect(websiteSchema.safeParse({ ...w, i18n: { english: {} } }).success).toBe(false);
   });
 });

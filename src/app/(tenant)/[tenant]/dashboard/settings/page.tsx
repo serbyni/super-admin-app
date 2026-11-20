@@ -15,12 +15,15 @@ import { CafePageLink } from "@/components/cafe/cafe-page-link";
 import { ProfileTab } from "@/components/settings/profile-tab";
 import { Section } from "@/components/settings/form-kit";
 import { saveCafeAction } from "./actions";
+import { LanguagesTab } from "./languages-tab";
+import { formatDateTime } from "@/config/locale";
 import { CafeSettingsForm } from "./forms";
 
 export const metadata: Metadata = { title: "Settings" };
 
 const TABS = [
   { key: "cafe", label: "Café", icon: "storefront" },
+  { key: "languages", label: "Languages", icon: "translate" },
   { key: "profile", label: "Profile", icon: "person" },
 ] as const;
 
@@ -105,6 +108,8 @@ async function Settings({
             }}
           />
         </div>
+      ) : tab.key === "languages" ? (
+        <LanguagesTabLoader slug={tenant} />
       ) : (
         <ProfileTab emailResult={emailResult} pendingEmail={user.new_email ?? null} />
       )}
@@ -121,4 +126,13 @@ export default function SettingsPage({
       <Settings params={params} searchParams={searchParams} />
     </Suspense>
   );
+}
+
+async function LanguagesTabLoader({ slug }: { slug: string }) {
+  const languages = await serverApi().languages.mine(slug);
+  // Dates formatted on the server (same text in the browser — no hydration mismatch).
+  const dates = Object.fromEntries(
+    languages.requests.map((r) => [r.id, formatDateTime(r.createdAt)]),
+  );
+  return <LanguagesTab slug={slug} languages={languages} dates={dates} />;
 }

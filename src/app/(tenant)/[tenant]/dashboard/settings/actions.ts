@@ -48,3 +48,51 @@ export async function saveCafeAction(
   revalidatePath(tenantDashboard(slug), "layout");
   return done(prev, "Café settings saved");
 }
+
+/* ── Languages tab ── */
+
+export type LanguagesResult = { ok: true; message: string } | { ok: false; message: string };
+
+/** Languages the café offers (any available one; the main language is always kept). */
+export async function setLanguagesAction(
+  slug: string,
+  locales: string[],
+): Promise<LanguagesResult> {
+  await requireTenantOwner(slug);
+  if (
+    !Array.isArray(locales) ||
+    locales.some((l) => typeof l !== "string" || !/^[a-z]{2}$/.test(l))
+  )
+    return { ok: false, message: "Please check the languages." };
+  try {
+    await serverApi().languages.setOffered(slug, locales);
+  } catch (e) {
+    if (isDataError(e))
+      return { ok: false, message: "Could not save the languages. Please try again." };
+    throw e;
+  }
+  revalidatePath(tenantDashboard(slug), "layout");
+  return { ok: true, message: "Languages saved" };
+}
+
+/** Asks Serbi to add an extra language to the café (admins are notified). */
+export async function requestLanguageAction(
+  slug: string,
+  locale: string,
+  note: string,
+): Promise<LanguagesResult> {
+  await requireTenantOwner(slug);
+  if (!/^[a-z]{2}$/.test(locale) || note.length > 300)
+    return { ok: false, message: "Please check the request." };
+  try {
+    await serverApi().languages.request(slug, locale, note.trim());
+  } catch (e) {
+    if (isDataError(e, "conflict"))
+      return { ok: false, message: "You already asked for this language — it is being reviewed." };
+    if (isDataError(e))
+      return { ok: false, message: "Could not send the request. Please try again." };
+    throw e;
+  }
+  revalidatePath(tenantDashboard(slug), "layout");
+  return { ok: true, message: "Request sent — we'll notify you when it is reviewed" };
+}

@@ -81,6 +81,7 @@ export function itemSchema(currency: string) {
     is_available: z.boolean(),
     is_visible: z.boolean(),
     is_featured: z.boolean(),
+    i18n: itemI18nSchema,
   });
 }
 export type ItemForm = z.infer<ReturnType<typeof itemSchema>>;
@@ -90,9 +91,32 @@ export const categorySchema = z.object({
 });
 
 const num = z.coerce.number();
+/** Translations of a record: { "en": { "name": "…", "description": "…" } }. */
+const i18nSchema = z.record(z.string(), z.record(z.string(), z.string())).catch({});
+
+/** Translations sent by the item form (checked again in the database). */
+export const itemI18nSchema = z
+  .record(
+    z.string().regex(/^[a-z]{2}$/),
+    z.object({
+      name: z.string().trim().max(80).optional(),
+      description: z.string().trim().max(500).optional(),
+    }),
+  )
+  .default({});
+export const categoryI18nSchema = z
+  .record(z.string().regex(/^[a-z]{2}$/), z.object({ name: z.string().trim().max(60).optional() }))
+  .default({});
+
 export const menuSchema = z.object({
   categories: z.array(
-    z.object({ id: z.string(), name: z.string(), sortOrder: num, isVisible: z.boolean() }),
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      sortOrder: num,
+      isVisible: z.boolean(),
+      i18n: i18nSchema,
+    }),
   ),
   items: z.array(
     z.object({
@@ -107,6 +131,7 @@ export const menuSchema = z.object({
       isVisible: z.boolean(),
       isFeatured: z.boolean(),
       sortOrder: num,
+      i18n: i18nSchema,
     }),
   ),
 });

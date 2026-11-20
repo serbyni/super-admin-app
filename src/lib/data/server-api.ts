@@ -5,6 +5,7 @@ import { AdminsService } from "./services/admins";
 import { AuthService } from "./services/auth";
 import { BusinessTypesService } from "./services/business-types";
 import { CafesService } from "./services/cafes";
+import { LanguagesService } from "./services/languages";
 import { MenuService } from "./services/menu";
 import { NotificationsService } from "./services/notifications";
 import { OnboardingService } from "./services/onboarding";
@@ -32,6 +33,8 @@ export class ServerApi {
   readonly tables: TablesService;
   /** Menu (categories + items) of the owner's café. */
   readonly menu: MenuService;
+  /** Café languages (offered / available / requests). */
+  readonly languages: LanguagesService;
 
   constructor(createDb: () => Promise<Db>) {
     // One client per ServerApi, created on first use: pages that only need cached public data
@@ -49,6 +52,7 @@ export class ServerApi {
     this.website = new WebsiteService(db);
     this.tables = new TablesService(db);
     this.menu = new MenuService(db);
+    this.languages = new LanguagesService(db);
   }
 }
 
