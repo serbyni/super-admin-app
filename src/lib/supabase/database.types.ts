@@ -228,6 +228,87 @@ export type Database = {
         };
         Relationships: [];
       };
+      menu_categories: {
+        Row: {
+          cafe_id: string;
+          created_at: string;
+          id: string;
+          is_visible: boolean;
+          name: string;
+          sort_order: number;
+          updated_at: string;
+        };
+        Insert: {
+          cafe_id: string;
+          created_at?: string;
+          id?: string;
+          is_visible?: boolean;
+          name: string;
+          sort_order?: number;
+          updated_at?: string;
+        };
+        Update: {
+          cafe_id?: string;
+          created_at?: string;
+          id?: string;
+          is_visible?: boolean;
+          name?: string;
+          sort_order?: number;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      menu_items: {
+        Row: {
+          cafe_id: string;
+          category_id: string;
+          created_at: string;
+          description: string;
+          id: string;
+          image: Json | null;
+          is_available: boolean;
+          is_featured: boolean;
+          is_visible: boolean;
+          name: string;
+          price: number | null;
+          sort_order: number;
+          tags: string[];
+          updated_at: string;
+        };
+        Insert: {
+          cafe_id: string;
+          category_id: string;
+          created_at?: string;
+          description?: string;
+          id?: string;
+          image?: Json | null;
+          is_available?: boolean;
+          is_featured?: boolean;
+          is_visible?: boolean;
+          name: string;
+          price?: number | null;
+          sort_order?: number;
+          tags?: string[];
+          updated_at?: string;
+        };
+        Update: {
+          cafe_id?: string;
+          category_id?: string;
+          created_at?: string;
+          description?: string;
+          id?: string;
+          image?: Json | null;
+          is_available?: boolean;
+          is_featured?: boolean;
+          is_visible?: boolean;
+          name?: string;
+          price?: number | null;
+          sort_order?: number;
+          tags?: string[];
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       qr_codes: {
         Row: {
           cafe_id: string;
@@ -521,6 +602,40 @@ export type Database = {
         Returns: { cafe_slug: string; table_code: string; table_label: string }[];
       };
       get_public_table: { Args: { p_code: string; p_slug: string }; Returns: { label: string }[] };
+      get_my_menu: { Args: { p_slug: string }; Returns: Json };
+      get_public_menu: { Args: { p_slug: string }; Returns: Json };
+      save_my_menu_category: {
+        Args: { p_id: string | null; p_is_visible: boolean; p_name: string; p_slug: string };
+        Returns: string;
+      };
+      delete_my_menu_category: { Args: { p_id: string; p_slug: string }; Returns: undefined };
+      reorder_my_menu_categories: { Args: { p_ids: string[]; p_slug: string }; Returns: undefined };
+      save_my_menu_item: {
+        Args: {
+          p_category_id: string;
+          p_description: string;
+          p_id: string | null;
+          p_image: Json | null;
+          p_is_available: boolean;
+          p_is_featured: boolean;
+          p_is_visible: boolean;
+          p_name: string;
+          p_price: number | null;
+          p_slug: string;
+          p_tags: string[];
+        };
+        Returns: string;
+      };
+      set_my_menu_item_available: {
+        Args: { p_available: boolean; p_id: string; p_slug: string };
+        Returns: undefined;
+      };
+      delete_my_menu_item: { Args: { p_id: string; p_slug: string }; Returns: undefined };
+      reorder_my_menu_items: {
+        Args: { p_category_id: string; p_ids: string[]; p_slug: string };
+        Returns: undefined;
+      };
+      apply_my_menu_template: { Args: { p_slug: string }; Returns: undefined };
       get_my_owner: {
         Args: never;
         Returns: {
