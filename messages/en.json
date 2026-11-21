@@ -155,7 +155,9 @@
     "orderingOn": "You are accepting orders",
     "orderingOff": "Ordering is switched off",
     "pushOn": "Notifications are on for this device",
-    "pushOff": "Notifications are off for this device"
+    "pushOff": "Notifications are off for this device",
+    "orderMovedTable": "Order moved to the new table.",
+    "orderRadiusSaved": "Table orders now work within {metres} m of the café."
   },
   "common": {
     "save": "Save",
@@ -996,7 +998,16 @@
       "unsupported": "This browser can't receive notifications. Use Chrome, Edge or Firefox, or the Serbi app on your phone.",
       "install": "On iPhone, add Serbi to your Home Screen first: tap Share, then “Add to Home Screen”, open Serbi from there and turn notifications on.",
       "denied": "Notifications were not allowed."
-    }
+    },
+    "moveTable": "Move to table",
+    "moveTableTitle": "Move order #{number}",
+    "moveTableHint": "Pick the table the customers are now sitting at. They are told on their phone.",
+    "movedFrom": "moved from {label}",
+    "busy": "busy",
+    "current": "current table",
+    "radiusLabel": "Table orders: maximum distance",
+    "radiusHint": "Customers must be this close to the café (phone location) to order at a table.",
+    "radiusOption": "{metres} m"
   },
   "push": {
     "newOrderTitle": "New order #{number}",
@@ -1014,7 +1025,10 @@
     },
     "readyTable": "Your order is ready — it's coming to table {label}.",
     "readyTakeaway": "Your order is ready — pick it up at the counter, {name}.",
-    "reason": "Reason: {reason}"
+    "reason": "Reason: {reason}",
+    "movedTitle": "Order #{number} moved",
+    "movedBody": "Table {from} → table {to}",
+    "movedCustomer": "Your order is now at table {label}."
   },
   "receipt": {
     "subject": "Your receipt — {cafe} #{number}",

@@ -8,8 +8,8 @@ import { requireTenantOwner } from "@/lib/auth/guards";
 import { tenantDashboard } from "@/lib/auth/routes";
 import { isDataError } from "@/lib/data/errors";
 import { serverApi } from "@/lib/data/server-api";
-import { ORDER_STATUSES, type OrderStatus } from "@/lib/orders/schema";
-import { notifyOrderUpdate, requestReceipt } from "@/lib/data/push-dispatcher";
+import { ORDER_RADII, ORDER_STATUSES, type OrderStatus } from "@/lib/orders/schema";
+import { notifyOrderMoved, notifyOrderUpdate, requestReceipt } from "@/lib/data/push-dispatcher";
 
 export type OrderResult = { ok: true; message?: string } | { ok: false; message: string };
 
@@ -73,6 +73,39 @@ export async function setAcceptingOrdersAction(slug: string, on: boolean): Promi
   }
   refresh(slug);
   return { ok: true, message: on ? msg("orderingOn") : msg("orderingOff") };
+}
+
+/** Board: move an open table order to another table; the customer's phones are told. */
+export async function moveOrderTableAction(
+  slug: string,
+  id: string,
+  tableId: string,
+): Promise<OrderResult> {
+  await requireTenantOwner(slug);
+  if (!isId(id) || !isId(tableId)) return { ok: false, message: msg("checkForm") };
+  try {
+    await serverApi().orders.moveTable(slug, id, tableId);
+  } catch (e) {
+    refresh(slug);
+    return failure(e);
+  }
+  after(() => notifyOrderMoved(id));
+  refresh(slug);
+  return { ok: true, message: msg("orderMovedTable") };
+}
+
+/** Maximum distance from the café for table orders. */
+export async function setOrderRadiusAction(slug: string, metres: number): Promise<OrderResult> {
+  await requireTenantOwner(slug);
+  if (!ORDER_RADII.includes(metres as (typeof ORDER_RADII)[number]))
+    return { ok: false, message: msg("checkForm") };
+  try {
+    await serverApi().orders.setRadius(slug, metres);
+  } catch (e) {
+    return failure(e);
+  }
+  refresh(slug);
+  return { ok: true, message: msg("orderRadiusSaved", { metres }) };
 }
 
 const pushKeys = z.object({

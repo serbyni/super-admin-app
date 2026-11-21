@@ -155,7 +155,9 @@
     "orderingOn": "Vous acceptez les commandes",
     "orderingOff": "Les commandes sont désactivées",
     "pushOn": "Notifications activées sur cet appareil",
-    "pushOff": "Notifications désactivées sur cet appareil"
+    "pushOff": "Notifications désactivées sur cet appareil",
+    "orderMovedTable": "Commande déplacée vers la nouvelle table.",
+    "orderRadiusSaved": "Les commandes à table fonctionnent maintenant à moins de {metres} m du café."
   },
   "common": {
     "save": "Enregistrer",
@@ -996,7 +998,16 @@
       "unsupported": "Ce navigateur ne peut pas recevoir de notifications. Utilisez Chrome, Edge ou Firefox, ou l'app Serbi sur votre téléphone.",
       "install": "Sur iPhone, ajoutez d'abord Serbi à l'écran d'accueil : touchez Partager puis « Sur l'écran d'accueil », ouvrez Serbi depuis l'écran d'accueil et activez les notifications.",
       "denied": "Les notifications n'ont pas été autorisées."
-    }
+    },
+    "moveTable": "Changer de table",
+    "moveTableTitle": "Déplacer la commande n°{number}",
+    "moveTableHint": "Choisissez la table où les clients sont maintenant assis. Ils sont prévenus sur leur téléphone.",
+    "movedFrom": "déplacée depuis {label}",
+    "busy": "occupée",
+    "current": "table actuelle",
+    "radiusLabel": "Commandes à table : distance maximale",
+    "radiusHint": "Les clients doivent être à cette distance du café (position du téléphone) pour commander à table.",
+    "radiusOption": "{metres} m"
   },
   "push": {
     "newOrderTitle": "Nouvelle commande n°{number}",
@@ -1014,7 +1025,10 @@
     },
     "readyTable": "Votre commande est prête — elle arrive à la table {label}.",
     "readyTakeaway": "Votre commande est prête — récupérez-la au comptoir, {name}.",
-    "reason": "Motif : {reason}"
+    "reason": "Motif : {reason}",
+    "movedTitle": "Commande n°{number} déplacée",
+    "movedBody": "Table {from} → table {to}",
+    "movedCustomer": "Votre commande est maintenant à la table {label}."
   },
   "receipt": {
     "subject": "Votre reçu — {cafe} n°{number}",

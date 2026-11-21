@@ -51,6 +51,11 @@ async function OrdersPage({
         null,
       ]
     : await Promise.all([api.orders.board(tenant, "active"), api.orders.board(tenant, "day")]);
+  const floor = history ? null : await api.tables.floor(tenant);
+  const areaName = new Map(floor?.areas.map((a) => [a.id, a.name]));
+  const tables = (floor?.tables ?? [])
+    .filter((x) => x.isActive)
+    .map((x) => ({ id: x.id, label: x.label, area: areaName.get(x.areaId) ?? "" }));
   const base = `${tenantDashboard(cafe.slug).replace(/\/$/, "")}/orders`;
 
   return (
@@ -105,6 +110,7 @@ async function OrdersPage({
             currency={cafe.currency}
             board={board}
             today={today?.orders ?? []}
+            tables={tables}
           />
         </div>
       )}

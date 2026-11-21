@@ -48,6 +48,38 @@ export function newOrderPush(
   };
 }
 
+/** Staff: the customer moved their order to another table. */
+export function tableMovedPush(
+  o: { number: number; tableLabel: string | null; movedFromLabel: string | null },
+  cafe: { name: string },
+  locale: string,
+  url: string,
+): PushPayload {
+  const t = texts(locale);
+  return {
+    title: fill(t.movedTitle, { number: o.number, cafe: cafe.name }),
+    body: fill(t.movedBody, { from: o.movedFromLabel ?? "", to: o.tableLabel ?? "" }),
+    url,
+    tag: `moved-${o.number}`,
+  };
+}
+
+/** Customer: staff moved their order to another table. */
+export function orderMovedPush(
+  o: { number: number; tableLabel: string | null },
+  cafe: { name: string },
+  locale: string,
+  url: string,
+): PushPayload {
+  const t = texts(locale);
+  return {
+    title: fill(t.customerTitle, { cafe: cafe.name, number: o.number }),
+    body: fill(t.movedCustomer, { label: o.tableLabel ?? "" }),
+    url,
+    tag: `order-${o.number}`,
+  };
+}
+
 export function orderUpdatePush(
   o: {
     number: number;
