@@ -202,7 +202,7 @@ export function OrdersBoard({
             </p>
           </div>
         </div>
-        <label className="flex flex-col gap-xs text-caption text-on-surface-variant">
+        <label className="flex w-full flex-col gap-xs text-caption text-on-surface-variant md:w-80">
           <span className="font-semibold text-on-surface">{t("radiusLabel")}</span>
           <select
             value={board.orderRadiusM}
@@ -217,9 +217,7 @@ export function OrdersBoard({
               </option>
             ))}
           </select>
-          <span id="radius-hint" className="max-w-xs">
-            {t("radiusHint")}
-          </span>
+          <span id="radius-hint">{t("radiusHint")}</span>
         </label>
         <button
           type="button"
@@ -508,18 +506,6 @@ function OrderCard({
               {t(NEXT_LABEL[o.status] ?? "toServed")}
               <Icon name="arrow_forward" className="text-icon-md" flipRtl />
             </button>
-            {onMove ? (
-              <button
-                type="button"
-                disabled={pending}
-                onClick={onMove}
-                aria-label={t("moveTable")}
-                title={t("moveTable")}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-primary hover:bg-secondary-container disabled:opacity-60"
-              >
-                <Icon name="swap_horiz" className="text-icon-md" />
-              </button>
-            ) : null}
             <button
               type="button"
               disabled={pending}
@@ -531,6 +517,18 @@ function OrderCard({
               <Icon name="close" className="text-icon-md" />
             </button>
           </>
+        ) : null}
+        {onMove ? (
+          <button
+            type="button"
+            disabled={pending}
+            onClick={onMove}
+            aria-label={t("moveTable")}
+            title={t("moveTable")}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-primary hover:bg-secondary-container disabled:opacity-60"
+          >
+            <Icon name="swap_horiz" className="text-icon-md" />
+          </button>
         ) : null}
       </div>
     </article>
