@@ -691,6 +691,10 @@ export type Database = {
       get_my_owner_status: { Args: never; Returns: string };
       set_my_ui_locale: { Args: { p_locale: string }; Returns: undefined };
       set_my_accepting_orders: { Args: { p_on: boolean; p_slug: string }; Returns: undefined };
+      get_my_stats: {
+        Args: { p_from: string; p_slug: string; p_to: string };
+        Returns: Json;
+      };
       get_my_orders: {
         Args: { p_day?: string | null; p_scope: string; p_slug: string };
         Returns: Json;
