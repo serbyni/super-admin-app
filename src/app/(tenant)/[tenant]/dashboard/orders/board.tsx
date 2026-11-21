@@ -18,6 +18,8 @@ import {
   type Order,
   type OrderStatus,
 } from "@/lib/orders/schema";
+import { KpiTile, StatStrip } from "@/components/stats/charts";
+import { liveFigures, type LiveFigures } from "@/lib/orders/live";
 import {
   setAcceptingOrdersAction,
   setOrderPaidAction,
@@ -54,13 +56,17 @@ export function OrdersBoard({
   cafeId,
   currency,
   board,
+  today,
 }: {
   slug: string;
   cafeId: string;
   currency: string;
   board: Board;
+  /** Every order of today (café time), for the live figures. */
+  today: Order[];
 }) {
   const t = useTranslations("orders");
+  const ts = useTranslations("stats.orders");
   const m = useMsg();
   const toast = useToast();
   const router = useRouter();
@@ -199,6 +205,8 @@ export function OrdersBoard({
           {sound ? t("soundOn") : t("soundOff")}
         </button>
       </section>
+
+      <LiveStrip figures={liveFigures(board.orders, today, now ?? 0)} ready={now !== null} t={ts} />
 
       {board.orders.length === 0 ? (
         <p className="rounded-xl bg-surface-container-lowest p-xl text-center text-on-surface-variant shadow-sm">
@@ -452,5 +460,36 @@ export function OpeningText({ opening }: { opening: Opening }) {
         ? t("closedToday", { time: opening.opensAt })
         : t("closedOpens", { day: days[opening.opensDay], time: opening.opensAt })}
     </span>
+  );
+}
+
+/** Right now: waiting / in progress / ready, oldest waiting order, average time to accept today. */
+function LiveStrip({
+  figures: f,
+  ready,
+  t,
+}: {
+  figures: LiveFigures;
+  /** Minutes are computed in the browser only (no server/browser mismatch). */
+  ready: boolean;
+  t: ReturnType<typeof useTranslations<"stats.orders">>;
+}) {
+  const min = (n: number | null) =>
+    !ready || n === null ? t("none") : t("minutes", { n: Math.round(n) });
+  const late = ready && f.oldestNewMin !== null && f.oldestNewMin >= 5;
+  return (
+    <section aria-label={t("label")}>
+      <StatStrip>
+        <KpiTile
+          label={t("waiting")}
+          value={String(f.open.new)}
+          alert={late}
+          sub={ready && f.oldestNewMin !== null ? t("oldest", { n: f.oldestNewMin }) : undefined}
+        />
+        <KpiTile label={t("inProgress")} value={String(f.open.accepted + f.open.preparing)} />
+        <KpiTile label={t("ready")} value={String(f.open.ready)} />
+        <KpiTile label={t("avgAccept")} value={min(f.avgAcceptMin)} />
+      </StatStrip>
+    </section>
   );
 }
