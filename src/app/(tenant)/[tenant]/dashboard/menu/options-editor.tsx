@@ -1,10 +1,12 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { TextField } from "@/components/auth/fields";
 import { Icon } from "@/components/ui/icon";
 import { useLanguageLabel } from "@/i18n/use-language-label";
+import { formatLocale } from "@/config/locale";
 import { isRtlLanguage } from "@/lib/i18n/languages";
+import { optionKey } from "@/lib/stats/page-schemas";
 import { OPTION_LIMITS, parsePrice, type OptionGroup } from "@/lib/menu/schema";
 
 /*
@@ -69,13 +71,22 @@ export function OptionsEditor({
   onChange,
   currency,
   error,
+  shares,
 }: {
   value: EditGroup[];
   onChange: (v: EditGroup[]) => void;
   currency: string;
   error?: string;
+  /** Period statistics: `${group}\u0000${choice}` → share of the item's orders (0–1). */
+  shares?: Record<string, number>;
 }) {
   const t = useTranslations("menu.options");
+  const ts = useTranslations("stats.menu");
+  const locale = useLocale();
+  const pct = new Intl.NumberFormat(formatLocale(locale), {
+    style: "percent",
+    maximumFractionDigits: 0,
+  });
   const set = (fn: (gs: EditGroup[]) => void) => {
     const next = structuredClone(value);
     fn(next);
@@ -215,6 +226,11 @@ export function OptionsEditor({
                   />
                   {t("available")}
                 </label>
+                {shares?.[optionKey(g.name, c.name)] !== undefined ? (
+                  <span className="rounded-full bg-secondary-container px-sm text-caption font-semibold text-on-secondary-container">
+                    {ts("choiceShare", { share: pct.format(shares[optionKey(g.name, c.name)]) })}
+                  </span>
+                ) : null}
                 <Small
                   icon="close"
                   label={t("removeChoice")}

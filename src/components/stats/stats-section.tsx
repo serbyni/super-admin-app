@@ -5,9 +5,10 @@ import { Icon } from "@/components/ui/icon";
 import { formatLocale } from "@/config/locale";
 import { serverApi } from "@/lib/data/server-api";
 import { formatPrice } from "@/lib/menu/schema";
-import { delta, PERIODS, resolvePeriod, todayIn, type Period } from "@/lib/stats/period";
+import { delta, resolvePeriod, todayIn, type Period } from "@/lib/stats/period";
 import { averageTicket, type Stats } from "@/lib/stats/schema";
 import { ColumnChart, Heatmap, KpiTile, RankBars, SplitBar, type Column } from "./charts";
+import { PeriodBar } from "./period-bar";
 import { RankTabs } from "./rank-tabs";
 
 type Search = Record<string, string | string[] | undefined>;
@@ -39,13 +40,6 @@ export async function StatsSection({
   const fl = formatLocale(locale);
   const day = (d: string, o: Intl.DateTimeFormatOptions) =>
     new Intl.DateTimeFormat(fl, { ...o, timeZone: "UTC" }).format(new Date(`${d}T00:00:00Z`));
-  const range = (a: string, b: string) =>
-    a === b
-      ? day(a, { dateStyle: "medium" })
-      : new Intl.DateTimeFormat(fl, { dateStyle: "medium", timeZone: "UTC" }).formatRange(
-          new Date(`${a}T00:00:00Z`),
-          new Date(`${b}T00:00:00Z`),
-        );
   const money = (n: number) => formatPrice(n, currency);
   const count = new Intl.NumberFormat(fl);
   const pct = new Intl.NumberFormat(fl, { style: "percent", maximumFractionDigits: 0 });
@@ -63,17 +57,7 @@ export async function StatsSection({
         <p className="text-body-sm text-on-surface-variant">{t("description")}</p>
       </div>
 
-      <PeriodBar period={period} today={today} base={base} t={t} />
-      <p className="text-body-sm text-on-surface-variant">
-        <span className="font-semibold text-on-surface">
-          {period.key === "today" ? t("periods.today") : range(period.from, period.to)}
-        </span>{" "}
-        ·{" "}
-        {t("vsPrevious", {
-          from: day(period.prevFrom, { day: "numeric", month: "short" }),
-          to: day(period.prevTo, { day: "numeric", month: "short" }),
-        })}
-      </p>
+      <PeriodBar period={period} today={today} base={base} locale={locale} />
 
       <dl className="grid grid-cols-2 gap-sm lg:grid-cols-4">
         <KpiTile
@@ -150,80 +134,6 @@ function Card({ title, icon, children }: { title: string; icon: string; children
         {title}
       </h3>
       {children}
-    </div>
-  );
-}
-
-/** Quick periods (links) + custom range (GET form), in one row above everything they scope. */
-function PeriodBar({
-  period,
-  today,
-  base,
-  t,
-}: {
-  period: Period;
-  today: string;
-  base: string;
-  t: T;
-}) {
-  const quick = PERIODS.filter((p) => p !== "custom");
-  return (
-    <div className="flex flex-wrap items-end gap-sm">
-      <nav
-        aria-label={t("periodLabel")}
-        className="flex gap-xs rounded-full bg-surface-container p-0.5"
-      >
-        {quick.map((p) => (
-          <Link
-            key={p}
-            href={p === "7d" ? base : `${base}?period=${p}`}
-            scroll={false}
-            aria-current={period.key === p ? "page" : undefined}
-            className={`rounded-full px-md py-xs text-body-sm font-semibold ${
-              period.key === p
-                ? "bg-surface-container-lowest text-on-surface shadow-sm"
-                : "text-on-surface-variant hover:text-on-surface"
-            }`}
-          >
-            {t(`periods.${p}`)}
-          </Link>
-        ))}
-      </nav>
-      <form action={base} className="flex flex-wrap items-end gap-xs">
-        <input type="hidden" name="period" value="custom" />
-        {(
-          [
-            ["from", t("from"), period.from],
-            ["to", t("to"), period.to],
-          ] as const
-        ).map(([name, label, value]) => (
-          <label
-            key={name}
-            className="flex flex-col gap-xs text-caption font-semibold text-on-surface-variant"
-          >
-            {label}
-            <input
-              type="date"
-              name={name}
-              defaultValue={value}
-              max={today}
-              required
-              className="rounded-lg border border-outline-variant bg-transparent px-sm py-xs text-body-sm font-normal text-on-surface"
-            />
-          </label>
-        ))}
-        <button
-          type="submit"
-          aria-pressed={period.key === "custom"}
-          className={`rounded-xl border px-md py-xs text-body-sm font-semibold ${
-            period.key === "custom"
-              ? "border-primary bg-secondary-container text-on-secondary-container"
-              : "border-outline-variant text-primary hover:bg-secondary-container"
-          }`}
-        >
-          {t("apply")}
-        </button>
-      </form>
     </div>
   );
 }

@@ -1109,6 +1109,48 @@
       "toServe": "Served in",
       "minutes": "{n} min",
       "none": "—"
+    },
+    "menu": {
+      "label": "Menu sales",
+      "itemsSold": "Items sold",
+      "revenue": "Menu revenue",
+      "bestCategory": "Best category",
+      "bestCategoryValue": "{share} of revenue",
+      "noSaleCount": "Items with no sale",
+      "noSaleHint": "Orderable items that sold nothing",
+      "sold": "{count} sold",
+      "noSale": "No sale in this period",
+      "soldOutHint": "Sold out — {count} sold in the period",
+      "choiceShare": "Chosen in {share} of orders",
+      "categoryShare": "{share} of sales"
+    },
+    "tables": {
+      "label": "Tables & QR",
+      "scans": "QR scans",
+      "tableOrders": "Table orders",
+      "conversion": "Scans → orders",
+      "busiest": "Busiest table",
+      "busiestValue": "Table {label}",
+      "scansCount": "{count, plural, one {# scan} other {# scans}}",
+      "orders": "{count, plural, one {# order} other {# orders}}",
+      "noScans": "No scans — check the QR card",
+      "menuCode": "Takeaway: {orders} · {revenue}",
+      "sparkline": "Scans per day, {total} in total",
+      "none": "—"
+    },
+    "orders": {
+      "label": "Right now",
+      "waiting": "Waiting",
+      "oldest": "Oldest: {n} min",
+      "inProgress": "In progress",
+      "ready": "Ready to serve",
+      "avgAccept": "Average time to accept today",
+      "minutes": "{n} min",
+      "none": "—",
+      "avgTicket": "Average ticket",
+      "declinedRate": "Declined",
+      "vsLastWeek": "vs {day}",
+      "byHour": "Revenue per hour"
     }
   }
 }

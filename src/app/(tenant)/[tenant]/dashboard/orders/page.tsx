@@ -3,14 +3,18 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
+import { ColumnChart, KpiTile, StatStrip, type Column } from "@/components/stats/charts";
 import { PageHeader, TenantShell } from "@/components/tenant/tenant-shell";
+import { formatLocale } from "@/config/locale";
+import { addDays, delta } from "@/lib/stats/period";
+import { averageTicket } from "@/lib/stats/schema";
 import { Icon } from "@/components/ui/icon";
 import { applyOwnerLocale } from "@/i18n/owner-locale";
 import { requireTenantOwner } from "@/lib/auth/guards";
 import { tenantDashboard } from "@/lib/auth/routes";
 import { serverApi } from "@/lib/data/server-api";
 import { formatPrice } from "@/lib/menu/schema";
-import { dayTotals, type Order } from "@/lib/orders/schema";
+import type { Order } from "@/lib/orders/schema";
 import { OrdersBoard } from "./board";
 import { PushCard } from "./push-card";
 
@@ -37,13 +41,16 @@ async function OrdersPage({
   const cafe = await api.cafes.mine(tenant);
   if (!cafe) notFound();
   const history = view === "history";
-  const board = history
-    ? await api.orders.board(
-        tenant,
-        "day",
-        typeof day === "string" && DAY.test(day) ? day : undefined,
-      )
-    : await api.orders.board(tenant, "active");
+  const [board, today] = history
+    ? [
+        await api.orders.board(
+          tenant,
+          "day",
+          typeof day === "string" && DAY.test(day) ? day : undefined,
+        ),
+        null,
+      ]
+    : await Promise.all([api.orders.board(tenant, "active"), api.orders.board(tenant, "day")]);
   const base = `${tenantDashboard(cafe.slug).replace(/\/$/, "")}/orders`;
 
   return (
@@ -85,13 +92,20 @@ async function OrdersPage({
           timezone={cafe.timezone}
           locale={locale}
           action={base}
+          slug={cafe.slug}
         />
       ) : (
         <div className="flex flex-col gap-lg">
           {process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ? (
             <PushCard slug={cafe.slug} vapidKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY} />
           ) : null}
-          <OrdersBoard slug={cafe.slug} cafeId={cafe.id} currency={cafe.currency} board={board} />
+          <OrdersBoard
+            slug={cafe.slug}
+            cafeId={cafe.id}
+            currency={cafe.currency}
+            board={board}
+            today={today?.orders ?? []}
+          />
         </div>
       )}
     </TenantShell>
@@ -105,6 +119,7 @@ async function History({
   timezone,
   locale,
   action,
+  slug,
 }: {
   orders: Order[];
   day: string;
@@ -112,9 +127,38 @@ async function History({
   timezone: string;
   locale: string;
   action: string;
+  slug: string;
 }) {
-  const t = await getTranslations("orders");
-  const totals = dayTotals(orders);
+  const [t, ts, tp] = await Promise.all([
+    getTranslations("orders"),
+    getTranslations("stats.orders"),
+    getTranslations("stats"),
+  ]);
+  const lastWeek = addDays(day, -7);
+  const api = serverApi();
+  const [s, w] = await Promise.all([
+    api.stats.get(slug, day, day),
+    api.stats.get(slug, lastWeek, lastWeek),
+  ]);
+  const fl = formatLocale(locale);
+  const pct = new Intl.NumberFormat(fl, { style: "percent", maximumFractionDigits: 0 });
+  const received = (x: typeof s.totals) => x.orders + x.declined + x.cancelled;
+  const declinedRate = (x: typeof s.totals) => (received(x) ? x.declined / received(x) : 0);
+  const vs = ts("vsLastWeek", {
+    day: new Intl.DateTimeFormat(fl, {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+      timeZone: "UTC",
+    }).format(new Date(`${lastWeek}T00:00:00Z`)),
+  });
+  const columns: Column[] = s.series.map((b, i) => ({
+    key: b.at,
+    label: b.at,
+    showLabel: i % 3 === 0,
+    value: b.revenue,
+    tip: [`${b.at}:00`, formatPrice(b.revenue, currency), tp("orderCount", { count: b.orders })],
+  }));
   const time = new Intl.DateTimeFormat(locale === "ar" ? "ar-TN" : locale, {
     hour: "2-digit",
     minute: "2-digit",
@@ -140,22 +184,47 @@ async function History({
           <Icon name="search" className="text-icon-md" />
         </button>
       </form>
-      <dl className="grid grid-cols-3 gap-sm">
-        {(
-          [
-            [t("statsOrders"), String(totals.count)],
-            [t("statsRevenue"), formatPrice(totals.revenue, currency)],
-            [t("statsUnpaid"), String(totals.unpaid)],
-          ] as const
-        ).map(([label, value]) => (
-          <div key={label} className="rounded-xl bg-surface-container-lowest p-md shadow-sm">
-            <dt className="text-caption text-on-surface-variant">{label}</dt>
-            <dd className="text-headline-md font-bold text-on-surface tabular-nums" dir="ltr">
-              {value}
-            </dd>
-          </div>
-        ))}
-      </dl>
+      <div className="flex flex-col gap-xs">
+        <StatStrip>
+          <KpiTile
+            label={t("statsOrders")}
+            value={String(s.totals.orders)}
+            change={delta(s.totals.orders, w.totals.orders)}
+            noPrevious={tp("noPrevious")}
+          />
+          <KpiTile
+            label={t("statsRevenue")}
+            value={formatPrice(s.totals.revenue, currency)}
+            change={delta(s.totals.revenue, w.totals.revenue)}
+            sub={`${t("statsUnpaid")}: ${s.totals.unpaid}`}
+            noPrevious={tp("noPrevious")}
+          />
+          <KpiTile
+            label={ts("avgTicket")}
+            value={formatPrice(averageTicket(s.totals), currency)}
+            change={delta(averageTicket(s.totals), averageTicket(w.totals))}
+            noPrevious={tp("noPrevious")}
+          />
+          <KpiTile
+            label={ts("declinedRate")}
+            value={pct.format(declinedRate(s.totals))}
+            change={delta(declinedRate(s.totals), declinedRate(w.totals))}
+            upIsGood={false}
+            noPrevious={tp("noPrevious")}
+          />
+        </StatStrip>
+        <p className="text-caption text-on-surface-variant">{vs}</p>
+      </div>
+      {s.totals.orders ? (
+        <section className="flex flex-col gap-sm rounded-xl bg-surface-container-lowest p-lg pt-xl shadow-sm">
+          <h2 className="text-body-lg font-semibold text-on-surface">{ts("byHour")}</h2>
+          <ColumnChart
+            columns={columns}
+            maxLabel={formatPrice(Math.max(...s.series.map((b) => b.revenue)), currency)}
+            label={ts("byHour")}
+          />
+        </section>
+      ) : null}
       {orders.length === 0 ? (
         <p className="rounded-xl bg-surface-container-lowest p-lg text-center text-on-surface-variant">
           {t("noHistory")}

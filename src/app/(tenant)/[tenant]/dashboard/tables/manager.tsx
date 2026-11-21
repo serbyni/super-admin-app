@@ -8,9 +8,12 @@ import { FloorEditor } from "@/components/floor/floor-editor";
 import { QrDownloadMenu, type QrDownloadKind } from "@/components/qr/download-menu";
 import { downloadPng, downloadSvg, fileName } from "@/components/qr/qr-download";
 import { ConfirmDialog, Dialog } from "@/components/ui/dialog";
+import { TableFigures } from "@/components/stats/table-figures";
 import { Icon } from "@/components/ui/icon";
 import { useToast } from "@/components/ui/toast";
 import { useMsg } from "@/i18n/use-msg";
+import { formatPrice } from "@/lib/menu/schema";
+import type { TablesSales } from "@/lib/stats/page-schemas";
 import type { QrCardText } from "@/lib/qr/card-text";
 import {
   CARD,
@@ -64,6 +67,8 @@ type Props = {
   colors: QrCardInput["colors"];
   initialArea: string | null;
   printHref: string;
+  /** Statistics of the chosen period (strip above); without it the 30-day scan counts show. */
+  stats?: { sales: TablesSales; currency: string };
 };
 
 type Confirm =
@@ -80,8 +85,10 @@ export function TablesManager({
   colors,
   initialArea,
   printHref,
+  stats,
 }: Props) {
   const t = useTranslations("tables");
+  const ts = useTranslations("stats.tables");
   const tc = useTranslations("common");
   const tq = useTranslations("qrDownload");
   const m = useMsg();
@@ -212,14 +219,29 @@ export function TablesManager({
             {t("menuQrTitle")}
           </h2>
           <p className="text-body-sm text-on-surface-variant">{t("menuQrBody")}</p>
-          <p className="text-body-sm text-on-surface">
-            {t.rich("menuQrStats", {
-              scans: floor.menu.scans30d,
-              code: floor.menu.code,
-              b: (c) => <span className="font-semibold">{c}</span>,
-              mono: (c) => <span className="font-mono font-semibold">{c}</span>,
-            })}
-          </p>
+          {stats ? (
+            <p className="flex flex-wrap items-center gap-x-sm text-body-sm text-on-surface">
+              <span className="font-semibold">
+                {ts("scansCount", { count: stats.sales.menu.scans })}
+              </span>
+              <span className="text-on-surface-variant">
+                {ts("menuCode", {
+                  orders: ts("orders", { count: stats.sales.menu.takeawayOrders }),
+                  revenue: formatPrice(stats.sales.menu.takeawayRevenue, stats.currency),
+                })}
+              </span>
+              <span className="font-mono font-semibold">{floor.menu.code}</span>
+            </p>
+          ) : (
+            <p className="text-body-sm text-on-surface">
+              {t.rich("menuQrStats", {
+                scans: floor.menu.scans30d,
+                code: floor.menu.code,
+                b: (c) => <span className="font-semibold">{c}</span>,
+                mono: (c) => <span className="font-mono font-semibold">{c}</span>,
+              })}
+            </p>
+          )}
           <div className="mt-xs flex flex-wrap gap-sm">
             <QrDownloadMenu onPick={(k) => download(k, menuQr)} />
             <ActionButton
@@ -401,9 +423,16 @@ export function TablesManager({
                         ) : null}
                       </p>
                       <p className="text-body-sm text-on-surface-variant">
-                        {t(`shapes.${tb.shape}`)} · {t("seats", { count: tb.seats })} ·{" "}
-                        {t("scans30d", { count: tb.scans30d })}
+                        {t(`shapes.${tb.shape}`)} · {t("seats", { count: tb.seats })}
+                        {stats ? "" : ` · ${t("scans30d", { count: tb.scans30d })}`}
                       </p>
+                      {stats ? (
+                        <TableFigures
+                          figures={stats.sales.tables[tb.id]}
+                          currency={stats.currency}
+                          active={tb.isActive}
+                        />
+                      ) : null}
                       <div className="flex flex-wrap gap-xs">
                         <ActionButton icon="edit" onClick={() => setTableForm(tb)}>
                           {tc("edit")}
@@ -461,10 +490,18 @@ export function TablesManager({
                           <Icon name={shape?.icon ?? "table_restaurant"} className="text-icon-md" />
                           {t(`shapes.${tb.shape}`)} · {t("seats", { count: tb.seats })}
                         </p>
-                        <p className="text-caption text-on-surface-variant">
-                          {t("scansShort", { count: tb.scans30d })}
-                          {tb.code ? ` · ${tb.code}` : ""}
-                        </p>
+                        {stats ? (
+                          <TableFigures
+                            figures={stats.sales.tables[tb.id]}
+                            currency={stats.currency}
+                            active={tb.isActive}
+                          />
+                        ) : (
+                          <p className="text-caption text-on-surface-variant">
+                            {t("scansShort", { count: tb.scans30d })}
+                            {tb.code ? ` · ${tb.code}` : ""}
+                          </p>
+                        )}
                         <div className="mt-auto flex flex-wrap gap-xs pt-xs">
                           <IconButton
                             icon="edit"

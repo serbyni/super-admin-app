@@ -44,6 +44,12 @@ describe("resolvePeriod", () => {
       expect(resolvePeriod(q, today).key).toBe("7d");
   });
 
+  it("pages can default to another period", () => {
+    expect(resolvePeriod({}, today, "30d").key).toBe("30d");
+    expect(resolvePeriod({ period: "custom", from: "x" }, today, "30d").key).toBe("30d");
+    expect(resolvePeriod({}, today, "today").hourly).toBe(true);
+  });
+
   it("crosses month and year ends", () => {
     expect(addDays("2026-01-01", -1)).toBe("2025-12-31");
     expect(addDays("2028-02-28", 1)).toBe("2028-02-29");

@@ -1109,6 +1109,48 @@
       "toServe": "Servie en",
       "minutes": "{n} min",
       "none": "—"
+    },
+    "menu": {
+      "label": "Ventes du menu",
+      "itemsSold": "Articles vendus",
+      "revenue": "Chiffre d'affaires du menu",
+      "bestCategory": "Meilleure catégorie",
+      "bestCategoryValue": "{share} du chiffre d'affaires",
+      "noSaleCount": "Articles sans vente",
+      "noSaleHint": "Articles commandables qui ne se sont pas vendus",
+      "sold": "{count} vendus",
+      "noSale": "Aucune vente sur la période",
+      "soldOutHint": "Épuisé — {count} vendus sur la période",
+      "choiceShare": "Choisi dans {share} des commandes",
+      "categoryShare": "{share} des ventes"
+    },
+    "tables": {
+      "label": "Tables et QR",
+      "scans": "Scans QR",
+      "tableOrders": "Commandes à table",
+      "conversion": "Scans → commandes",
+      "busiest": "Table la plus active",
+      "busiestValue": "Table {label}",
+      "scansCount": "{count, plural, one {# scan} other {# scans}}",
+      "orders": "{count, plural, one {# commande} other {# commandes}}",
+      "noScans": "Aucun scan — vérifiez la carte QR",
+      "menuCode": "À emporter : {orders} · {revenue}",
+      "sparkline": "Scans par jour, {total} au total",
+      "none": "—"
+    },
+    "orders": {
+      "label": "En ce moment",
+      "waiting": "En attente",
+      "oldest": "La plus ancienne : {n} min",
+      "inProgress": "En cours",
+      "ready": "Prêtes à servir",
+      "avgAccept": "Temps moyen d'acceptation aujourd'hui",
+      "minutes": "{n} min",
+      "none": "—",
+      "avgTicket": "Panier moyen",
+      "declinedRate": "Refusées",
+      "vsLastWeek": "vs {day}",
+      "byHour": "Chiffre d'affaires par heure"
     }
   }
 }

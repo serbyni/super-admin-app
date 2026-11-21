@@ -18,7 +18,7 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useId, useMemo, useState, useTransition, type FormEvent, type ReactNode } from "react";
 import { TextAreaField, TextField } from "@/components/auth/fields";
 import { ImageField } from "@/components/media/image-fields";
@@ -27,6 +27,8 @@ import { Icon } from "@/components/ui/icon";
 import { useToast } from "@/components/ui/toast";
 import { useLanguageLabel } from "@/i18n/use-language-label";
 import { useMsg } from "@/i18n/use-msg";
+import { formatLocale } from "@/config/locale";
+import type { MenuSales } from "@/lib/stats/page-schemas";
 import { isRtlLanguage } from "@/lib/i18n/languages";
 import { mediaUrl } from "@/lib/media/config";
 import {
@@ -66,6 +68,8 @@ type Props = {
   menu: Menu;
   /** Menu language and the other languages the café offers (translation tabs). */
   languages: { main: string; others: string[] };
+  /** Sales of the chosen period (statistics strip above). */
+  sales?: MenuSales;
 };
 type I18nState = Record<string, Record<string, string>>;
 type Confirm = { kind: "item"; item: MenuItem } | { kind: "category"; category: MenuCategory };
@@ -79,7 +83,7 @@ const STATUS = {
   no_price: { label: "statusNoPrice", className: "bg-warning-container text-on-warning-container" },
 } as const satisfies Record<ReturnType<typeof itemStatus>, { label: string; className: string }>;
 
-export function MenuManager({ slug, cafeId, currency, menu, languages }: Props) {
+export function MenuManager({ slug, cafeId, currency, menu, languages, sales }: Props) {
   const t = useTranslations("menu");
   const tc = useTranslations("common");
   const m = useMsg();
@@ -284,6 +288,7 @@ export function MenuManager({ slug, cafeId, currency, menu, languages }: Props) 
                 category={c}
                 active={c.id === categoryId}
                 count={itemsOf(c.id).length}
+                share={sales?.categoryShare[c.id]}
                 onClick={() => setCategoryId(c.id)}
               />
             ))}
@@ -351,6 +356,7 @@ export function MenuManager({ slug, cafeId, currency, menu, languages }: Props) 
                   currency={currency}
                   categoryName={categoryId === ALL ? catName(i.categoryId) : null}
                   sortable={canReorderItems}
+                  sales={sales ? (sales.items[i.id] ?? null) : undefined}
                   pending={pending}
                   onEdit={() => setItemForm(i)}
                   onDelete={() => setConfirm({ kind: "item", item: i })}
@@ -422,6 +428,7 @@ export function MenuManager({ slug, cafeId, currency, menu, languages }: Props) 
             cafeId={cafeId}
             currency={currency}
             languages={languages}
+            optionShares={itemForm !== "new" && sales ? sales.options[itemForm.id] : undefined}
             errors={errors}
             pending={pending}
             onCancel={() => setItemForm(null)}
@@ -478,6 +485,7 @@ function ItemCard({
   currency,
   categoryName,
   sortable,
+  sales,
   pending,
   onEdit,
   onDelete,
@@ -487,6 +495,8 @@ function ItemCard({
   currency: string;
   categoryName: string | null;
   sortable: boolean;
+  /** Period sales: null = sold nothing; undefined = no statistics shown. */
+  sales?: MenuSales["items"][string] | null;
   pending: boolean;
   onEdit: () => void;
   onDelete: () => void;
@@ -568,6 +578,9 @@ function ItemCard({
             {t("optionsCount", { count: item.options.length })}
           </p>
         ) : null}
+        {sales !== undefined ? (
+          <ItemSales sales={sales} currency={currency} status={status} />
+        ) : null}
         {tags.length ? (
           <ul className="flex flex-wrap gap-xs">
             {tags.map((tag) => (
@@ -620,6 +633,7 @@ function ItemFields({
   cafeId,
   currency,
   languages,
+  optionShares,
   errors,
   pending,
   onSubmit,
@@ -631,6 +645,7 @@ function ItemFields({
   cafeId: string;
   currency: string;
   languages: { main: string; others: string[] };
+  optionShares?: Record<string, number>;
   errors: Record<string, string>;
   pending: boolean;
   onSubmit: (input: Record<string, unknown>) => void;
@@ -796,6 +811,7 @@ function ItemFields({
           </div>
         </fieldset>
         <OptionsEditor
+          shares={optionShares}
           value={options}
           onChange={setOptions}
           currency={currency}
@@ -820,15 +836,61 @@ function ItemFields({
 
 /* ── Categories ─────────────────────────────────────────────────────────── */
 
+/** "42 sold · 273.000 TND ▲12%", "No sale in this period" or "Sold out — 18 sold". */
+function ItemSales({
+  sales,
+  currency,
+  status,
+}: {
+  sales: MenuSales["items"][string] | null;
+  currency: string;
+  status: ReturnType<typeof itemStatus>;
+}) {
+  const t = useTranslations("stats.menu");
+  if (!sales) {
+    return status === "available" ? (
+      <p className="flex items-center gap-xs text-caption text-on-surface-variant">
+        <Icon name="trending_flat" className="text-icon-sm" />
+        {t("noSale")}
+      </p>
+    ) : null;
+  }
+  if (status === "sold_out") {
+    return (
+      <p className="flex items-center gap-xs text-caption font-semibold text-on-surface">
+        <Icon name="info" className="text-icon-sm" />
+        {t("soldOutHint", { count: sales.sold })}
+      </p>
+    );
+  }
+  const change = sales.change === null ? null : Math.round(sales.change);
+  return (
+    <p className="flex flex-wrap items-center gap-x-xs text-caption text-on-surface">
+      <Icon name="shopping_bag" className="text-icon-sm text-primary" />
+      <span className="font-semibold">{t("sold", { count: sales.sold })}</span>
+      <span className="text-on-surface-variant">·</span>
+      <span dir="ltr">{formatPrice(sales.revenue, currency)}</span>
+      {change !== null ? (
+        <span dir="ltr" className={`font-semibold ${change >= 0 ? "text-success" : "text-error"}`}>
+          {change > 0 ? "▲" : change < 0 ? "▼" : ""}
+          {Math.abs(change)}%
+        </span>
+      ) : null}
+    </p>
+  );
+}
+
 function SortableChip({
   category,
   active,
   count,
+  share,
   onClick,
 }: {
   category: MenuCategory;
   active: boolean;
   count: number;
+  share?: number;
   onClick: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -844,6 +906,7 @@ function SortableChip({
         active={active}
         onClick={onClick}
         count={count}
+        share={share}
         muted={!category.isVisible}
         dragProps={{ ...attributes, ...listeners }}
         label={category.name}
@@ -858,6 +921,7 @@ function Chip({
   active,
   onClick,
   count,
+  share,
   muted,
   children,
   dragProps,
@@ -866,12 +930,21 @@ function Chip({
   active: boolean;
   onClick: () => void;
   count: number;
+  /** Share of the period's sales (0–1). */
+  share?: number;
   muted?: boolean;
   children: ReactNode;
   dragProps?: object;
   label?: string;
 }) {
   const t = useTranslations("menu");
+  const ts = useTranslations("stats.menu");
+  const locale = useLocale();
+  const pct = (x: number) =>
+    new Intl.NumberFormat(formatLocale(locale), {
+      style: "percent",
+      maximumFractionDigits: 0,
+    }).format(x);
   return (
     <span
       className={`inline-flex items-center rounded-full text-body-sm font-semibold transition-colors ${
@@ -900,6 +973,11 @@ function Chip({
         {children}
         {muted ? <Icon name="visibility_off" className="ms-xs text-icon-sm" /> : null}
         <span className="ms-xs opacity-75">{count}</span>
+        {share ? (
+          <span className="ms-xs opacity-75" title={ts("categoryShare", { share: pct(share) })}>
+            · {pct(share)}
+          </span>
+        ) : null}
       </button>
     </span>
   );
