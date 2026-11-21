@@ -86,3 +86,40 @@ export function noSaleItems<
       !(sold.get(i.id)?.sold ?? 0),
   );
 }
+
+/** Sales figures the menu editor shows (plain data for the client component). */
+export type MenuSales = {
+  /** By item id; items without an entry sold nothing. change = % vs the previous period. */
+  items: Record<string, { sold: number; revenue: number; change: number | null }>;
+  /** Category id → share of the period's revenue (0–1). */
+  categoryShare: Record<string, number>;
+  /** Item id → `${group}\u0000${choice}` → share of the item's order lines (0–1). */
+  options: Record<string, Record<string, number>>;
+};
+
+export const optionKey = (group: string | null, choice: string | null) =>
+  `${group ?? ""}\u0000${choice ?? ""}`;
+
+export function menuSales(s: MenuStats): MenuSales {
+  const total = s.totals.revenue;
+  const options: MenuSales["options"] = {};
+  for (const o of s.options) (options[o.itemId] ??= {})[optionKey(o.group, o.choice)] = o.share;
+  return {
+    items: Object.fromEntries(
+      s.items
+        .filter((i) => i.sold > 0)
+        .map((i) => [
+          i.itemId,
+          {
+            sold: i.sold,
+            revenue: i.revenue,
+            change: i.prevRevenue ? ((i.revenue - i.prevRevenue) / i.prevRevenue) * 100 : null,
+          },
+        ]),
+    ),
+    categoryShare: Object.fromEntries(
+      s.categories.map((c) => [c.categoryId, total ? c.revenue / total : 0]),
+    ),
+    options,
+  };
+}

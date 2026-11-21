@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { menuStatsSchema, noSaleItems, tableStatsSchema } from "./page-schemas";
+import {
+  menuSales,
+  menuStatsSchema,
+  noSaleItems,
+  optionKey,
+  tableStatsSchema,
+} from "./page-schemas";
 
 const range = {
   from: "2025-03-03",
@@ -62,5 +68,14 @@ describe("page stats schemas", () => {
       { id: "f", ...base, categoryId: "hidden" },
     ];
     expect(noSaleItems(items, new Set(["c1"]), menu).map((i) => i.id)).toEqual(["b"]);
+  });
+});
+
+describe("menuSales", () => {
+  it("builds the editor figures", () => {
+    const s = menuSales(menu);
+    expect(s.items.a).toEqual({ sold: 3, revenue: 15, change: 200 });
+    expect(s.categoryShare.c1).toBe(1);
+    expect(s.options.a[optionKey("Size", "Grand")]).toBe(0.5);
   });
 });

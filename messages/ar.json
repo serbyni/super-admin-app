@@ -1109,6 +1109,48 @@
       "toServe": "التقديم خلال",
       "minutes": "{n} د",
       "none": "—"
+    },
+    "menu": {
+      "label": "مبيعات القائمة",
+      "itemsSold": "المنتجات المباعة",
+      "revenue": "مداخيل القائمة",
+      "bestCategory": "أفضل فئة",
+      "bestCategoryValue": "{share} من المداخيل",
+      "noSaleCount": "منتجات بدون مبيعات",
+      "noSaleHint": "منتجات متاحة للطلب لم يُبع منها شيء",
+      "sold": "بيع {count}",
+      "noSale": "لا مبيعات في هذه الفترة",
+      "soldOutHint": "نفد — بيع {count} في الفترة",
+      "choiceShare": "اختير في {share} من الطلبات",
+      "categoryShare": "{share} من المبيعات"
+    },
+    "tables": {
+      "label": "الطاولات ورموز QR",
+      "scans": "مسح رموز QR",
+      "tableOrders": "طلبات الطاولات",
+      "conversion": "المسح ← الطلبات",
+      "busiest": "الطاولة الأكثر نشاطًا",
+      "busiestValue": "طاولة {label}",
+      "scansCount": "{count, plural, one {مسح واحد} two {مسحان} few {# عمليات مسح} many {# عملية مسح} other {# عملية مسح}}",
+      "orders": "{count, plural, one {طلب واحد} two {طلبان} few {# طلبات} many {# طلبًا} other {# طلب}}",
+      "noScans": "لا عمليات مسح — تحقّق من بطاقة QR",
+      "menuCode": "للأخذ: {orders} · {revenue}",
+      "sparkline": "عمليات المسح يوميًا، {total} في المجموع",
+      "none": "—"
+    },
+    "orders": {
+      "label": "الآن",
+      "waiting": "في الانتظار",
+      "oldest": "الأقدم: {n} د",
+      "inProgress": "قيد التحضير",
+      "ready": "جاهزة للتقديم",
+      "avgAccept": "متوسط وقت القبول اليوم",
+      "minutes": "{n} د",
+      "none": "—",
+      "avgTicket": "متوسط الطلب",
+      "declinedRate": "مرفوضة",
+      "vsLastWeek": "مقارنة بـ {day}",
+      "byHour": "المداخيل حسب الساعة"
     }
   }
 }

@@ -7,6 +7,15 @@ import { Icon } from "@/components/ui/icon";
  * exact values; every chart also has its figures in a table (see the section).
  */
 
+/** Row of stat tiles at the top of a page. */
+export function StatStrip({ children, label }: { children: ReactNode; label?: string }) {
+  return (
+    <dl aria-label={label} className="grid grid-cols-2 gap-sm lg:grid-cols-4">
+      {children}
+    </dl>
+  );
+}
+
 /** Stat tile: label · value · signed change vs the previous period (colour = good or bad). */
 export function KpiTile({
   label,
@@ -14,43 +23,50 @@ export function KpiTile({
   change,
   upIsGood = true,
   sub,
-  noPrevious,
+  noPrevious = "",
+  alert = false,
 }: {
   label: string;
   value: string;
-  change: number | null;
+  /** % vs the previous period; null = nothing to compare; undefined = no change line (live figures). */
+  change?: number | null;
   upIsGood?: boolean;
   sub?: string;
-  noPrevious: string;
+  noPrevious?: string;
+  /** Value needs attention (shown in the error colour, with the label read out). */
+  alert?: boolean;
 }) {
-  const rounded = change === null ? null : Math.round(change);
+  const rounded = change === null || change === undefined ? null : Math.round(change);
   const good = rounded !== null && (rounded === 0 || rounded > 0 === upIsGood);
   return (
     <div className="flex flex-col gap-xs rounded-xl bg-surface-container-lowest p-md shadow-sm">
       <dt className="text-caption text-on-surface-variant">{label}</dt>
-      <dd className="text-headline-md font-bold text-on-surface">
+      <dd className={`text-headline-md font-bold ${alert ? "text-error" : "text-on-surface"}`}>
+        {alert ? <Icon name="warning" className="me-xs text-icon-lg" /> : null}
         <span dir="ltr">{value}</span>
       </dd>
-      <dd
-        className={`flex items-center gap-xs text-caption font-semibold ${
-          rounded === null ? "text-on-surface-variant" : good ? "text-success" : "text-error"
-        }`}
-      >
-        {rounded === null ? (
-          noPrevious
-        ) : (
-          <>
-            <Icon
-              name={rounded > 0 ? "trending_up" : rounded < 0 ? "trending_down" : "trending_flat"}
-              className="text-icon-md"
-            />
-            <span dir="ltr">
-              {rounded > 0 ? "+" : ""}
-              {rounded}%
-            </span>
-          </>
-        )}
-      </dd>
+      {change === undefined ? null : (
+        <dd
+          className={`flex items-center gap-xs text-caption font-semibold ${
+            rounded === null ? "text-on-surface-variant" : good ? "text-success" : "text-error"
+          }`}
+        >
+          {rounded === null ? (
+            noPrevious
+          ) : (
+            <>
+              <Icon
+                name={rounded > 0 ? "trending_up" : rounded < 0 ? "trending_down" : "trending_flat"}
+                className="text-icon-md"
+              />
+              <span dir="ltr">
+                {rounded > 0 ? "+" : ""}
+                {rounded}%
+              </span>
+            </>
+          )}
+        </dd>
+      )}
       {sub ? <dd className="text-caption text-on-surface-variant">{sub}</dd> : null}
     </div>
   );

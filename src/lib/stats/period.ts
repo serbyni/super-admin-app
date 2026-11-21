@@ -42,12 +42,15 @@ function build(key: PeriodKey, from: string, to: string): Period {
   };
 }
 
-/** Reads ?period=today|7d|30d|custom&from=&to=. Anything invalid → the last 7 days. */
+/** Reads ?period=today|7d|30d|custom&from=&to=. Missing or invalid → `fallback` (7 days). */
 export function resolvePeriod(
   params: { period?: unknown; from?: unknown; to?: unknown },
   today: string,
+  fallback: "today" | "7d" | "30d" = "7d",
 ): Period {
-  const key = PERIODS.includes(params.period as PeriodKey) ? (params.period as PeriodKey) : "7d";
+  const key = PERIODS.includes(params.period as PeriodKey)
+    ? (params.period as PeriodKey)
+    : fallback;
   if (key === "today") return build("today", today, today);
   if (key === "30d") return build("30d", addDays(today, -29), today);
   if (key === "custom" && valid(params.from) && valid(params.to)) {
@@ -56,6 +59,7 @@ export function resolvePeriod(
     const days = Math.round((toMs(to) - toMs(from)) / DAY_MS) + 1;
     if (days <= MAX_DAYS && to <= today) return build("custom", from, to);
   }
+  if (key === "custom") return resolvePeriod({}, today, fallback);
   return build("7d", addDays(today, -6), today);
 }
 
