@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { CafePageLink } from "@/components/cafe/cafe-page-link";
+import { StatsSection, StatsSkeleton } from "@/components/stats/stats-section";
 import { PageHeader, TenantShell } from "@/components/tenant/tenant-shell";
 import { Icon } from "@/components/ui/icon";
 import { applyOwnerLocale } from "@/i18n/owner-locale";
@@ -23,7 +24,13 @@ export async function generateMetadata(): Promise<Metadata> {
 
 type Stat = { label: string; value: string | number; tone?: "warn"; wide?: boolean };
 
-async function Dashboard({ params }: { params: PageProps<"/[tenant]/dashboard">["params"] }) {
+async function Dashboard({
+  params,
+  searchParams,
+}: {
+  params: PageProps<"/[tenant]/dashboard">["params"];
+  searchParams: PageProps<"/[tenant]/dashboard">["searchParams"];
+}) {
   const { tenant } = await params;
   // Page-level check too: layouts are not re-run on every client navigation.
   const { user } = await requireTenantOwner(tenant);
@@ -215,15 +222,29 @@ async function Dashboard({ params }: { params: PageProps<"/[tenant]/dashboard">[
             </div>
           ))}
         </div>
+
+        <Suspense fallback={<StatsSkeleton />}>
+          <StatsSection
+            slug={cafe.slug}
+            currency={cafe.currency}
+            timezone={cafe.timezone}
+            locale={locale}
+            base={base}
+            searchParams={searchParams}
+          />
+        </Suspense>
       </div>
     </TenantShell>
   );
 }
 
-export default function TenantDashboardPage({ params }: PageProps<"/[tenant]/dashboard">) {
+export default function TenantDashboardPage({
+  params,
+  searchParams,
+}: PageProps<"/[tenant]/dashboard">) {
   return (
     <Suspense fallback={<div className="min-h-screen bg-background" />}>
-      <Dashboard params={params} />
+      <Dashboard params={params} searchParams={searchParams} />
     </Suspense>
   );
 }

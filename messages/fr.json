@@ -1037,5 +1037,78 @@
     "signOff": "À bientôt,",
     "why": "Vous recevez cet e-mail car vous avez saisi votre adresse en commandant chez {cafe}. Elle n'est utilisée que pour cette commande.",
     "tagline": "Commandé avec Serbi · Menus QR et commande pour cafés"
+  },
+  "stats": {
+    "title": "Statistiques",
+    "description": "L'activité de votre café, comparée à la période précédente.",
+    "periods": {
+      "today": "Aujourd'hui",
+      "7d": "7 jours",
+      "30d": "30 jours",
+      "custom": "Personnalisé"
+    },
+    "periodLabel": "Période",
+    "from": "Du",
+    "to": "Au",
+    "apply": "Afficher",
+    "vsPrevious": "vs {from} – {to}",
+    "noPrevious": "Rien à comparer",
+    "kpi": {
+      "revenue": "Chiffre d'affaires",
+      "orders": "Commandes",
+      "avgTicket": "Panier moyen",
+      "unpaid": "Pas encore payées"
+    },
+    "paidOf": "{amount} encaissés",
+    "declinedCancelled": "{declined} refusées · {cancelled} annulées",
+    "unpaidHint": "Commandes non marquées comme payées",
+    "trendDaily": "Chiffre d'affaires par jour",
+    "trendHourly": "Chiffre d'affaires par heure",
+    "orderCount": "{count, plural, one {# commande} other {# commandes}}",
+    "empty": "Aucune commande sur cette période.",
+    "emptyHint": "Les commandes apparaissent ici dès que les clients commandent via le QR du menu.",
+    "openOrders": "Voir les commandes",
+    "showData": "Afficher les chiffres",
+    "colWhen": "Quand",
+    "colRevenue": "Chiffre d'affaires",
+    "colOrders": "Commandes",
+    "best": {
+      "title": "Meilleures ventes",
+      "byQuantity": "Par quantité",
+      "byRevenue": "Par montant",
+      "sold": "{count} vendus",
+      "options": "Options populaires",
+      "optionShare": "{share} des {item}",
+      "noOptions": "Aucune option choisie pour l'instant."
+    },
+    "busy": {
+      "title": "Heures d'affluence",
+      "hint": "Commandes par jour et par heure (heure du café).",
+      "fewer": "Moins",
+      "more": "Plus",
+      "cell": "{day} {hour} h : {count, plural, one {# commande} other {# commandes}}"
+    },
+    "channels": {
+      "title": "Sur place et à emporter",
+      "table": "À table",
+      "takeaway": "À emporter",
+      "topTables": "Tables les plus actives",
+      "tableName": "Table {label}",
+      "noTables": "Pas encore de commande à table."
+    },
+    "qr": {
+      "title": "QR codes",
+      "scans": "Scans QR",
+      "conversion": "Scans suivis d'une commande",
+      "noScans": "Aucun scan sur cette période."
+    },
+    "timing": {
+      "title": "Temps de service (médiane)",
+      "toAccept": "Acceptée en",
+      "toReady": "Prête en",
+      "toServe": "Servie en",
+      "minutes": "{n} min",
+      "none": "—"
+    }
   }
 }

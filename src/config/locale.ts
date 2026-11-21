@@ -4,6 +4,9 @@ export const PLATFORM_TIME_ZONE = "Africa/Tunis";
 /** Date formatting locale per interface language (ar-TN: Arabic with Latin digits). */
 const FORMAT_LOCALE: Record<string, string> = { en: "en-GB", fr: "fr-FR", ar: "ar-TN" };
 
+/** Intl locale for numbers and dates in the interface language `locale`. */
+export const formatLocale = (locale: string) => FORMAT_LOCALE[locale] ?? FORMAT_LOCALE.en;
+
 const formatters = new Map<string, Intl.DateTimeFormat>();
 
 /** "20 Nov 2026, 12:30" (in the interface language `locale`, default English). */
