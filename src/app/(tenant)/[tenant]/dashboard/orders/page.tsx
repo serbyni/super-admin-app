@@ -12,6 +12,7 @@ import { serverApi } from "@/lib/data/server-api";
 import { formatPrice } from "@/lib/menu/schema";
 import { dayTotals, type Order } from "@/lib/orders/schema";
 import { OrdersBoard } from "./board";
+import { PushCard } from "./push-card";
 
 export async function generateMetadata(): Promise<Metadata> {
   await applyOwnerLocale();
@@ -86,7 +87,12 @@ async function OrdersPage({
           action={base}
         />
       ) : (
-        <OrdersBoard slug={cafe.slug} cafeId={cafe.id} currency={cafe.currency} board={board} />
+        <div className="flex flex-col gap-lg">
+          {process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ? (
+            <PushCard slug={cafe.slug} vapidKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY} />
+          ) : null}
+          <OrdersBoard slug={cafe.slug} cafeId={cafe.id} currency={cafe.currency} board={board} />
+        </div>
       )}
     </TenantShell>
   );

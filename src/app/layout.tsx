@@ -15,6 +15,8 @@ export const metadata: Metadata = {
   description: "Serbi — QR menus and ordering for cafés.",
   // Icons come from src/app/icon.png + apple-icon.png (Next.js file conventions).
   openGraph: { images: ["/brand/serbi-logo.jpg"] },
+  // Home Screen app on iPhone (needed there for push notifications).
+  appleWebApp: { capable: true, title: "Serbi", statusBarStyle: "default" },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

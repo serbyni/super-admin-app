@@ -1,12 +1,15 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
+import { after } from "next/server";
 import { msg } from "@/i18n/msg";
 import { requireTenantOwner } from "@/lib/auth/guards";
 import { tenantDashboard } from "@/lib/auth/routes";
 import { isDataError } from "@/lib/data/errors";
 import { serverApi } from "@/lib/data/server-api";
 import { ORDER_STATUSES, type OrderStatus } from "@/lib/orders/schema";
+import { notifyOrderUpdate, requestReceipt } from "@/lib/data/push-dispatcher";
 
 export type OrderResult = { ok: true; message?: string } | { ok: false; message: string };
 
@@ -35,6 +38,11 @@ export async function setOrderStatusAction(
     refresh(slug);
     return failure(e);
   }
+  // Customer's phones (push) + e-mail receipt when accepted — after the response.
+  after(async () => {
+    const o = await notifyOrderUpdate(id);
+    if (o && status === "accepted") await requestReceipt(o.slug, o.token);
+  });
   refresh(slug);
   return { ok: true };
 }
@@ -65,4 +73,33 @@ export async function setAcceptingOrdersAction(slug: string, on: boolean): Promi
   }
   refresh(slug);
   return { ok: true, message: on ? msg("orderingOn") : msg("orderingOff") };
+}
+
+const pushKeys = z.object({
+  endpoint: z.string().url().startsWith("https://").max(1000),
+  p256dh: z.string().min(20).max(200),
+  auth: z.string().min(10).max(100),
+});
+
+/** Turns new-order notifications on for this device. */
+export async function savePushAction(slug: string, keys: unknown): Promise<OrderResult> {
+  await requireTenantOwner(slug);
+  const parsed = pushKeys.safeParse(keys);
+  if (!parsed.success) return { ok: false, message: msg("checkForm") };
+  try {
+    await serverApi().orders.savePush(slug, parsed.data);
+  } catch (e) {
+    return failure(e);
+  }
+  return { ok: true, message: msg("pushOn") };
+}
+
+export async function deletePushAction(slug: string, endpoint: string): Promise<OrderResult> {
+  await requireTenantOwner(slug);
+  try {
+    await serverApi().orders.deletePush(endpoint);
+  } catch (e) {
+    return failure(e);
+  }
+  return { ok: true, message: msg("pushOff") };
 }

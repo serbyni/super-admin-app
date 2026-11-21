@@ -37,6 +37,28 @@ export class OrdersService {
     );
   }
 
+  /** This device gets a push for every new order of the café. */
+  async savePush(slug: string, keys: { endpoint: string; p256dh: string; auth: string }) {
+    unwrap(
+      "save_my_push_subscription",
+      await (
+        await this.db()
+      ).rpc("save_my_push_subscription", {
+        p_slug: slug,
+        p_endpoint: keys.endpoint,
+        p_p256dh: keys.p256dh,
+        p_auth: keys.auth,
+      }),
+    );
+  }
+
+  async deletePush(endpoint: string) {
+    unwrap(
+      "delete_my_push_subscription",
+      await (await this.db()).rpc("delete_my_push_subscription", { p_endpoint: endpoint }),
+    );
+  }
+
   async setAccepting(slug: string, on: boolean): Promise<void> {
     unwrap(
       "set_my_accepting_orders",
