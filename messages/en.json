@@ -1037,5 +1037,78 @@
     "signOff": "See you soon,",
     "why": "You receive this email because you entered your address when ordering at {cafe}. It is used only for this order.",
     "tagline": "Ordered with Serbi · QR menus and ordering for cafés"
+  },
+  "stats": {
+    "title": "Statistics",
+    "description": "How your café is doing, compared with the period just before.",
+    "periods": {
+      "today": "Today",
+      "7d": "7 days",
+      "30d": "30 days",
+      "custom": "Custom"
+    },
+    "periodLabel": "Period",
+    "from": "From",
+    "to": "To",
+    "apply": "Show",
+    "vsPrevious": "vs {from} – {to}",
+    "noPrevious": "Nothing to compare with",
+    "kpi": {
+      "revenue": "Revenue",
+      "orders": "Orders",
+      "avgTicket": "Average ticket",
+      "unpaid": "Not paid yet"
+    },
+    "paidOf": "{amount} paid",
+    "declinedCancelled": "{declined} declined · {cancelled} cancelled",
+    "unpaidHint": "Open orders not marked as paid",
+    "trendDaily": "Revenue per day",
+    "trendHourly": "Revenue per hour",
+    "orderCount": "{count, plural, one {# order} other {# orders}}",
+    "empty": "No orders in this period.",
+    "emptyHint": "Orders appear here once customers order from the menu QR.",
+    "openOrders": "Go to orders",
+    "showData": "Show the figures",
+    "colWhen": "When",
+    "colRevenue": "Revenue",
+    "colOrders": "Orders",
+    "best": {
+      "title": "Best sellers",
+      "byQuantity": "By quantity",
+      "byRevenue": "By revenue",
+      "sold": "{count} sold",
+      "options": "Popular options",
+      "optionShare": "{share} of {item}",
+      "noOptions": "No options chosen yet."
+    },
+    "busy": {
+      "title": "Busy hours",
+      "hint": "Orders by day and hour (café time).",
+      "fewer": "Fewer",
+      "more": "More",
+      "cell": "{day} {hour}h: {count, plural, one {# order} other {# orders}}"
+    },
+    "channels": {
+      "title": "Tables & takeaway",
+      "table": "At the table",
+      "takeaway": "Takeaway",
+      "topTables": "Busiest tables",
+      "tableName": "Table {label}",
+      "noTables": "No table orders yet."
+    },
+    "qr": {
+      "title": "QR codes",
+      "scans": "QR scans",
+      "conversion": "Scans that became an order",
+      "noScans": "No scans in this period."
+    },
+    "timing": {
+      "title": "Service times (median)",
+      "toAccept": "Accepted in",
+      "toReady": "Ready in",
+      "toServe": "Served in",
+      "minutes": "{n} min",
+      "none": "—"
+    }
   }
 }
