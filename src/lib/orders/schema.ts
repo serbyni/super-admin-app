@@ -21,6 +21,8 @@ export const orderSchema = z.object({
   number: num,
   kind: z.enum(["table", "takeaway"]),
   tableLabel: z.string().nullable(),
+  /** Previous table after a move (customer or staff). */
+  movedFromLabel: z.string().nullable().optional(),
   customerName: z.string(),
   note: z.string(),
   status: z.enum(ORDER_STATUSES),
@@ -59,6 +61,8 @@ export type Opening = z.infer<typeof openingSchema>;
 
 export const boardSchema = z.object({
   acceptingOrders: z.boolean(),
+  /** Table orders must come from within this distance of the café (metres). */
+  orderRadiusM: z.coerce.number().default(100),
   ordering: openingSchema,
   today: z.string(),
   orders: z.array(orderSchema),
@@ -98,3 +102,6 @@ export function dayTotals(orders: Order[]) {
     unpaid: counted.filter((o) => !o.isPaid).length,
   };
 }
+
+/** Distances the owner can choose for table orders (metres; the database allows 50–500). */
+export const ORDER_RADII = [50, 100, 150, 200, 300, 500] as const;

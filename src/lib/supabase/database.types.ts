@@ -167,9 +167,10 @@ export type Database = {
           facebook_url: string | null;
           id: string;
           instagram_url: string | null;
-          latitude: number | null;
-          longitude: number | null;
+          latitude: number;
+          longitude: number;
           name: string;
+          order_radius_m: number;
           phone: string | null;
           slug: string;
           status: string;
@@ -194,6 +195,7 @@ export type Database = {
           instagram_url?: string | null;
           latitude?: number | null;
           longitude?: number | null;
+          order_radius_m?: number;
           name: string;
           phone?: string | null;
           slug: string;
@@ -219,6 +221,7 @@ export type Database = {
           instagram_url?: string | null;
           latitude?: number | null;
           longitude?: number | null;
+          order_radius_m?: number;
           name?: string;
           phone?: string | null;
           slug?: string;
@@ -726,9 +729,31 @@ export type Database = {
           p_note: string;
           p_slug: string;
           p_table_code: string | null;
+          p_table_id?: string | null;
+          p_lat?: number | null;
+          p_lng?: number | null;
+          p_accuracy?: number | null;
         };
         Returns: Json;
       };
+      get_public_tables: { Args: { p_slug: string }; Returns: Json };
+      move_order_table: {
+        Args: {
+          p_slug: string;
+          p_token: string;
+          p_table_id: string;
+          p_lat?: number | null;
+          p_lng?: number | null;
+          p_accuracy?: number | null;
+        };
+        Returns: Json;
+      };
+      move_my_order_table: {
+        Args: { p_id: string; p_slug: string; p_table_id: string };
+        Returns: undefined;
+      };
+      set_my_order_radius: { Args: { p_metres: number; p_slug: string }; Returns: undefined };
+      push_table_moved_targets: { Args: { p_slug: string; p_token: string }; Returns: Json };
       save_my_push_subscription: {
         Args: { p_auth: string; p_endpoint: string; p_p256dh: string; p_slug: string };
         Returns: undefined;

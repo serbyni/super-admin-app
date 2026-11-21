@@ -5,7 +5,13 @@ import { tenantDashboard } from "@/lib/auth/routes";
 import { cafeUrl, siteUrl } from "@/lib/env";
 import { ORDER_STATUSES } from "@/lib/orders/schema";
 import { pushConfig } from "@/lib/push/config";
-import { newOrderPush, orderUpdatePush, type PushPayload } from "@/lib/push/texts";
+import {
+  newOrderPush,
+  orderMovedPush,
+  orderUpdatePush,
+  tableMovedPush,
+  type PushPayload,
+} from "@/lib/push/texts";
 import { createServiceClient } from "@/lib/supabase/service";
 
 /*
@@ -84,6 +90,7 @@ const updateSchema = z.object({
     kind: z.string(),
     tableLabel: z.string().nullable(),
     customerName: z.string(),
+    movedFromLabel: z.string().nullable().optional(),
     token: z.string(),
   }),
   cafe,
@@ -120,6 +127,40 @@ export async function notifyOrderUpdate(
     await sendPush(db, subscriptions, (t) => orderUpdatePush(order, c, t.locale, url));
   }
   return { slug: c.slug, token: order.token };
+}
+
+const movedSchema = z.object({
+  order: z.object({
+    number: num,
+    tableLabel: z.string().nullable(),
+    movedFromLabel: z.string().nullable(),
+  }),
+  cafe,
+  subscriptions: z.array(target),
+});
+
+/** The customer moved their order → the café owners' devices. Once per move (database). */
+export async function notifyTableMoved(slug: string, token: string): Promise<void> {
+  const db = createServiceClient();
+  if (!db || !pushConfig()) return;
+  const { data } = await db.rpc("push_table_moved_targets", { p_slug: slug, p_token: token });
+  const parsed = movedSchema.safeParse(data);
+  if (!parsed.success) return;
+  const { order, cafe: c, subscriptions } = parsed.data;
+  const url = siteUrl(`${tenantDashboard(c.slug).replace(/\/$/, "")}/orders`);
+  await sendPush(db, subscriptions, (t) => tableMovedPush(order, c, t.locale, url));
+}
+
+/** Staff moved an order → the customer's phones. */
+export async function notifyOrderMoved(orderId: string): Promise<void> {
+  const db = createServiceClient();
+  if (!db || !pushConfig()) return;
+  const { data } = await db.rpc("push_order_update_targets", { p_order_id: orderId });
+  const parsed = updateSchema.safeParse(data);
+  if (!parsed.success || !parsed.data.subscriptions.length) return;
+  const { order, cafe: c, subscriptions } = parsed.data;
+  const url = `${cafeUrl(c.slug)}/order/${order.token}`;
+  await sendPush(db, subscriptions, (t) => orderMovedPush(order, c, t.locale, url));
 }
 
 /**

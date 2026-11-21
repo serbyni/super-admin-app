@@ -4,13 +4,14 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { TextAreaField } from "@/components/auth/fields";
-import { ConfirmDialog } from "@/components/ui/dialog";
+import { ConfirmDialog, Dialog } from "@/components/ui/dialog";
 import { Icon } from "@/components/ui/icon";
 import { useToast } from "@/components/ui/toast";
 import { useMsg } from "@/i18n/use-msg";
 import { browserApi } from "@/lib/data/browser-api";
 import { formatPrice } from "@/lib/menu/schema";
 import {
+  ORDER_RADII,
   columnOf,
   nextStatus,
   type Board,
@@ -21,8 +22,10 @@ import {
 import { KpiTile, StatStrip } from "@/components/stats/charts";
 import { liveFigures, type LiveFigures } from "@/lib/orders/live";
 import {
+  moveOrderTableAction,
   setAcceptingOrdersAction,
   setOrderPaidAction,
+  setOrderRadiusAction,
   setOrderStatusAction,
   type OrderResult,
 } from "./actions";
@@ -57,6 +60,7 @@ export function OrdersBoard({
   currency,
   board,
   today,
+  tables,
 }: {
   slug: string;
   cafeId: string;
@@ -64,6 +68,8 @@ export function OrdersBoard({
   board: Board;
   /** Every order of today (café time), for the live figures. */
   today: Order[];
+  /** Active tables of the café (move dialog). */
+  tables: { id: string; label: string; area: string }[];
 }) {
   const t = useTranslations("orders");
   const ts = useTranslations("stats.orders");
@@ -77,6 +83,7 @@ export function OrdersBoard({
     null,
   );
   const [reason, setReason] = useState("");
+  const [moving, setMoving] = useState<Order | null>(null);
   const audio = useRef<AudioContext | null>(null);
   const soundRef = useRef(false);
   useEffect(() => {
@@ -195,6 +202,23 @@ export function OrdersBoard({
             </p>
           </div>
         </div>
+        <label className="flex w-full flex-col gap-xs text-caption text-on-surface-variant md:w-80">
+          <span className="font-semibold text-on-surface">{t("radiusLabel")}</span>
+          <select
+            value={board.orderRadiusM}
+            disabled={pending}
+            onChange={(e) => run(() => setOrderRadiusAction(slug, Number(e.target.value)))}
+            aria-describedby="radius-hint"
+            className="w-fit rounded-lg border border-outline-variant bg-transparent px-sm py-xs text-body-sm text-on-surface"
+          >
+            {ORDER_RADII.map((r) => (
+              <option key={r} value={r}>
+                {t("radiusOption", { metres: r })}
+              </option>
+            ))}
+          </select>
+          <span id="radius-hint">{t("radiusHint")}</span>
+        </label>
         <button
           type="button"
           onClick={toggleSound}
@@ -250,6 +274,9 @@ export function OrdersBoard({
                         setDialog({ order: o, kind });
                       }}
                       onPaid={(paid) => run(() => setOrderPaidAction(slug, o.id!, paid))}
+                      onMove={
+                        o.kind === "table" && tables.length > 1 ? () => setMoving(o) : undefined
+                      }
                     />
                   ))
                 )}
@@ -258,6 +285,47 @@ export function OrdersBoard({
           })}
         </div>
       )}
+
+      <Dialog
+        open={moving !== null}
+        onClose={() => setMoving(null)}
+        icon="table_restaurant"
+        title={moving ? t("moveTableTitle", { number: moving.number }) : ""}
+        description={t("moveTableHint")}
+      >
+        <ul className="grid grid-cols-2 gap-xs sm:grid-cols-3">
+          {tables.map((tb) => {
+            const current = moving?.tableLabel === tb.label;
+            const busy = board.orders.some(
+              (o) => o.kind === "table" && o.tableLabel === tb.label && o.id !== moving?.id,
+            );
+            return (
+              <li key={tb.id}>
+                <button
+                  type="button"
+                  disabled={pending || current}
+                  onClick={() => {
+                    const o = moving;
+                    if (!o) return;
+                    run(() => moveOrderTableAction(slug, o.id!, tb.id));
+                    setMoving(null);
+                  }}
+                  className={`flex w-full flex-col items-start rounded-xl border px-md py-sm text-start disabled:opacity-60 ${
+                    current
+                      ? "border-primary bg-secondary-container"
+                      : "border-outline-variant hover:bg-surface-container"
+                  }`}
+                >
+                  <span className="font-semibold text-on-surface">{tb.label}</span>
+                  <span className="text-caption text-on-surface-variant">
+                    {current ? t("current") : busy ? `${tb.area} · ${t("busy")}` : tb.area}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </Dialog>
 
       <ConfirmDialog
         open={dialog !== null}
@@ -307,6 +375,7 @@ function OrderCard({
   onStatus,
   onAsk,
   onPaid,
+  onMove,
 }: {
   order: Order;
   currency: string;
@@ -315,6 +384,8 @@ function OrderCard({
   onStatus: (s: OrderStatus) => void;
   onAsk: (kind: "declined" | "cancelled") => void;
   onPaid: (paid: boolean) => void;
+  /** Table orders: move to another table. */
+  onMove?: () => void;
 }) {
   const t = useTranslations("orders");
   const next = nextStatus(o.status);
@@ -331,6 +402,12 @@ function OrderCard({
               ? t("table", { label: o.tableLabel ?? "" })
               : t("takeaway", { name: o.customerName })}
           </p>
+          {o.movedFromLabel ? (
+            <p className="flex items-center gap-xs text-caption text-on-surface-variant">
+              <Icon name="swap_horiz" className="text-icon-sm" />
+              {t("movedFrom", { label: o.movedFromLabel })}
+            </p>
+          ) : null}
         </div>
         <div className="flex flex-col items-end gap-xs text-caption">
           <span className="text-on-surface-variant" suppressHydrationWarning>
@@ -440,6 +517,18 @@ function OrderCard({
               <Icon name="close" className="text-icon-md" />
             </button>
           </>
+        ) : null}
+        {onMove ? (
+          <button
+            type="button"
+            disabled={pending}
+            onClick={onMove}
+            aria-label={t("moveTable")}
+            title={t("moveTable")}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-primary hover:bg-secondary-container disabled:opacity-60"
+          >
+            <Icon name="swap_horiz" className="text-icon-md" />
+          </button>
         ) : null}
       </div>
     </article>

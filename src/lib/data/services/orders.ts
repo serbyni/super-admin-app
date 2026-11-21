@@ -37,6 +37,24 @@ export class OrdersService {
     );
   }
 
+  /** Staff move an open table order to another active table (busy tables allowed). */
+  async moveTable(slug: string, id: string, tableId: string): Promise<void> {
+    unwrap(
+      "move_my_order_table",
+      await (
+        await this.db()
+      ).rpc("move_my_order_table", { p_slug: slug, p_id: id, p_table_id: tableId }),
+    );
+  }
+
+  /** How far from the café a table order may be placed (50–500 m). */
+  async setRadius(slug: string, metres: number): Promise<void> {
+    unwrap(
+      "set_my_order_radius",
+      await (await this.db()).rpc("set_my_order_radius", { p_slug: slug, p_metres: metres }),
+    );
+  }
+
   /** This device gets a push for every new order of the café. */
   async savePush(slug: string, keys: { endpoint: string; p256dh: string; auth: string }) {
     unwrap(

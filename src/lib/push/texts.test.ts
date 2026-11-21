@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { newOrderPush, orderUpdatePush } from "./texts";
+import { newOrderPush, orderMovedPush, orderUpdatePush, tableMovedPush } from "./texts";
 
 const cafe = { name: "Lune Bleue" };
 const base = { number: 12, kind: "table", tableLabel: "T4", customerName: "", reason: "" };
@@ -42,6 +42,25 @@ describe("push texts", () => {
   it("falls back to English for other languages", () => {
     expect(orderUpdatePush({ ...base, status: "accepted" }, cafe, "it", "u")?.body).toBe(
       "The café accepted your order.",
+    );
+  });
+});
+
+describe("table moves", () => {
+  const cafe = { name: "Lune Bleue" };
+  it("tells staff where the order went", () => {
+    const p = tableMovedPush(
+      { number: 12, tableLabel: "T7", movedFromLabel: "T4" },
+      cafe,
+      "fr",
+      "u",
+    );
+    expect(p.title).toBe("Commande n°12 déplacée");
+    expect(p.body).toBe("Table T4 → table T7");
+  });
+  it("tells the customer their new table", () => {
+    expect(orderMovedPush({ number: 12, tableLabel: "T7" }, cafe, "en", "u").body).toBe(
+      "Your order is now at table T7.",
     );
   });
 });
