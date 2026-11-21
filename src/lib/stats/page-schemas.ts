@@ -123,3 +123,19 @@ export function menuSales(s: MenuStats): MenuSales {
     options,
   };
 }
+
+/** Table figures the tables editor shows (plain data for the client component). */
+export type TablesSales = {
+  tables: Record<string, { scans: number; orders: number; revenue: number; series: number[] }>;
+  menu: TableStats["menu"];
+};
+
+export const tablesSales = (s: TableStats): TablesSales => ({
+  tables: Object.fromEntries(
+    s.tables.map((t) => [
+      t.tableId,
+      { scans: t.scans, orders: t.orders, revenue: t.revenue, series: t.series },
+    ]),
+  ),
+  menu: s.menu,
+});
