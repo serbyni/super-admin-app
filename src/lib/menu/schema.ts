@@ -1,21 +1,11 @@
 import { z } from "zod";
 import { MEDIA_PATH } from "@/lib/media/config";
+import { MAX_TAGS, menuTagSchema } from "./tags";
 
 /*
- * Menu: tags, form rules, prices and the data returned by get_my_menu.
+ * Menu: form rules, prices and the data returned by get_my_menu (tags: lib/menu/tags.ts).
  * cafe-app keeps a copy of the price/tag helpers (lib/menu/schema.ts) — keep them in sync.
  */
-
-export const MENU_TAGS = [
-  { value: "popular", label: "Popular", icon: "local_fire_department" },
-  { value: "new", label: "New", icon: "new_releases" },
-  { value: "vegetarian", label: "Vegetarian", icon: "eco" },
-  { value: "vegan", label: "Vegan", icon: "spa" },
-  { value: "gluten_free", label: "Gluten-free", icon: "grain" },
-  { value: "spicy", label: "Spicy", icon: "whatshot" },
-] as const;
-export type MenuTag = (typeof MENU_TAGS)[number]["value"];
-const TAG_VALUES = MENU_TAGS.map((t) => t.value) as [MenuTag, ...MenuTag[]];
 
 export const MENU_LIMITS = { categories: 50, items: 500 } as const;
 
@@ -77,7 +67,7 @@ export function itemSchema(currency: string) {
     }),
     image_path: z.union([z.literal(""), z.string().regex(MEDIA_PATH, "Upload the photo again")]),
     image_alt: z.string().trim().max(150),
-    tags: z.array(z.enum(TAG_VALUES)).max(TAG_VALUES.length),
+    tag_ids: z.array(z.uuid()).max(MAX_TAGS),
     is_available: z.boolean(),
     is_visible: z.boolean(),
     is_featured: z.boolean(),
@@ -190,8 +180,12 @@ export const menuSchema = z.object({
       sortOrder: num,
       isVisible: z.boolean(),
       i18n: i18nSchema,
+      /** Optional icon (CATEGORY_ICONS). */
+      icon: z.string().nullable().catch(null),
+      itemCount: num.default(0),
     }),
   ),
+  tags: z.array(menuTagSchema).default([]),
   items: z.array(
     z.object({
       id: z.string(),
@@ -200,7 +194,7 @@ export const menuSchema = z.object({
       description: z.string(),
       price: num.nullable(),
       image: z.object({ path: z.string(), alt: z.string().catch("") }).nullable(),
-      tags: z.array(z.enum(TAG_VALUES)).catch([]),
+      tagIds: z.array(z.string()).catch([]),
       isAvailable: z.boolean(),
       isVisible: z.boolean(),
       isFeatured: z.boolean(),

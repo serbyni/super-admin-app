@@ -1,3 +1,5 @@
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { ToastProvider } from "@/components/ui/toast";
@@ -36,6 +38,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <EnglishIntl>
           <ToastProvider>{children}</ToastProvider>
         </EnglishIntl>
+        {/* Vercel Web Analytics (visits, no cookies) + Speed Insights (real loading speed). */}
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );

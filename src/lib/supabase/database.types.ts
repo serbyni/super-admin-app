@@ -621,6 +621,7 @@ export type Database = {
       save_my_menu_category: {
         Args: {
           p_i18n?: Json;
+          p_icon?: string | null;
           p_id: string | null;
           p_is_visible: boolean;
           p_name: string;
@@ -630,6 +631,19 @@ export type Database = {
       };
       delete_my_menu_category: { Args: { p_id: string; p_slug: string }; Returns: undefined };
       reorder_my_menu_categories: { Args: { p_ids: string[]; p_slug: string }; Returns: undefined };
+      save_my_menu_tag: {
+        Args: {
+          p_i18n: Json;
+          p_icon: string;
+          p_id: string | null;
+          p_is_visible: boolean;
+          p_name: string;
+          p_slug: string;
+        };
+        Returns: string;
+      };
+      delete_my_menu_tag: { Args: { p_id: string; p_slug: string }; Returns: number };
+      reorder_my_menu_tags: { Args: { p_ids: string[]; p_slug: string }; Returns: undefined };
       save_my_menu_item: {
         Args: {
           p_i18n?: Json;
@@ -645,6 +659,7 @@ export type Database = {
           p_price: number | null;
           p_slug: string;
           p_tags: string[];
+          p_tag_ids?: string[] | null;
         };
         Returns: string;
       };

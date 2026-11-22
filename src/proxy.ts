@@ -40,6 +40,6 @@ export const config = {
   // Skip static assets and image optimisation.
   matcher: [
     // QR scans (/q/<code>) need no session: skip the auth refresh so they redirect fast.
-    "/((?!_next/static|_next/image|favicon.ico|q/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    "/((?!_next/static|_next/image|_vercel|favicon.ico|q/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };

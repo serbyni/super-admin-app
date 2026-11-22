@@ -48,7 +48,7 @@ describe("item options", () => {
       price: "4.000",
       image_path: "",
       image_alt: "",
-      tags: [],
+      tag_ids: [],
       is_available: true,
       is_visible: true,
       is_featured: false,
