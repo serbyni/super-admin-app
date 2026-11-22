@@ -578,6 +578,7 @@ export type Database = {
         }[];
       };
       get_my_access: { Args: { p_slug: string }; Returns: Json };
+      get_my_cafe_slugs: { Args: never; Returns: string[] };
       get_my_roles: { Args: { p_slug: string }; Returns: Json };
       save_my_role: {
         Args: {

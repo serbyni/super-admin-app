@@ -107,8 +107,20 @@ describe("AuthService.homePath", () => {
     const a = auth({
       is_platform_admin: { data: false, error: null },
       get_my_owner: { data: [], error: null },
+      get_my_cafe_slugs: { data: [], error: null },
     });
     expect(await a.homePath()).toBe("/register/complete");
+  });
+
+  it("sends staff (member, no owner account) to their café", async () => {
+    const a = auth({
+      is_platform_admin: { data: false, error: null },
+      get_my_owner: { data: [], error: null },
+      get_my_cafe_slugs: { data: ["artisan-brew"], error: null },
+    });
+    expect(await a.homePath()).toBe("/artisan-brew/dashboard");
+    expect(await a.homePath("/artisan-brew/dashboard/orders")).toBe("/artisan-brew/dashboard/orders");
+    expect(await a.homePath("/other/dashboard")).toBe("/artisan-brew/dashboard");
   });
 });
 

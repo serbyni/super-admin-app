@@ -155,8 +155,8 @@ export class AuthService {
     }
     if (!me) {
       // Staff (no owner account): the café they belong to.
-      const { data } = await (await this.db()).from("cafes").select("slug").order("name");
-      const slugs = (data ?? []).map((c) => c.slug);
+      const { data } = await (await this.db()).rpc("get_my_cafe_slugs");
+      const slugs = data ?? [];
       if (slugs.length)
         return target && slugs.includes(tenantSlugOf(target) ?? "") ? target : tenantDashboard(slugs[0]);
     }
