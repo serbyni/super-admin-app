@@ -17,6 +17,7 @@ import { CafePageLink } from "@/components/cafe/cafe-page-link";
 import { ProfileTab } from "@/components/settings/profile-tab";
 import { Section } from "@/components/settings/form-kit";
 import { saveCafeAction } from "./actions";
+import { HoursTab } from "./hours-tab";
 import { LanguagesTab } from "./languages-tab";
 import { formatDateTime } from "@/config/locale";
 import { CafeSettingsForm } from "./forms";
@@ -28,6 +29,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 const TABS = [
   { key: "cafe", label: "tabCafe", icon: "storefront" },
+  { key: "hours", label: "tabHours", icon: "schedule" },
   { key: "languages", label: "tabLanguages", icon: "translate" },
   { key: "profile", label: "tabProfile", icon: "person" },
 ] as const;
@@ -56,7 +58,7 @@ async function Settings({
       <PageHeader title={t("title")} description={t("description")} />
       <nav
         aria-label={t("title")}
-        className="mb-lg flex gap-xs border-b border-surface-container-high"
+        className="mb-lg flex gap-xs overflow-x-auto border-b border-surface-container-high"
       >
         {TABS.map((tab_) => {
           const active = tab_.key === tab.key;
@@ -65,7 +67,7 @@ async function Settings({
               key={tab_.key}
               href={tab_.key === "cafe" ? base : `${base}?tab=${tab_.key}`}
               aria-current={active ? "page" : undefined}
-              className={`-mb-px inline-flex items-center gap-xs border-b-2 px-md py-sm text-body-sm font-semibold transition-colors ${
+              className={`-mb-px inline-flex shrink-0 items-center gap-xs border-b-2 px-md py-sm text-body-sm font-semibold whitespace-nowrap transition-colors ${
                 active
                   ? "border-primary text-primary"
                   : "border-transparent text-on-surface-variant hover:text-on-surface"
@@ -109,6 +111,8 @@ async function Settings({
             }}
           />
         </div>
+      ) : tab.key === "hours" ? (
+        <HoursTab slug={tenant} hours={cafe.openingHours} />
       ) : tab.key === "languages" ? (
         <LanguagesTabLoader slug={tenant} locale={locale} />
       ) : (

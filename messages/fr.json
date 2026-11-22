@@ -157,7 +157,10 @@
     "pushOn": "Notifications activées sur cet appareil",
     "pushOff": "Notifications désactivées sur cet appareil",
     "orderMovedTable": "Commande déplacée vers la nouvelle table.",
-    "orderRadiusSaved": "Les commandes à table fonctionnent maintenant à moins de {metres} m du café."
+    "orderRadiusSaved": "Les commandes à table fonctionnent maintenant à moins de {metres} m du café.",
+    "hoursInvalid": "Vérifiez les horaires : un jour ouvert doit avoir des heures d'ouverture et de fermeture différentes.",
+    "hoursSaveFailed": "Les horaires n'ont pas pu être enregistrés. Réessayez.",
+    "hoursSaved": "Horaires enregistrés."
   },
   "common": {
     "save": "Enregistrer",
@@ -238,7 +241,8 @@
     "contactBody": "Comment vos clients vous joignent : téléphone et e-mail, plus vos pages Facebook et Instagram.",
     "colourTitle": "Couleur de la marque",
     "colourBody": "Les couleurs de votre menu sont générées à partir de cette couleur.",
-    "yourCafe": "Votre café"
+    "yourCafe": "Votre café",
+    "tabHours": "Horaires"
   },
   "profile": {
     "emailConfirmed": "Votre e-mail de connexion a été modifié.",
@@ -639,7 +643,9 @@
       "pets": "Animaux bienvenus",
       "star": "Note",
       "schedule": "Ouvert tard"
-    }
+    },
+    "hoursMoved": "Les horaires d'ouverture sont maintenant dans Paramètres → Horaires. Ils s'affichent automatiquement sur votre site.",
+    "hoursMovedLink": "Modifier les horaires"
   },
   "notifications": {
     "aCafe": "Un café",
@@ -933,7 +939,7 @@
     "closedOpens": "Fermé · ouvre {day} à {time}",
     "closedToday": "Fermé · ouvre aujourd'hui à {time}",
     "closed": "Fermé",
-    "hoursHint": "Les horaires viennent de votre site (Site web → Horaires).",
+    "hoursHint": "Horaires : Paramètres → Horaires",
     "soundOn": "Son activé",
     "soundOff": "Activer le son",
     "colNew": "Nouvelles",
@@ -1166,5 +1172,21 @@
       "vsLastWeek": "vs {day}",
       "byHour": "Chiffre d'affaires par heure"
     }
+  },
+  "hoursTab": {
+    "title": "Horaires d'ouverture",
+    "body": "Les clients ne peuvent commander que pendant vos horaires. Ils s'affichent aussi en bas de votre site — sans publier.",
+    "fixed": "Horaires fixes",
+    "always": "Pas d'horaires fixes (toujours ouvert)",
+    "alwaysHint": "Les commandes sont acceptées dès que « Accepter les commandes » est activé.",
+    "open": "Ouvert",
+    "closed": "Fermé",
+    "opens": "{day} ouverture",
+    "closes": "{day} fermeture",
+    "overnight": "Ferme après minuit",
+    "copyMonday": "Copier lundi sur tous les jours",
+    "save": "Enregistrer les horaires",
+    "saving": "Enregistrement…",
+    "days": "Lundi|Mardi|Mercredi|Jeudi|Vendredi|Samedi|Dimanche"
   }
 }

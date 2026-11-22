@@ -1,4 +1,7 @@
 import { z } from "zod";
+import { daySchema, defaultHours } from "@/lib/cafes/hours";
+
+export { WEEKDAYS, groupHours } from "@/lib/cafes/hours";
 import { MEDIA_PATH } from "@/lib/media/config";
 
 /*
@@ -27,23 +30,11 @@ const ICON_VALUES = HIGHLIGHT_ICONS.map((i) => i.value) as [string, ...string[]]
 export const SECTION_TYPES = ["how_it_works", "story", "gallery", "specialties"] as const;
 export type SectionType = (typeof SECTION_TYPES)[number];
 
-/** Monday first. */
-export const WEEKDAYS = [
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-  "Sunday",
-];
-
 export const LIMITS = { highlights: 4, points: 3, galleryImages: 8 } as const;
 
 const text = (max: number) => z.string().trim().max(max, `At most ${max} characters`);
 const required = (min: number, max: number, what: string) =>
   z.string().trim().min(min, `Enter ${what}`).max(max, `At most ${max} characters`);
-const time = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Use HH:MM");
 
 export const imageSchema = z.object({
   path: z.string().regex(MEDIA_PATH, "Upload the photo again"),
@@ -104,19 +95,13 @@ const sectionSchema = z.discriminatedUnion("type", [
   specialtiesSchema,
 ]);
 
-const daySchema = z
-  .object({ closed: z.boolean(), open: time, close: time })
-  .refine((d) => d.closed || d.open !== d.close, {
-    path: ["close"],
-    message: "Closing time must differ from opening time",
-  });
-
 export const websiteSchema = z
   .object({
     version: z.literal(WEBSITE_VERSION),
     hero: heroSchema,
     sections: z.array(sectionSchema).max(SECTION_TYPES.length),
-    footer: z.object({ hours: z.array(daySchema).length(7) }),
+    /** Old place of the opening hours (now cafes.opening_hours): kept in stored documents, unused. */
+    footer: z.object({ hours: z.array(daySchema).length(7) }).optional(),
     /** Translations: { "en": { "hero.title": "…", "sections.story.text": "…" } } (see translatableFields). */
     i18n: z
       .record(
@@ -151,7 +136,7 @@ export const websiteSchema = z
 export type Website = z.infer<typeof websiteSchema>;
 export type WebsiteSection = Website["sections"][number];
 export type WebsiteImage = z.infer<typeof imageSchema>;
-export type OpeningDay = Website["footer"]["hours"][number];
+export type { OpeningDay } from "@/lib/cafes/hours";
 
 /** Zod issues → { "hero.title": "…", "sections.1.text": "…" } (first message per field). */
 export function websiteErrors(error: z.ZodError): Record<string, string> {
@@ -227,13 +212,8 @@ export function defaultWebsite(cafe: { name: string; locale?: string }): Website
       { type: "gallery", enabled: false, title: t.gallery, images: [] },
       { type: "specialties", enabled: false, title: t.specialties, text: t.specialtiesText },
     ],
-    footer: {
-      hours: WEEKDAYS.map((_, i) => ({
-        closed: false,
-        open: i < 5 ? "08:00" : "09:00",
-        close: "20:00",
-      })),
-    },
+    // Still written for documents read by older café-site deploys; hours live in Settings.
+    footer: { hours: defaultHours() },
   };
 }
 
@@ -251,27 +231,6 @@ export function withAllSections(w: Website): Website {
 export function parseWebsite(raw: unknown): Website | null {
   const r = websiteSchema.safeParse(raw);
   return r.success ? r.data : null;
-}
-
-/**
- * Consecutive days with the same hours, e.g. [{ days: "Monday – Friday", hours: "08:00 – 20:00" }].
- * `labels` translates the day names and "Closed" (default English).
- */
-export function groupHours(
-  hours: OpeningDay[],
-  labels: { days: readonly string[]; closed: string } = { days: WEEKDAYS, closed: "Closed" },
-): { days: string; hours: string }[] {
-  const label = (d: OpeningDay) => (d.closed ? labels.closed : `${d.open} – ${d.close}`);
-  const out: { from: number; to: number; hours: string }[] = [];
-  hours.forEach((d, i) => {
-    const last = out.at(-1);
-    if (last && last.hours === label(d)) last.to = i;
-    else out.push({ from: i, to: i, hours: label(d) });
-  });
-  return out.map((g) => ({
-    days: g.from === g.to ? labels.days[g.from] : `${labels.days[g.from]} – ${labels.days[g.to]}`,
-    hours: g.hours,
-  }));
 }
 
 /* ── Translations ─────────────────────────────────────────────────────────── */

@@ -157,7 +157,10 @@
     "pushOn": "Notifications are on for this device",
     "pushOff": "Notifications are off for this device",
     "orderMovedTable": "Order moved to the new table.",
-    "orderRadiusSaved": "Table orders now work within {metres} m of the café."
+    "orderRadiusSaved": "Table orders now work within {metres} m of the café.",
+    "hoursInvalid": "Check the opening hours: an open day needs different opening and closing times.",
+    "hoursSaveFailed": "The opening hours could not be saved. Please try again.",
+    "hoursSaved": "Opening hours saved."
   },
   "common": {
     "save": "Save",
@@ -238,7 +241,8 @@
     "contactBody": "How customers reach your café: phone and email, plus your Facebook and Instagram pages.",
     "colourTitle": "Brand colour",
     "colourBody": "Your menu's colours are generated from this colour.",
-    "yourCafe": "Your café"
+    "yourCafe": "Your café",
+    "tabHours": "Opening hours"
   },
   "profile": {
     "emailConfirmed": "Your sign-in email was changed.",
@@ -639,7 +643,9 @@
       "pets": "Pet friendly",
       "star": "Rating",
       "schedule": "Open late"
-    }
+    },
+    "hoursMoved": "Opening hours are now in Settings → Opening hours. They appear on your website automatically.",
+    "hoursMovedLink": "Edit opening hours"
   },
   "notifications": {
     "aCafe": "A café",
@@ -933,7 +939,7 @@
     "closedOpens": "Closed now · opens {day} at {time}",
     "closedToday": "Closed now · opens today at {time}",
     "closed": "Closed now",
-    "hoursHint": "Hours come from your website (Website → Opening hours).",
+    "hoursHint": "Opening hours: Settings → Opening hours",
     "soundOn": "Sound on",
     "soundOff": "Turn on sound",
     "colNew": "New",
@@ -1166,5 +1172,21 @@
       "vsLastWeek": "vs {day}",
       "byHour": "Revenue per hour"
     }
+  },
+  "hoursTab": {
+    "title": "Opening hours",
+    "body": "Customers can order only while you're open. The hours also appear at the bottom of your website — no need to publish.",
+    "fixed": "Fixed opening hours",
+    "always": "No fixed hours (always open)",
+    "alwaysHint": "Orders are accepted whenever “Accepting orders” is on.",
+    "open": "Open",
+    "closed": "Closed",
+    "opens": "{day} opens",
+    "closes": "{day} closes",
+    "overnight": "Closes after midnight",
+    "copyMonday": "Copy Monday to every day",
+    "save": "Save hours",
+    "saving": "Saving…",
+    "days": "Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday"
   }
 }

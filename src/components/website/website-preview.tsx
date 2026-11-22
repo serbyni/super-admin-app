@@ -2,7 +2,13 @@ import type { CSSProperties } from "react";
 import { Icon } from "@/components/ui/icon";
 import type { CafePalette } from "@/lib/cafes/theme";
 import { mediaUrl } from "@/lib/media/config";
-import { WEEKDAYS, groupHours, type Website, type WebsiteImage } from "@/lib/website/schema";
+import {
+  WEEKDAYS,
+  groupHours,
+  type OpeningDay,
+  type Website,
+  type WebsiteImage,
+} from "@/lib/website/schema";
 
 /*
  * Phone-sized preview of the café website in the café's colours. A close sketch of what cafe-app
@@ -49,7 +55,8 @@ export function WebsitePreview({
   website: Website;
   palette: CafePalette;
   cafeName: string;
-  contact: { address: string | null; phone: string | null };
+  /** Footer: address, phone and opening hours (Settings), as the café site shows them. */
+  contact: { address: string | null; phone: string | null; hours?: OpeningDay[] | null };
   featured?: FeaturedItem[];
   /** Fixed texts of the page (the editor passes them in the owner's language). */
   labels?: PreviewLabels;
@@ -204,15 +211,19 @@ export function WebsitePreview({
         className="flex flex-col gap-xs px-md py-lg text-body-sm"
         style={{ backgroundColor: palette.variant, color: palette.onVariant }}
       >
-        <p className="flex items-center gap-xs font-semibold uppercase" style={primary}>
-          <Icon name="schedule" className="text-icon-md" /> {labels.hours ?? "Opening hours"}
-        </p>
-        {groupHours(website.footer.hours, { days: labels.days, closed: labels.closed }).map((g) => (
-          <p key={g.days} className="flex justify-between gap-sm">
-            <span>{g.days}</span>
-            <span>{g.hours}</span>
-          </p>
-        ))}
+        {contact.hours ? (
+          <>
+            <p className="flex items-center gap-xs font-semibold uppercase" style={primary}>
+              <Icon name="schedule" className="text-icon-md" /> {labels.hours ?? "Opening hours"}
+            </p>
+            {groupHours(contact.hours, { days: labels.days, closed: labels.closed }).map((g) => (
+              <p key={g.days} className="flex justify-between gap-sm">
+                <span>{g.days}</span>
+                <span>{g.hours}</span>
+              </p>
+            ))}
+          </>
+        ) : null}
         {contact.address ? <p className="pt-xs">{contact.address}</p> : null}
         {contact.phone ? <p>{contact.phone}</p> : null}
       </footer>

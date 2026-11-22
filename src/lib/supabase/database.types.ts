@@ -170,6 +170,7 @@ export type Database = {
           latitude: number;
           longitude: number;
           name: string;
+          opening_hours: Json | null;
           order_radius_m: number;
           phone: string | null;
           slug: string;
@@ -195,6 +196,7 @@ export type Database = {
           instagram_url?: string | null;
           latitude?: number | null;
           longitude?: number | null;
+          opening_hours?: Json | null;
           order_radius_m?: number;
           name: string;
           phone?: string | null;
@@ -221,6 +223,7 @@ export type Database = {
           instagram_url?: string | null;
           latitude?: number | null;
           longitude?: number | null;
+          opening_hours?: Json | null;
           order_radius_m?: number;
           name?: string;
           phone?: string | null;
@@ -565,8 +568,10 @@ export type Database = {
           theme: Json;
           website: Json;
           locales: string[];
+          opening_hours: Json | null;
         }[];
       };
+      set_my_opening_hours: { Args: { p_hours: Json; p_slug: string }; Returns: undefined };
       get_my_website: {
         Args: { p_slug: string };
         Returns: { draft: Json; draft_updated_at: string; published: Json; published_at: string }[];

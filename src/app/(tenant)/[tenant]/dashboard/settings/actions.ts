@@ -6,6 +6,7 @@ import { tenantDashboard } from "@/lib/auth/routes";
 import { inputField, isDataError } from "@/lib/data/errors";
 import { serverApi } from "@/lib/data/server-api";
 import { msg } from "@/i18n/msg";
+import { hoursSchema } from "@/lib/cafes/hours";
 import { cafeSettingsSchema, zodErrors, type FormState } from "@/lib/settings/schema";
 
 const values = (f: FormData) => Object.fromEntries(f) as Record<string, string>;
@@ -93,4 +94,22 @@ export async function requestLanguageAction(
   }
   revalidatePath(tenantDashboard(slug), "layout");
   return { ok: true, message: msg("requestSent") };
+}
+
+/** Opening hours tab: 7 days, or null = no fixed hours (always open). Used by ordering + website. */
+export async function setOpeningHoursAction(
+  slug: string,
+  hours: unknown,
+): Promise<LanguagesResult> {
+  await requireTenantOwner(slug);
+  const parsed = hours === null ? null : hoursSchema.safeParse(hours);
+  if (parsed && !parsed.success) return { ok: false, message: msg("hoursInvalid") };
+  try {
+    await serverApi().cafes.setHours(slug, parsed ? parsed.data : null);
+  } catch (e) {
+    if (isDataError(e)) return { ok: false, message: msg("hoursSaveFailed") };
+    throw e;
+  }
+  revalidatePath(tenantDashboard(slug), "layout");
+  return { ok: true, message: msg("hoursSaved") };
 }

@@ -61,7 +61,9 @@ async function Website({ params }: { params: PageProps<"/[tenant]/dashboard/webs
           phone: cafe.phone
             ? (parsePhoneNumberFromString(cafe.phone)?.formatInternational() ?? cafe.phone)
             : null,
+          hours: cafe.openingHours,
         }}
+        hoursHref={`${tenantDashboard(cafe.slug).replace(/\/$/, "")}/settings?tab=hours`}
         initial={withAllSections(site.draft ?? site.published ?? defaultWebsite(cafe))}
         published={site.published ? withAllSections(site.published) : null}
         publishedAt={site.publishedAt}

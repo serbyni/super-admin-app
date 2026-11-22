@@ -1,4 +1,5 @@
 import "server-only";
+import { parseHours, type OpeningHours } from "@/lib/cafes/hours";
 import { themeSeed } from "@/lib/cafes/theme";
 import { unwrap } from "../errors";
 import type { LazyDb } from "../types";
@@ -21,6 +22,8 @@ export type Cafe = {
   contactEmail: string | null;
   facebook: string | null;
   instagram: string | null;
+  /** Settings → Opening hours (null = no fixed hours, always open). */
+  openingHours: OpeningHours | null;
   createdAt: string;
 };
 
@@ -45,7 +48,7 @@ export type CafeListItem = Pick<
   "id" | "slug" | "name" | "status" | "countryCode" | "city" | "createdAt"
 > & { ownerUserId: string | null; ownerEmail: string | null; ownerName: string | null };
 
-export type CafeAdminDetails = Cafe & {
+export type CafeAdminDetails = Omit<Cafe, "openingHours"> & {
   latitude: number | null;
   longitude: number | null;
   termsVersion: string;
@@ -75,7 +78,7 @@ export class CafesService {
     )
       .from("cafes")
       .select(
-        "id, slug, name, status, country_code, city, address, currency, timezone, default_locale, theme, phone, contact_email, facebook_url, instagram_url, created_at",
+        "id, slug, name, status, country_code, city, address, currency, timezone, default_locale, theme, phone, contact_email, facebook_url, instagram_url, opening_hours, created_at",
       )
       .eq("slug", slug)
       .maybeSingle();
@@ -97,8 +100,17 @@ export class CafesService {
       contactEmail: data.contact_email,
       facebook: data.facebook_url,
       instagram: data.instagram_url,
+      openingHours: parseHours(data.opening_hours),
       createdAt: data.created_at,
     };
+  }
+
+  /** Opening hours of the caller's café (owner only); null = no fixed hours. */
+  async setHours(slug: string, hours: OpeningHours | null): Promise<void> {
+    unwrap(
+      "set_my_opening_hours",
+      await (await this.db()).rpc("set_my_opening_hours", { p_slug: slug, p_hours: hours }),
+    );
   }
 
   /**
