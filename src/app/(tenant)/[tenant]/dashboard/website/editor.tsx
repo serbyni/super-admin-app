@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useFormatter, useTranslations } from "next-intl";
 import { useEffect, useMemo, useState, useTransition, type ReactNode } from "react";
 import { TextAreaField, TextField } from "@/components/auth/fields";
@@ -17,7 +18,7 @@ import {
   HIGHLIGHT_ICONS,
   LIMITS,
   SPECIALTIES_MAX,
-  WEEKDAYS,
+  type OpeningDay,
   translatableFields,
   translateWebsite,
   websiteErrors,
@@ -63,7 +64,7 @@ type Props = {
   cafeId: string;
   cafeName: string;
   palette: CafePalette;
-  contact: { address: string | null; phone: string | null };
+  contact: { address: string | null; phone: string | null; hours: OpeningDay[] | null };
   initial: Website;
   /** Website as customers see it now (null = never published). */
   published: Website | null;
@@ -72,6 +73,8 @@ type Props = {
   featured: FeaturedItem[];
   /** Owner's Menu page (to mark items as Featured). */
   menuHref: string;
+  /** Settings → Opening hours (hours moved there). */
+  hoursHref: string;
   /** Main language and the other offered languages (translation mode). */
   languages: { main: string; others: string[] };
 };
@@ -89,6 +92,7 @@ export function WebsiteEditor({
   publishedAt,
   featured,
   menuHref,
+  hoursHref,
   languages,
 }: Props) {
   const t = useTranslations("website");
@@ -721,84 +725,16 @@ export function WebsiteEditor({
               );
             })}
 
-            {/* Hours */}
-            <Card icon="schedule" title={t("hoursTitle")} hint={t("hoursHint")}>
-              <div className="flex flex-col gap-sm">
-                {doc.footer.hours.map((d, i) => (
-                  <div key={i} className="grid grid-cols-2 items-center gap-sm sm:grid-cols-4">
-                    <span className="text-body-sm font-semibold text-on-surface">
-                      {days[i] ?? WEEKDAYS[i]}
-                    </span>
-                    <label className="flex items-center gap-xs text-body-sm text-on-surface-variant">
-                      <input
-                        type="checkbox"
-                        checked={!d.closed}
-                        onChange={(e) => {
-                          const open = e.target.checked;
-                          update((x) => {
-                            x.footer.hours[i].closed = !open;
-                            return x;
-                          });
-                        }}
-                        className="h-4 w-4 accent-primary"
-                      />
-                      {t("open")}
-                    </label>
-                    {d.closed ? (
-                      <span className="text-body-sm text-on-surface-variant sm:col-span-2">
-                        {t("closed")}
-                      </span>
-                    ) : (
-                      <div className="col-span-2 flex items-center gap-xs">
-                        <input
-                          type="time"
-                          aria-label={t("opens", { day: days[i] ?? WEEKDAYS[i] })}
-                          value={d.open}
-                          onChange={(e) => {
-                            const v = e.target.value;
-                            update((x) => {
-                              x.footer.hours[i].open = v;
-                              return x;
-                            });
-                          }}
-                          className="rounded-lg border border-outline-variant bg-transparent px-sm py-xs text-body-sm"
-                        />
-                        <span aria-hidden="true">–</span>
-                        <input
-                          type="time"
-                          aria-label={t("closes", { day: days[i] ?? WEEKDAYS[i] })}
-                          value={d.close}
-                          onChange={(e) => {
-                            const v = e.target.value;
-                            update((x) => {
-                              x.footer.hours[i].close = v;
-                              return x;
-                            });
-                          }}
-                          className="rounded-lg border border-outline-variant bg-transparent px-sm py-xs text-body-sm"
-                        />
-                      </div>
-                    )}
-                    {err(`footer.hours.${i}.close`) ? (
-                      <p className="col-span-full text-body-xs text-error">
-                        {m(err(`footer.hours.${i}.close`))}
-                      </p>
-                    ) : null}
-                  </div>
-                ))}
-                <div>
-                  <AddButton
-                    icon="content_copy"
-                    label={t("copyMonday")}
-                    onClick={() =>
-                      update((x) => {
-                        x.footer.hours = x.footer.hours.map(() => ({ ...x.footer.hours[0] }));
-                        return x;
-                      })
-                    }
-                  />
-                </div>
-              </div>
+            {/* Opening hours now live in Settings */}
+            <Card icon="schedule" title={t("hoursTitle")} hint={t("hoursMoved")}>
+              <Link
+                href={hoursHref}
+                className="inline-flex w-fit items-center gap-xs rounded-xl border border-outline-variant px-md py-sm text-body-sm font-semibold text-primary hover:bg-secondary-container"
+              >
+                <Icon name="settings" className="text-icon-md" />
+                {t("hoursMovedLink")}
+                <Icon name="arrow_forward" className="text-icon-md" flipRtl />
+              </Link>
             </Card>
           </div>
         </div>

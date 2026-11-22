@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { TextAreaField } from "@/components/auth/fields";
@@ -8,6 +9,7 @@ import { ConfirmDialog, Dialog } from "@/components/ui/dialog";
 import { Icon } from "@/components/ui/icon";
 import { useToast } from "@/components/ui/toast";
 import { useMsg } from "@/i18n/use-msg";
+import { tenantSettings } from "@/lib/auth/routes";
 import { browserApi } from "@/lib/data/browser-api";
 import { formatPrice } from "@/lib/menu/schema";
 import {
@@ -198,7 +200,13 @@ export function OrdersBoard({
           <div>
             <p className="font-semibold text-on-surface">{t("accepting")}</p>
             <p className="text-caption text-on-surface-variant">
-              <OpeningText opening={board.ordering} /> · {t("hoursHint")}
+              <OpeningText opening={board.ordering} /> ·{" "}
+              <Link
+                href={`${tenantSettings(slug)}?tab=hours`}
+                className="underline underline-offset-2"
+              >
+                {t("hoursHint")}
+              </Link>
             </p>
           </div>
         </div>

@@ -3,7 +3,6 @@ import {
   defaultWebsite,
   translatableFields,
   translateWebsite,
-  groupHours,
   parseWebsite,
   websiteErrors,
   websiteSchema,
@@ -51,30 +50,21 @@ describe("websiteSchema", () => {
     expect(errorsOf(x)).toEqual({});
   });
 
-  it("limits highlights and validates hours", () => {
+  it("limits highlights", () => {
     const w = base();
     w.hero.highlights = Array.from({ length: 5 }, () => ({ icon: "star", label: "x" }));
-    w.footer.hours[2] = { closed: false, open: "09:00", close: "09:00" };
-    const e = errorsOf(w);
-    expect(e["hero.highlights"]).toBeDefined();
-    expect(e["footer.hours.2.close"]).toBeDefined();
+    expect(errorsOf(w)["hero.highlights"]).toBeDefined();
+  });
+
+  it("a document without the old footer (hours now in Settings) is still valid", () => {
+    const w: Partial<ReturnType<typeof base>> = base();
+    delete w.footer;
+    expect(parseWebsite(w)).not.toBeNull();
   });
 
   it("parseWebsite returns null for unreadable data", () => {
     expect(parseWebsite({ version: 99 })).toBeNull();
     expect(parseWebsite(base())).toEqual(base());
-  });
-});
-
-describe("groupHours", () => {
-  it("groups consecutive days with the same hours", () => {
-    const hours = base().footer.hours;
-    hours[6] = { closed: true, open: "09:00", close: "20:00" };
-    expect(groupHours(hours)).toEqual([
-      { days: "Monday – Friday", hours: "08:00 – 20:00" },
-      { days: "Saturday", hours: "09:00 – 20:00" },
-      { days: "Sunday", hours: "Closed" },
-    ]);
   });
 });
 
