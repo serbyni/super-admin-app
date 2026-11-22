@@ -24,8 +24,15 @@ export type Cafe = {
   instagram: string | null;
   /** Settings → Opening hours (null = no fixed hours, always open). */
   openingHours: OpeningHours | null;
+  /** "order" = customers order on the site; "menu_only" = they only browse the menu. */
+  menuMode: MenuMode;
+  /** How the menu is shown in menu-only mode. */
+  menuDisplay: MenuDisplay;
   createdAt: string;
 };
+
+export type MenuMode = "order" | "menu_only";
+export type MenuDisplay = "list" | "book";
 
 /** Editable café settings (the address/slug is not changed here). */
 export type CafeSettingsInput = {
@@ -48,7 +55,7 @@ export type CafeListItem = Pick<
   "id" | "slug" | "name" | "status" | "countryCode" | "city" | "createdAt"
 > & { ownerUserId: string | null; ownerEmail: string | null; ownerName: string | null };
 
-export type CafeAdminDetails = Omit<Cafe, "openingHours"> & {
+export type CafeAdminDetails = Omit<Cafe, "openingHours" | "menuMode" | "menuDisplay"> & {
   latitude: number | null;
   longitude: number | null;
   termsVersion: string;
@@ -78,7 +85,7 @@ export class CafesService {
     )
       .from("cafes")
       .select(
-        "id, slug, name, status, country_code, city, address, currency, timezone, default_locale, theme, phone, contact_email, facebook_url, instagram_url, opening_hours, created_at",
+        "id, slug, name, status, country_code, city, address, currency, timezone, default_locale, theme, phone, contact_email, facebook_url, instagram_url, opening_hours, menu_mode, menu_display, created_at",
       )
       .eq("slug", slug)
       .maybeSingle();
@@ -101,8 +108,20 @@ export class CafesService {
       facebook: data.facebook_url,
       instagram: data.instagram_url,
       openingHours: parseHours(data.opening_hours),
+      menuMode: data.menu_mode === "menu_only" ? "menu_only" : "order",
+      menuDisplay: data.menu_display === "book" ? "book" : "list",
       createdAt: data.created_at,
     };
+  }
+
+  /** Ordering on the site or menu only, and the menu display (owner only). */
+  async setMenuDisplay(slug: string, mode: MenuMode, display: MenuDisplay): Promise<void> {
+    unwrap(
+      "set_my_menu_display",
+      await (
+        await this.db()
+      ).rpc("set_my_menu_display", { p_slug: slug, p_mode: mode, p_display: display }),
+    );
   }
 
   /** Opening hours of the caller's café (owner only); null = no fixed hours. */

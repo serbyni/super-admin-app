@@ -71,11 +71,14 @@ async function Dashboard({
       icon: "receipt_long",
       title: tn("orders"),
       cta: t("openOrders"),
-      stats: [
-        { label: t("ordersToday"), value: totals.count },
-        { label: t("ordersRevenue"), value: formatPrice(totals.revenue, cafe.currency) },
-        { label: t("ordersNew"), value: newOrders, tone: newOrders ? "warn" : undefined },
-      ],
+      stats:
+        cafe.menuMode === "menu_only"
+          ? [{ label: t("status"), value: t("menuOnlyCard"), wide: true }]
+          : [
+              { label: t("ordersToday"), value: totals.count },
+              { label: t("ordersRevenue"), value: formatPrice(totals.revenue, cafe.currency) },
+              { label: t("ordersNew"), value: newOrders, tone: newOrders ? "warn" : undefined },
+            ],
     },
     {
       href: `${base}/menu`,

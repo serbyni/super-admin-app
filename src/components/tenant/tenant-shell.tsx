@@ -27,7 +27,11 @@ async function NewOrdersBadge({ slug }: { slug: string }) {
 }
 
 /** Café dashboard sections. `soon` = not built yet (shown, not clickable). */
-function cafeNav(slug: string, t: (key: NavKey) => string): ShellNavItem[] {
+function cafeNav(
+  slug: string,
+  t: (key: NavKey | "off") => string,
+  menuOnly = false,
+): ShellNavItem[] {
   const base = tenantDashboard(slug).replace(/\/$/, "");
   return [
     { href: base, icon: "dashboard", label: t("dashboard") },
@@ -38,7 +42,11 @@ function cafeNav(slug: string, t: (key: NavKey) => string): ShellNavItem[] {
       href: `${base}/orders`,
       icon: "receipt_long",
       label: t("orders"),
-      badge: (
+      badge: menuOnly ? (
+        <span className="rounded-full bg-surface-container-high px-sm text-caption font-semibold text-on-surface-variant">
+          {t("off")}
+        </span>
+      ) : (
         <Suspense fallback={null}>
           <NewOrdersBadge slug={slug} />
         </Suspense>
@@ -60,7 +68,7 @@ export async function TenantShell({
   active,
   children,
 }: {
-  cafe: Pick<Cafe, "slug" | "name" | "seed">;
+  cafe: Pick<Cafe, "slug" | "name" | "seed"> & Partial<Pick<Cafe, "menuMode">>;
   email: string | undefined;
   active: string;
   children: ReactNode;
@@ -71,7 +79,7 @@ export async function TenantShell({
     getTranslations("common"),
   ]);
   const c = cafePalette(cafe.seed);
-  const nav = cafeNav(cafe.slug, tn);
+  const nav = cafeNav(cafe.slug, tn, cafe.menuMode === "menu_only");
   const activeHref = nav.find((n) => n.href.endsWith(`/${active}`))?.href ?? nav[0].href;
   return (
     <AppShell
