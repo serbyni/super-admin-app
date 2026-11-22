@@ -187,7 +187,17 @@ export function CategoriesTab({
     {
       key: "name",
       header: t("colName"),
-      cell: (c) => <span className="font-semibold text-on-surface">{c.name}</span>,
+      cell: (c) => (
+        <span className="flex items-center gap-sm font-semibold text-on-surface">
+          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-secondary-container text-primary">
+            <Icon
+              name={c.icon ?? "category"}
+              className={`text-icon-md ${c.icon ? "" : "opacity-40"}`}
+            />
+          </span>
+          {c.name}
+        </span>
+      ),
     },
     {
       key: "tr",
@@ -283,10 +293,10 @@ export function CategoriesTab({
         pending={pending}
         languages={languages}
         onClose={() => setForm(null)}
-        onSubmit={(name, i18n) => {
+        onSubmit={(name, i18n, icon) => {
           const c = form !== "new" ? form : null;
           run(
-            () => saveCategoryAction(slug, c?.id ?? null, name, c?.isVisible ?? true, i18n),
+            () => saveCategoryAction(slug, c?.id ?? null, name, c?.isVisible ?? true, i18n, icon),
             () => setForm(null),
           );
         }}

@@ -463,7 +463,9 @@
     "deleteCategoryTitle": "Supprimer « {name} » ?",
     "deleteTagTitle": "Supprimer « {name} » ?",
     "deleteTagBody": "{count, plural, =0 {Aucun article n'utilise cette étiquette.} one {Utilisée par # article — elle en sera retirée.} other {Utilisée par # articles — elle en sera retirée.}}",
-    "deleteConfirm": "Supprimer"
+    "deleteConfirm": "Supprimer",
+    "categoryIcon": "Icône",
+    "noIcon": "Sans icône"
   },
   "qrCard": {
     "menu": "Menu",

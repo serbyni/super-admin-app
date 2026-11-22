@@ -41,6 +41,8 @@ export class MenuService {
     name: string,
     isVisible: boolean,
     i18n?: Record<string, Record<string, string>>,
+    /** undefined = keep, "" = no icon. */
+    icon?: string,
   ) {
     return unwrap(
       "save_my_menu_category",
@@ -52,6 +54,7 @@ export class MenuService {
         p_name: name,
         p_is_visible: isVisible,
         ...(i18n ? { p_i18n: i18n as unknown as Json } : {}),
+        ...(icon !== undefined ? { p_icon: icon } : {}),
       }),
     );
   }

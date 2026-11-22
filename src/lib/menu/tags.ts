@@ -35,6 +35,35 @@ export const TAG_ICONS = [
 ] as const;
 export type TagIcon = (typeof TAG_ICONS)[number];
 
+/** Icons a category may use (same list as platform.category_icons() in SQL). */
+export const CATEGORY_ICONS = [
+  "local_cafe",
+  "coffee",
+  "emoji_food_beverage",
+  "local_drink",
+  "sports_bar",
+  "wine_bar",
+  "liquor",
+  "icecream",
+  "cake",
+  "bakery_dining",
+  "cookie",
+  "breakfast_dining",
+  "egg_alt",
+  "lunch_dining",
+  "local_pizza",
+  "ramen_dining",
+  "rice_bowl",
+  "set_meal",
+  "kebab_dining",
+  "tapas",
+  "soup_kitchen",
+  "restaurant",
+  "eco",
+  "star",
+] as const;
+export type CategoryIcon = (typeof CATEGORY_ICONS)[number];
+
 export const BUILTIN_TAGS = [
   "popular",
   "new",

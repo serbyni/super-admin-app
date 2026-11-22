@@ -463,7 +463,9 @@
     "deleteCategoryTitle": "حذف «{name}»؟",
     "deleteTagTitle": "حذف «{name}»؟",
     "deleteTagBody": "{count, plural, =0 {لا يستخدم أي صنف هذا الوسم.} one {يستخدمه صنف واحد — سيُزال منه.} two {يستخدمه صنفان — سيُزال منهما.} few {تستخدمه # أصناف — سيُزال منها.} many {يستخدمه # صنفًا — سيُزال منها.} other {يستخدمه # صنف — سيُزال منها.}}",
-    "deleteConfirm": "حذف"
+    "deleteConfirm": "حذف",
+    "categoryIcon": "الأيقونة",
+    "noIcon": "بدون أيقونة"
   },
   "qrCard": {
     "menu": "القائمة",

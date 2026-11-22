@@ -24,12 +24,13 @@ import { TextAreaField, TextField } from "@/components/auth/fields";
 import { ImageField } from "@/components/media/image-fields";
 import { ConfirmDialog, Dialog } from "@/components/ui/dialog";
 import { Icon } from "@/components/ui/icon";
+import { IconPicker } from "@/components/ui/icon-picker";
 import { useToast } from "@/components/ui/toast";
 import { useLanguageLabel } from "@/i18n/use-language-label";
 import { useMsg } from "@/i18n/use-msg";
 import { formatLocale } from "@/config/locale";
 import type { MenuSales } from "@/lib/stats/page-schemas";
-import { tagName, type MenuTagRow } from "@/lib/menu/tags";
+import { CATEGORY_ICONS, tagName, type MenuTagRow } from "@/lib/menu/tags";
 import { TagDialog } from "./tag-dialog";
 import { isRtlLanguage } from "@/lib/i18n/languages";
 import { mediaUrl } from "@/lib/media/config";
@@ -197,9 +198,9 @@ export function MenuManager({ slug, cafeId, currency, menu, languages, sales }: 
           pending={pending}
           onClose={() => setCategoryForm(null)}
           languages={languages}
-          onSubmit={(name, i18n) =>
+          onSubmit={(name, i18n, icon) =>
             run(
-              () => saveCategoryAction(slug, null, name, true, i18n),
+              () => saveCategoryAction(slug, null, name, true, i18n, icon),
               (r) => {
                 setCategoryForm(null);
                 if (r.id) setCategoryId(r.id);
@@ -394,10 +395,10 @@ export function MenuManager({ slug, cafeId, currency, menu, languages, sales }: 
           setErrors({});
         }}
         languages={languages}
-        onSubmit={(name, i18n) => {
+        onSubmit={(name, i18n, icon) => {
           const c = categoryForm !== "new" ? categoryForm : null;
           run(
-            () => saveCategoryAction(slug, c?.id ?? null, name, c?.isVisible ?? true, i18n),
+            () => saveCategoryAction(slug, c?.id ?? null, name, c?.isVisible ?? true, i18n, icon),
             (r) => {
               setCategoryForm(null);
               if (!c && r.id) setCategoryId(r.id);
@@ -970,6 +971,7 @@ function SortableChip({
         dragProps={{ ...attributes, ...listeners }}
         label={category.name}
       >
+        {category.icon ? <Icon name={category.icon} className="me-xs text-icon-sm" /> : null}
         {category.name}
       </Chip>
     </span>
@@ -1054,11 +1056,19 @@ export function CategoryDialog({
   errors: Record<string, string>;
   pending: boolean;
   onClose: () => void;
-  onSubmit: (name: string, i18n: I18nState) => void;
+  onSubmit: (name: string, i18n: I18nState, icon: string) => void;
   languages: { main: string; others: string[] };
 }) {
   const t = useTranslations("menu");
   const languageLabel = useLanguageLabel();
+  const [icon, setIcon] = useState("");
+  const [shownFor, setShownFor] = useState<string | null>(null);
+  // Reset the picker when the dialog opens for another category.
+  const key = form === null ? null : form === "new" ? "new" : form.id;
+  if (key !== shownFor) {
+    setShownFor(key);
+    setIcon(form && form !== "new" ? (form.icon ?? "") : "");
+  }
   return (
     <Dialog
       open={form !== null}
@@ -1077,7 +1087,7 @@ export function CategoryDialog({
             const i18n: I18nState = Object.fromEntries(
               languages.others.map((l) => [l, { name: String(f.get(`name-${l}`) ?? "") }]),
             );
-            onSubmit(String(f.get("name") ?? ""), i18n);
+            onSubmit(String(f.get("name") ?? ""), i18n, icon);
           }}
         >
           <TextField
@@ -1099,6 +1109,14 @@ export function CategoryDialog({
               defaultValue={form === "new" ? "" : (form.i18n[l]?.name ?? "")}
             />
           ))}
+          <IconPicker
+            icons={CATEGORY_ICONS}
+            value={icon}
+            onChange={setIcon}
+            label={t("categoryIcon")}
+            noneLabel={t("noIcon")}
+            error={errors.icon}
+          />
           <FormButtons
             pending={pending}
             onCancel={onClose}

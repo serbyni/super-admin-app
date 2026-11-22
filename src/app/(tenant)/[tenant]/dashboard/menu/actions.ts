@@ -9,7 +9,7 @@ import { serverApi } from "@/lib/data/server-api";
 import { msg } from "@/i18n/msg";
 import { cleanI18n } from "@/lib/i18n/languages";
 import { categoryI18nSchema, categorySchema, currencyDigits, itemSchema } from "@/lib/menu/schema";
-import { tagFormSchema } from "@/lib/menu/tags";
+import { CATEGORY_ICONS, tagFormSchema } from "@/lib/menu/tags";
 import { zodErrors } from "@/lib/settings/schema";
 
 export type MenuResult =
@@ -75,8 +75,12 @@ export async function saveCategoryAction(
   name: string,
   isVisible: boolean,
   i18n?: unknown,
+  /** undefined = keep, "" = no icon, else one of CATEGORY_ICONS. */
+  icon?: string,
 ): Promise<MenuResult> {
   await requireTenantOwner(slug);
+  if (icon !== undefined && icon !== "" && !(CATEGORY_ICONS as readonly string[]).includes(icon))
+    return { ok: false, message: msg("menuTagIcon"), errors: { icon: msg("menuTagIcon") } };
   const parsed = categorySchema.safeParse({ name });
   if (!parsed.success)
     return { ok: false, message: msg("menuName"), errors: fieldErrors(parsed.error) };
@@ -89,6 +93,7 @@ export async function saveCategoryAction(
       parsed.data.name,
       isVisible,
       tr?.success ? (cleanI18n(tr.data) as Record<string, Record<string, string>>) : undefined,
+      icon,
     );
     refresh(slug);
     return { ok: true, id: cid, message: id ? msg("categorySaved") : msg("categoryAdded") };

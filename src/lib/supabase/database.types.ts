@@ -621,6 +621,7 @@ export type Database = {
       save_my_menu_category: {
         Args: {
           p_i18n?: Json;
+          p_icon?: string | null;
           p_id: string | null;
           p_is_visible: boolean;
           p_name: string;

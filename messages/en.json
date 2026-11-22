@@ -463,7 +463,9 @@
     "deleteCategoryTitle": "Delete “{name}”?",
     "deleteTagTitle": "Delete “{name}”?",
     "deleteTagBody": "{count, plural, =0 {No item uses this tag.} one {Used by # item — it will be removed from it.} other {Used by # items — it will be removed from them.}}",
-    "deleteConfirm": "Delete"
+    "deleteConfirm": "Delete",
+    "categoryIcon": "Icon",
+    "noIcon": "No icon"
   },
   "qrCard": {
     "menu": "Menu",

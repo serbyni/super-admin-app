@@ -180,6 +180,8 @@ export const menuSchema = z.object({
       sortOrder: num,
       isVisible: z.boolean(),
       i18n: i18nSchema,
+      /** Optional icon (CATEGORY_ICONS). */
+      icon: z.string().nullable().catch(null),
       itemCount: num.default(0),
     }),
   ),

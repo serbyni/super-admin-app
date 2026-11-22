@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { TAG_ICONS, isDefaultName, menuTagSchema, tagFormSchema, tagName } from "./tags";
+import {
+  CATEGORY_ICONS,
+  TAG_ICONS,
+  isDefaultName,
+  menuTagSchema,
+  tagFormSchema,
+  tagName,
+} from "./tags";
 
 const builtin = (k: string) => ({ popular: "Populaire", spicy: "Épicé" })[k] ?? k;
 
@@ -27,6 +34,7 @@ describe("menu tags", () => {
 
   it("24 distinct icons; the form only accepts them", () => {
     expect(new Set(TAG_ICONS).size).toBe(24);
+    expect(new Set(CATEGORY_ICONS).size).toBe(24);
     expect(tagFormSchema.safeParse({ name: "X", icon: "star", isVisible: true }).success).toBe(
       true,
     );

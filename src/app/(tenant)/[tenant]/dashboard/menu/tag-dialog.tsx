@@ -5,6 +5,7 @@ import { useState } from "react";
 import { TextField } from "@/components/auth/fields";
 import { Dialog } from "@/components/ui/dialog";
 import { Icon } from "@/components/ui/icon";
+import { IconPicker } from "@/components/ui/icon-picker";
 import { useLanguageLabel } from "@/i18n/use-language-label";
 import { useMsg } from "@/i18n/use-msg";
 import { isRtlLanguage } from "@/lib/i18n/languages";
@@ -140,29 +141,13 @@ function TagForm({
           ))
         : null}
 
-      <fieldset>
-        <legend className="mb-xs text-body-sm font-semibold text-on-surface">{t("tagIcon")}</legend>
-        <div className="grid grid-cols-6 gap-xs sm:grid-cols-8" role="radiogroup">
-          {TAG_ICONS.map((i) => (
-            <button
-              key={i}
-              type="button"
-              role="radio"
-              aria-checked={icon === i}
-              aria-label={i.replaceAll("_", " ")}
-              onClick={() => setIcon(i)}
-              className={`flex h-10 items-center justify-center rounded-lg border ${
-                icon === i
-                  ? "border-primary bg-secondary-container text-primary"
-                  : "border-outline-variant text-on-surface-variant hover:bg-surface-container"
-              }`}
-            >
-              <Icon name={i} className="text-icon-md" />
-            </button>
-          ))}
-        </div>
-        {errors.icon ? <p className="mt-xs text-body-xs text-error">{m(errors.icon)}</p> : null}
-      </fieldset>
+      <IconPicker
+        icons={TAG_ICONS}
+        value={icon}
+        onChange={(i) => setIcon(i as TagIcon)}
+        label={t("tagIcon")}
+        error={errors.icon ? m(errors.icon) : undefined}
+      />
 
       <label className="flex items-center gap-sm text-body-sm text-on-surface">
         <input
