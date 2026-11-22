@@ -40,7 +40,12 @@ const TABS = [
   { key: "languages", label: "tabLanguages", icon: "translate", perm: "settings.languages" },
   { key: "roles", label: "tabRoles", icon: "badge", perm: "staff.manage" },
   { key: "profile", label: "tabProfile", icon: "person", perm: null },
-] as const satisfies readonly { key: string; label: string; icon: string; perm: Permission | null }[];
+] as const satisfies readonly {
+  key: string;
+  label: string;
+  icon: string;
+  perm: Permission | null;
+}[];
 
 async function Settings({
   params,

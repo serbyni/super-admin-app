@@ -20,12 +20,18 @@ export class AccessService {
   constructor(private readonly db: LazyDb) {}
 
   async mine(slug: string): Promise<Access> {
-    const raw = unwrap("get_my_access", await (await this.db()).rpc("get_my_access", { p_slug: slug }));
+    const raw = unwrap(
+      "get_my_access",
+      await (await this.db()).rpc("get_my_access", { p_slug: slug }),
+    );
     return accessSchema.parse(raw);
   }
 
   async roles(slug: string): Promise<Role[]> {
-    const raw = unwrap("get_my_roles", await (await this.db()).rpc("get_my_roles", { p_slug: slug }));
+    const raw = unwrap(
+      "get_my_roles",
+      await (await this.db()).rpc("get_my_roles", { p_slug: slug }),
+    );
     return z.array(roleSchema).parse(raw);
   }
 
@@ -49,15 +55,24 @@ export class AccessService {
   }
 
   async deleteRole(slug: string, id: string): Promise<void> {
-    unwrap("delete_my_role", await (await this.db()).rpc("delete_my_role", { p_slug: slug, p_id: id }));
+    unwrap(
+      "delete_my_role",
+      await (await this.db()).rpc("delete_my_role", { p_slug: slug, p_id: id }),
+    );
   }
 
   async reorderRoles(slug: string, ids: string[]): Promise<void> {
-    unwrap("reorder_my_roles", await (await this.db()).rpc("reorder_my_roles", { p_slug: slug, p_ids: ids }));
+    unwrap(
+      "reorder_my_roles",
+      await (await this.db()).rpc("reorder_my_roles", { p_slug: slug, p_ids: ids }),
+    );
   }
 
   async shifts(slug: string): Promise<Shift[]> {
-    const raw = unwrap("get_my_shifts", await (await this.db()).rpc("get_my_shifts", { p_slug: slug }));
+    const raw = unwrap(
+      "get_my_shifts",
+      await (await this.db()).rpc("get_my_shifts", { p_slug: slug }),
+    );
     return z.array(shiftSchema).parse(raw);
   }
 
@@ -82,7 +97,10 @@ export class AccessService {
   }
 
   async deleteShift(slug: string, id: string): Promise<void> {
-    unwrap("delete_my_shift", await (await this.db()).rpc("delete_my_shift", { p_slug: slug, p_id: id }));
+    unwrap(
+      "delete_my_shift",
+      await (await this.db()).rpc("delete_my_shift", { p_slug: slug, p_id: id }),
+    );
   }
 
   async reorderShifts(slug: string, ids: string[]): Promise<void> {
