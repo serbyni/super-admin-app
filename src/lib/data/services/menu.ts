@@ -1,7 +1,7 @@
 import "server-only";
 import type { OptionGroup } from "@/lib/menu/schema";
 import type { Json } from "@/lib/supabase/database.types";
-import { menuSchema, type Menu, type MenuTag } from "@/lib/menu/schema";
+import { menuSchema, type Menu } from "@/lib/menu/schema";
 import { unwrap } from "../errors";
 import type { LazyDb } from "../types";
 
@@ -11,7 +11,8 @@ export type MenuItemInput = {
   description: string;
   price: number | null;
   image: { path: string; alt: string } | null;
-  tags: MenuTag[];
+  /** The café's tag ids (menu_tags). */
+  tagIds: string[];
   isAvailable: boolean;
   isVisible: boolean;
   isFeatured: boolean;
@@ -82,13 +83,55 @@ export class MenuService {
         p_description: i.description,
         p_price: i.price,
         p_image: i.image as unknown as Json,
-        p_tags: i.tags,
+        p_tags: [],
+        p_tag_ids: i.tagIds,
         p_is_available: i.isAvailable,
         p_is_visible: i.isVisible,
         p_is_featured: i.isFeatured,
         p_i18n: i.i18n as unknown as Json,
         p_options: (i.options ?? []) as unknown as Json,
       }),
+    );
+  }
+
+  /** Create (id null) or update a tag. An empty name on a built-in = back to its default name. */
+  async saveTag(
+    slug: string,
+    id: string | null,
+    t: {
+      name: string;
+      icon: string;
+      isVisible: boolean;
+      i18n: Record<string, Record<string, string>>;
+    },
+  ): Promise<string> {
+    return unwrap(
+      "save_my_menu_tag",
+      await (
+        await this.db()
+      ).rpc("save_my_menu_tag", {
+        p_slug: slug,
+        p_id: id,
+        p_name: t.name,
+        p_icon: t.icon,
+        p_i18n: t.i18n as unknown as Json,
+        p_is_visible: t.isVisible,
+      }),
+    );
+  }
+
+  /** Deletes a tag (removed from its items). Returns how many items had it. */
+  async deleteTag(slug: string, id: string): Promise<number> {
+    return unwrap(
+      "delete_my_menu_tag",
+      await (await this.db()).rpc("delete_my_menu_tag", { p_slug: slug, p_id: id }),
+    );
+  }
+
+  async reorderTags(slug: string, ids: string[]): Promise<void> {
+    unwrap(
+      "reorder_my_menu_tags",
+      await (await this.db()).rpc("reorder_my_menu_tags", { p_slug: slug, p_ids: ids }),
     );
   }
 

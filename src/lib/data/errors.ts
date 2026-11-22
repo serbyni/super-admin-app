@@ -9,6 +9,8 @@ export const DATA_ERROR_CODES = [
   "forbidden",
   "conflict", // unique violation (23505)
   "in_use",
+  "name_taken", // e.g. a menu tag with the same name
+
   "stale_list",
   "profile_already_completed",
   "invalid_location",

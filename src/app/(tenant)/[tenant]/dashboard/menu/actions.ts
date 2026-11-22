@@ -9,6 +9,7 @@ import { serverApi } from "@/lib/data/server-api";
 import { msg } from "@/i18n/msg";
 import { cleanI18n } from "@/lib/i18n/languages";
 import { categoryI18nSchema, categorySchema, currencyDigits, itemSchema } from "@/lib/menu/schema";
+import { tagFormSchema } from "@/lib/menu/tags";
 import { zodErrors } from "@/lib/settings/schema";
 
 export type MenuResult =
@@ -27,6 +28,8 @@ const FIELD_LABELS: Record<string, string> = {
   i18n: msg("menuTranslations"),
   category_id: msg("menuCategory"),
   tags: msg("menuTags"),
+  tag_ids: msg("menuTags"),
+  icon: msg("menuTagIcon"),
   options: msg("menuOptions"),
 };
 
@@ -58,6 +61,8 @@ function failure(e: unknown, fallback: string, conflictField?: string): MenuResu
       errors: conflictField ? { [conflictField]: fallback } : undefined,
     };
   if (isDataError(e, "in_use")) return { ok: false, message: msg("categoryNotEmpty") };
+  if (isDataError(e, "name_taken"))
+    return { ok: false, message: msg("tagNameTaken"), errors: { name: msg("tagNameTaken") } };
   if (isDataError(e, "stale_list")) return { ok: false, message: msg("changedMeanwhile") };
   if (isDataError(e, "invalid_state")) return { ok: false, message: msg("templateOnlyEmpty") };
   if (isDataError(e)) return { ok: false, message: msg("somethingWrong") };
@@ -161,7 +166,7 @@ export async function saveItemAction(
       description: d.description,
       price: d.price,
       image: d.image_path ? { path: d.image_path, alt: d.image_alt } : null,
-      tags: d.tags,
+      tagIds: d.tag_ids,
       isAvailable: d.is_available,
       isVisible: d.is_visible,
       isFeatured: d.is_featured,
@@ -220,5 +225,63 @@ export async function applyTemplateAction(slug: string): Promise<MenuResult> {
     return { ok: true, message: msg("templateAdded") };
   } catch (e) {
     return failure(e, msg("templateFailed"));
+  }
+}
+
+/* ── Tags ── */
+
+/** Create (id null) or update a tag; returns its id (the item form selects a new tag at once). */
+export async function saveTagAction(
+  slug: string,
+  id: string | null,
+  input: unknown,
+): Promise<MenuResult> {
+  await requireTenantOwner(slug);
+  const parsed = tagFormSchema.safeParse(input);
+  if (!parsed.success)
+    return { ok: false, message: msg("fieldsNeedAttention"), errors: fieldErrors(parsed.error) };
+  const d = parsed.data;
+  if (!id && !d.name)
+    return { ok: false, message: msg("menuName"), errors: { name: msg("menuName") } };
+  try {
+    const tagId = await serverApi().menu.saveTag(slug, id, {
+      name: d.name,
+      icon: d.icon,
+      isVisible: d.isVisible,
+      i18n: cleanI18n(d.i18n) as Record<string, Record<string, string>>,
+    });
+    refresh(slug);
+    return {
+      ok: true,
+      id: tagId,
+      message: id ? msg("tagSaved") : msg("tagAdded", { name: d.name }),
+    };
+  } catch (e) {
+    return failure(e, msg("tagSaveFailed"));
+  }
+}
+
+export async function deleteTagAction(slug: string, id: string): Promise<MenuResult> {
+  await requireTenantOwner(slug);
+  if (!z.uuid().safeParse(id).success) return { ok: false, message: msg("checkForm") };
+  try {
+    const n = await serverApi().menu.deleteTag(slug, id);
+    refresh(slug);
+    return { ok: true, message: msg("tagDeleted", { count: n }) };
+  } catch (e) {
+    return failure(e, msg("tagDeleteFailed"));
+  }
+}
+
+export async function reorderTagsAction(slug: string, order: unknown): Promise<MenuResult> {
+  await requireTenantOwner(slug);
+  const parsed = z.array(z.uuid()).max(100).safeParse(order);
+  if (!parsed.success) return { ok: false, message: msg("orderFailed") };
+  try {
+    await serverApi().menu.reorderTags(slug, parsed.data);
+    refresh(slug);
+    return { ok: true };
+  } catch (e) {
+    return failure(e, msg("orderFailed"));
   }
 }

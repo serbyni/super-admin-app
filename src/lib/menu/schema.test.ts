@@ -8,7 +8,7 @@ const form = (price: string) => ({
   price,
   image_path: "",
   image_alt: "",
-  tags: [],
+  tag_ids: [],
   is_available: true,
   is_visible: true,
   is_featured: false,

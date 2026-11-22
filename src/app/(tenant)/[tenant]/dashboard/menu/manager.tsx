@@ -29,18 +29,18 @@ import { useLanguageLabel } from "@/i18n/use-language-label";
 import { useMsg } from "@/i18n/use-msg";
 import { formatLocale } from "@/config/locale";
 import type { MenuSales } from "@/lib/stats/page-schemas";
+import { tagName, type MenuTagRow } from "@/lib/menu/tags";
+import { TagDialog } from "./tag-dialog";
 import { isRtlLanguage } from "@/lib/i18n/languages";
 import { mediaUrl } from "@/lib/media/config";
 import {
   MENU_LIMITS,
-  MENU_TAGS,
   currencyDigits,
   formatPrice,
   itemStatus,
   type Menu,
   type MenuCategory,
   type MenuItem,
-  type MenuTag,
 } from "@/lib/menu/schema";
 import {
   applyTemplateAction,
@@ -50,6 +50,7 @@ import {
   reorderItemsAction,
   saveCategoryAction,
   saveItemAction,
+  saveTagAction,
   setAvailableAction,
   type MenuResult,
 } from "./actions";
@@ -357,6 +358,8 @@ export function MenuManager({ slug, cafeId, currency, menu, languages, sales }: 
                   categoryName={categoryId === ALL ? catName(i.categoryId) : null}
                   sortable={canReorderItems}
                   sales={sales ? (sales.items[i.id] ?? null) : undefined}
+                  tagList={menu.tags}
+                  mainLanguage={languages.main}
                   pending={pending}
                   onEdit={() => setItemForm(i)}
                   onDelete={() => setConfirm({ kind: "item", item: i })}
@@ -428,6 +431,8 @@ export function MenuManager({ slug, cafeId, currency, menu, languages, sales }: 
             cafeId={cafeId}
             currency={currency}
             languages={languages}
+            slug={slug}
+            tagList={menu.tags}
             optionShares={itemForm !== "new" && sales ? sales.options[itemForm.id] : undefined}
             errors={errors}
             pending={pending}
@@ -486,12 +491,17 @@ function ItemCard({
   categoryName,
   sortable,
   sales,
+  tagList,
+  mainLanguage,
   pending,
   onEdit,
   onDelete,
   onToggleSoldOut,
 }: {
   item: MenuItem;
+  /** The café's tags (menu_tags). */
+  tagList: MenuTagRow[];
+  mainLanguage: string;
   currency: string;
   categoryName: string | null;
   sortable: boolean;
@@ -518,7 +528,7 @@ function ItemCard({
   const tt = useTranslations("tags");
   const status = itemStatus(item);
   const s = STATUS[status];
-  const tags = MENU_TAGS.filter((tag) => item.tags.includes(tag.value));
+  const tags = tagList.filter((tag) => item.tagIds.includes(tag.id));
   return (
     <li
       ref={setNodeRef}
@@ -585,10 +595,11 @@ function ItemCard({
           <ul className="flex flex-wrap gap-xs">
             {tags.map((tag) => (
               <li
-                key={tag.value}
-                className="inline-flex items-center gap-xs rounded-full bg-surface-container px-sm text-caption text-on-surface-variant"
+                key={tag.id}
+                className={`inline-flex items-center gap-xs rounded-full bg-surface-container px-sm text-caption text-on-surface-variant ${tag.isVisible ? "" : "opacity-60"}`}
               >
-                <Icon name={tag.icon} className="text-icon-sm" /> {tt(tag.value)}
+                <Icon name={tag.icon} className="text-icon-sm" />{" "}
+                {tagName(tag, mainLanguage, (k) => tt(k))}
               </li>
             ))}
           </ul>
@@ -633,6 +644,8 @@ function ItemFields({
   cafeId,
   currency,
   languages,
+  slug,
+  tagList,
   optionShares,
   errors,
   pending,
@@ -645,6 +658,8 @@ function ItemFields({
   cafeId: string;
   currency: string;
   languages: { main: string; others: string[] };
+  slug: string;
+  tagList: MenuTagRow[];
   optionShares?: Record<string, number>;
   errors: Record<string, string>;
   pending: boolean;
@@ -668,7 +683,11 @@ function ItemFields({
   const setTr = (l: string, f: string, v: string) =>
     setI18n((x) => ({ ...x, [l]: { ...(x[l] ?? {}), [f]: v } }));
   const [image, setImage] = useState(item?.image ?? null);
-  const [tags, setTags] = useState<MenuTag[]>(item?.tags ?? []);
+  const [tags, setTags] = useState<string[]>(item?.tagIds ?? []);
+  const [tagForm, setTagForm] = useState<"new" | null>(null);
+  const [tagPending, startTag] = useTransition();
+  const [tagErrors, setTagErrors] = useState<Record<string, string>>({});
+  const toast = useToast();
   const submit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
@@ -679,7 +698,7 @@ function ItemFields({
       price: f.get("price") ?? "",
       image_path: image?.path ?? "",
       image_alt: image?.alt ?? "",
-      tags,
+      tag_ids: tags,
       is_available: f.get("is_available") === "on",
       is_visible: f.get("is_visible") === "on",
       is_featured: f.get("is_featured") === "on",
@@ -688,149 +707,189 @@ function ItemFields({
     });
   };
   return (
-    <form onSubmit={submit} noValidate className="flex flex-col gap-md">
-      {languages.others.length ? (
-        <LanguageTabs
-          main={languages.main}
-          others={languages.others}
-          active={tab}
-          onChange={setTab}
-          done={(l) => !!tr(l, "name")}
-        />
-      ) : null}
-      {languages.others.map((l) =>
-        tab === l ? (
-          <div key={l} className="flex flex-col gap-md" lang={l}>
-            <p className="text-body-sm text-on-surface-variant">
-              {t("translationNote", {
-                language: languageLabel(l),
-                main: languageLabel(languages.main),
-              })}
-            </p>
-            <TextField
-              id={`name-${l}`}
-              label={t("nameIn", { language: languageLabel(l) })}
-              maxLength={80}
-              dir={isRtlLanguage(l) ? "rtl" : "ltr"}
-              value={tr(l, "name")}
-              onChange={(e) => setTr(l, "name", e.target.value)}
-              hint={mainName ? t("original", { text: mainName }) : undefined}
-              error={errors.i18n}
-            />
-            <TextAreaField
-              id={`description-${l}`}
-              label={t("descriptionIn", { language: languageLabel(l) })}
-              rows={3}
-              maxLength={500}
-              dir={isRtlLanguage(l) ? "rtl" : "ltr"}
-              value={tr(l, "description")}
-              onChange={(e) => setTr(l, "description", e.target.value)}
-              hint={mainDesc ? t("original", { text: mainDesc }) : undefined}
-            />
-            <OptionsTranslation value={options} onChange={setOptions} lang={l} />
-          </div>
-        ) : null,
-      )}
-      {/* Main language: always mounted (its inputs are part of the form), hidden on other tabs. */}
-      <div className="flex flex-col gap-md" hidden={tab !== languages.main}>
-        <TextField
-          id="name"
-          label={t("name")}
-          required
-          maxLength={80}
-          defaultValue={item?.name ?? ""}
-          onChange={(e) => setMainName(e.target.value)}
-          error={errors.name}
-        />
-        <div className="grid grid-cols-1 gap-sm sm:grid-cols-2">
-          <TextField
-            id="price"
-            label={t("price", { currency })}
-            inputMode="decimal"
-            placeholder={(4.5).toFixed(digits)}
-            defaultValue={
-              item?.price === null || item?.price === undefined ? "" : item.price.toFixed(digits)
-            }
-            error={errors.price}
-            hint={t("priceHint")}
+    <>
+      <form onSubmit={submit} noValidate className="flex flex-col gap-md">
+        {languages.others.length ? (
+          <LanguageTabs
+            main={languages.main}
+            others={languages.others}
+            active={tab}
+            onChange={setTab}
+            done={(l) => !!tr(l, "name")}
           />
-          <label className="flex flex-col gap-xs text-body-sm font-semibold text-on-surface">
-            {t("category")}
-            <select
-              name="category_id"
-              defaultValue={item?.categoryId ?? defaultCategory}
-              className="rounded-lg border border-outline-variant bg-transparent px-sm py-3.5 font-normal"
-            >
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-        <TextAreaField
-          id="description"
-          label={t("description")}
-          rows={3}
-          maxLength={500}
-          defaultValue={item?.description ?? ""}
-          error={errors.description}
-          onChange={(e) => setMainDesc(e.target.value)}
-        />
-        <ImageField
-          cafeId={cafeId}
-          label={t("photo")}
-          value={image}
-          onChange={setImage}
-          error={errors.image ?? errors.image_path}
-        />
-        <fieldset>
-          <legend className="mb-xs text-body-sm font-semibold text-on-surface">{t("tags")}</legend>
-          <div className="flex flex-wrap gap-xs">
-            {MENU_TAGS.map((tag) => {
-              const on = tags.includes(tag.value);
-              return (
-                <button
-                  key={tag.value}
-                  type="button"
-                  aria-pressed={on}
-                  onClick={() =>
-                    setTags((x) => (on ? x.filter((v) => v !== tag.value) : [...x, tag.value]))
-                  }
-                  className={`inline-flex items-center gap-xs rounded-full border px-sm py-xs text-body-sm ${
-                    on
-                      ? "border-primary bg-secondary-container text-primary"
-                      : "border-outline-variant text-on-surface-variant"
-                  }`}
-                >
-                  <Icon name={tag.icon} className="text-icon-md" /> {tt(tag.value)}
-                </button>
-              );
-            })}
+        ) : null}
+        {languages.others.map((l) =>
+          tab === l ? (
+            <div key={l} className="flex flex-col gap-md" lang={l}>
+              <p className="text-body-sm text-on-surface-variant">
+                {t("translationNote", {
+                  language: languageLabel(l),
+                  main: languageLabel(languages.main),
+                })}
+              </p>
+              <TextField
+                id={`name-${l}`}
+                label={t("nameIn", { language: languageLabel(l) })}
+                maxLength={80}
+                dir={isRtlLanguage(l) ? "rtl" : "ltr"}
+                value={tr(l, "name")}
+                onChange={(e) => setTr(l, "name", e.target.value)}
+                hint={mainName ? t("original", { text: mainName }) : undefined}
+                error={errors.i18n}
+              />
+              <TextAreaField
+                id={`description-${l}`}
+                label={t("descriptionIn", { language: languageLabel(l) })}
+                rows={3}
+                maxLength={500}
+                dir={isRtlLanguage(l) ? "rtl" : "ltr"}
+                value={tr(l, "description")}
+                onChange={(e) => setTr(l, "description", e.target.value)}
+                hint={mainDesc ? t("original", { text: mainDesc }) : undefined}
+              />
+              <OptionsTranslation value={options} onChange={setOptions} lang={l} />
+            </div>
+          ) : null,
+        )}
+        {/* Main language: always mounted (its inputs are part of the form), hidden on other tabs. */}
+        <div className="flex flex-col gap-md" hidden={tab !== languages.main}>
+          <TextField
+            id="name"
+            label={t("name")}
+            required
+            maxLength={80}
+            defaultValue={item?.name ?? ""}
+            onChange={(e) => setMainName(e.target.value)}
+            error={errors.name}
+          />
+          <div className="grid grid-cols-1 gap-sm sm:grid-cols-2">
+            <TextField
+              id="price"
+              label={t("price", { currency })}
+              inputMode="decimal"
+              placeholder={(4.5).toFixed(digits)}
+              defaultValue={
+                item?.price === null || item?.price === undefined ? "" : item.price.toFixed(digits)
+              }
+              error={errors.price}
+              hint={t("priceHint")}
+            />
+            <label className="flex flex-col gap-xs text-body-sm font-semibold text-on-surface">
+              {t("category")}
+              <select
+                name="category_id"
+                defaultValue={item?.categoryId ?? defaultCategory}
+                className="rounded-lg border border-outline-variant bg-transparent px-sm py-3.5 font-normal"
+              >
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
-        </fieldset>
-        <OptionsEditor
-          shares={optionShares}
-          value={options}
-          onChange={setOptions}
-          currency={currency}
-          error={errors.options ? m(errors.options) : undefined}
-        />
-        <div className="flex flex-col gap-sm rounded-lg bg-surface-container-low p-md text-body-sm text-on-surface">
-          <Check name="is_available" defaultChecked={item?.isAvailable ?? true}>
-            {t("availableCheck")}
-          </Check>
-          <Check name="is_visible" defaultChecked={item?.isVisible ?? true}>
-            {t("visibleCheck")}
-          </Check>
-          <Check name="is_featured" defaultChecked={item?.isFeatured ?? false}>
-            {t("featuredCheck")}
-          </Check>
+          <TextAreaField
+            id="description"
+            label={t("description")}
+            rows={3}
+            maxLength={500}
+            defaultValue={item?.description ?? ""}
+            error={errors.description}
+            onChange={(e) => setMainDesc(e.target.value)}
+          />
+          <ImageField
+            cafeId={cafeId}
+            label={t("photo")}
+            value={image}
+            onChange={setImage}
+            error={errors.image ?? errors.image_path}
+          />
+          <fieldset>
+            <legend className="mb-xs text-body-sm font-semibold text-on-surface">
+              {t("tags")}
+            </legend>
+            <div className="flex flex-wrap gap-xs">
+              {tagList.map((tag) => {
+                const on = tags.includes(tag.id);
+                return (
+                  <button
+                    key={tag.id}
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() =>
+                      setTags((x) => (on ? x.filter((v) => v !== tag.id) : [...x, tag.id]))
+                    }
+                    className={`inline-flex items-center gap-xs rounded-full border px-sm py-xs text-body-sm ${
+                      on
+                        ? "border-primary bg-secondary-container text-primary"
+                        : "border-outline-variant text-on-surface-variant"
+                    } ${tag.isVisible ? "" : "opacity-60"}`}
+                  >
+                    <Icon name={tag.icon} className="text-icon-md" />{" "}
+                    {tagName(tag, languages.main, (k) => tt(k))}
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                onClick={() => {
+                  setTagErrors({});
+                  setTagForm("new");
+                }}
+                className="inline-flex items-center gap-xs rounded-full border border-dashed border-outline-variant px-sm py-xs text-body-sm font-semibold text-primary hover:bg-secondary-container"
+              >
+                <Icon name="add" className="text-icon-md" /> {t("tagNew")}
+              </button>
+            </div>
+          </fieldset>
+          <OptionsEditor
+            shares={optionShares}
+            value={options}
+            onChange={setOptions}
+            currency={currency}
+            error={errors.options ? m(errors.options) : undefined}
+          />
+          <div className="flex flex-col gap-sm rounded-lg bg-surface-container-low p-md text-body-sm text-on-surface">
+            <Check name="is_available" defaultChecked={item?.isAvailable ?? true}>
+              {t("availableCheck")}
+            </Check>
+            <Check name="is_visible" defaultChecked={item?.isVisible ?? true}>
+              {t("visibleCheck")}
+            </Check>
+            <Check name="is_featured" defaultChecked={item?.isFeatured ?? false}>
+              {t("featuredCheck")}
+            </Check>
+          </div>
         </div>
-      </div>
-      <FormButtons pending={pending} onCancel={onCancel} label={item ? t("save") : t("addItem")} />
-    </form>
+        <FormButtons
+          pending={pending}
+          onCancel={onCancel}
+          label={item ? t("save") : t("addItem")}
+        />
+      </form>
+      <TagDialog
+        form={tagForm}
+        languages={languages}
+        pending={tagPending}
+        errors={tagErrors}
+        onClose={() => setTagForm(null)}
+        onSubmit={(input) =>
+          startTag(async () => {
+            const r = await saveTagAction(slug, null, input);
+            if (!r.ok) {
+              setTagErrors(r.errors ?? {});
+              toast.show({ variant: "error", title: m(r.message) });
+              return;
+            }
+            if (r.message) toast.show({ variant: "success", title: m(r.message) });
+            // The new tag is selected on this item at once.
+            if (r.id) setTags((x) => [...x, r.id!]);
+            setTagForm(null);
+          })
+        }
+      />
+    </>
   );
 }
 
@@ -983,7 +1042,7 @@ function Chip({
   );
 }
 
-function CategoryDialog({
+export function CategoryDialog({
   form,
   errors,
   pending,
