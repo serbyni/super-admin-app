@@ -10,7 +10,8 @@ import { addDays, delta } from "@/lib/stats/period";
 import { averageTicket } from "@/lib/stats/schema";
 import { Icon } from "@/components/ui/icon";
 import { applyOwnerLocale } from "@/i18n/owner-locale";
-import { requireTenantOwner } from "@/lib/auth/guards";
+import { can } from "@/lib/access/ability";
+import { requireTenantAccess } from "@/lib/access/server";
 import { tenantDashboard, tenantSettings } from "@/lib/auth/routes";
 import { serverApi } from "@/lib/data/server-api";
 import { formatPrice } from "@/lib/menu/schema";
@@ -34,7 +35,7 @@ async function OrdersPage({
 }) {
   const { tenant } = await params;
   const { view, day } = await searchParams;
-  const { user } = await requireTenantOwner(tenant);
+  const { user, ability } = await requireTenantAccess(tenant, "orders.read");
   const locale = await applyOwnerLocale();
   const t = await getTranslations("orders");
   const api = serverApi();
@@ -51,7 +52,8 @@ async function OrdersPage({
         null,
       ]
     : await Promise.all([api.orders.board(tenant, "active"), api.orders.board(tenant, "day")]);
-  const floor = history ? null : await api.tables.floor(tenant);
+  // Tables to move an order to: only for members who handle orders.
+  const floor = history || !can(ability, "orders.handle") ? null : await api.tables.floor(tenant);
   const areaName = new Map(floor?.areas.map((a) => [a.id, a.name]));
   const tables = (floor?.tables ?? [])
     .filter((x) => x.isActive)

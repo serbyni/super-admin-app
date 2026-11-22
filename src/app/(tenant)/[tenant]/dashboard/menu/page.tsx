@@ -9,7 +9,7 @@ import { KpiTile, StatStrip } from "@/components/stats/charts";
 import { PeriodBar } from "@/components/stats/period-bar";
 import { Icon } from "@/components/ui/icon";
 import { PageHeader, TenantShell } from "@/components/tenant/tenant-shell";
-import { requireTenantOwner } from "@/lib/auth/guards";
+import { requireTenantAccess } from "@/lib/access/server";
 import { formatLocale } from "@/config/locale";
 import { tenantDashboard } from "@/lib/auth/routes";
 import { serverApi } from "@/lib/data/server-api";
@@ -32,7 +32,7 @@ async function MenuPage({
   searchParams: PageProps<"/[tenant]/dashboard/menu">["searchParams"];
 }) {
   const { tenant } = await params;
-  const { user } = await requireTenantOwner(tenant);
+  const { user } = await requireTenantAccess(tenant, "menu.read");
   const locale = await applyOwnerLocale();
   const [t, ts, tp] = await Promise.all([
     getTranslations("menu"),

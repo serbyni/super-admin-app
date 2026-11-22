@@ -171,7 +171,17 @@
     "menuDisplayFailed": "L'affichage du menu n'a pas pu être enregistré. Réessayez.",
     "menuOnlySaved": "Menu seulement : vos clients consultent le menu, la commande en ligne est désactivée.",
     "menuOrderSaved": "La commande en ligne est de nouveau possible — activez « Accepter les commandes » sur la page Commandes.",
-    "orderingMenuOnly": "Votre café est en mode menu seulement. Changez-le dans Paramètres → Affichage du menu."
+    "orderingMenuOnly": "Votre café est en mode menu seulement. Changez-le dans Paramètres → Affichage du menu.",
+    "noPermission": "Vous n'avez pas la permission de faire cela.",
+    "offShift": "Vous êtes hors service — l'accès revient pendant votre prochain créneau.",
+    "roleInUse": "Des membres utilisent encore ce rôle. Donnez-leur d'abord un autre rôle.",
+    "roleLocked": "Le rôle Propriétaire ne peut pas être modifié.",
+    "rolesSaved": "Rôle enregistré.",
+    "roleDeleted": "Rôle supprimé.",
+    "shiftSaved": "Créneau enregistré.",
+    "shiftDeleted": "Créneau supprimé.",
+    "nameTakenRole": "Un rôle porte déjà ce nom.",
+    "nameTakenShift": "Un créneau porte déjà ce nom."
   },
   "common": {
     "save": "Enregistrer",
@@ -256,7 +266,8 @@
     "colourBody": "Les couleurs de votre menu sont générées à partir de cette couleur.",
     "yourCafe": "Votre café",
     "tabHours": "Horaires",
-    "tabDisplay": "Affichage du menu"
+    "tabDisplay": "Affichage du menu",
+    "tabRoles": "Rôles"
   },
   "profile": {
     "emailConfirmed": "Votre e-mail de connexion a été modifié.",
@@ -1258,5 +1269,163 @@
     "bookNeedsMenuOnly": "Le livre 3D est disponible en mode menu seulement.",
     "seeIt": "Voir sur votre site",
     "save": "Enregistrer"
+  },
+  "access": {
+    "metaTitle": "Accès refusé",
+    "title": "Pas d'accès à cette page",
+    "body": "Votre rôle n'inclut pas cette page. Demandez au propriétaire du café si vous en avez besoin.",
+    "offShiftTitle": "Vous êtes hors service",
+    "offShiftBody": "Votre accès s'ouvre pendant vos créneaux. Revenez au début de votre prochain créneau.",
+    "nextShift": "Votre prochain créneau : {name} — {when} à {time}",
+    "noNextShift": "Aucun créneau à venir. Demandez au propriétaire du café.",
+    "today": "aujourd'hui",
+    "tomorrow": "demain",
+    "days": "lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche",
+    "profile": "Mon profil"
+  },
+  "roles": {
+    "tab": "Rôles et permissions",
+    "rolesTitle": "Rôles",
+    "rolesBody": "Ce que chaque rôle peut voir et faire. Le rôle Propriétaire a tous les droits et ne peut pas être modifié.",
+    "roleNew": "Nouveau rôle",
+    "roleEdit": "Modifier le rôle",
+    "roleDuplicate": "Dupliquer",
+    "roleCopy": "{name} (copie)",
+    "colRole": "Rôle",
+    "colPermissions": "Accès",
+    "colMembers": "Membres",
+    "colActions": "Actions",
+    "colShift": "Créneau",
+    "colDays": "Jours",
+    "colHours": "Heures",
+    "allRights": "Tous les droits",
+    "locked": "Verrouillé",
+    "permCount": "{count, plural, one {# permission} other {# permissions}}",
+    "name": "Nom",
+    "description": "Description (facultatif)",
+    "matrix": "Permissions",
+    "needsRead": "Requis par une autre permission activée",
+    "sees": "Ce que ce rôle voit",
+    "seesNone": "Uniquement son profil.",
+    "save": "Enregistrer",
+    "add": "Ajouter le rôle",
+    "deleteRoleTitle": "Supprimer le rôle « {name} » ?",
+    "deleteRoleBody": "Action irréversible.",
+    "deleteConfirm": "Supprimer",
+    "inUse": "Des membres utilisent ce rôle",
+    "drag": "Glissez pour ordonner les rôles.",
+    "dragShifts": "Glissez pour ordonner les créneaux.",
+    "reorder": "Déplacer {name}",
+    "reorderColumn": "Ordre",
+    "editName": "Modifier {name}",
+    "deleteName": "Supprimer {name}",
+    "shiftsTitle": "Créneaux",
+    "shiftsBody": "Horaires de travail du personnel « Par créneaux » : en dehors de ses créneaux, il n'a aucun accès. Un créneau peut passer minuit.",
+    "shiftNew": "Nouveau créneau",
+    "shiftEdit": "Modifier le créneau",
+    "shiftAdd": "Ajouter le créneau",
+    "noShifts": "Aucun créneau — par ex. « Matin · lun–sam 07:00–15:00 ».",
+    "days": "Jours",
+    "everyDay": "Tous les jours",
+    "starts": "Début",
+    "ends": "Fin",
+    "overnight": "de nuit",
+    "dayNames": "lun|mar|mer|jeu|ven|sam|dim",
+    "deleteShiftTitle": "Supprimer le créneau « {name} » ?",
+    "deleteShiftBody": "{count, plural, =0 {Aucun membre sur ce créneau.} one {# membre perd ce créneau.} other {# membres perdent ce créneau.}}",
+    "staffSoon": "Les membres reçoivent leurs rôles et créneaux dans Équipe (prochaine étape).",
+    "perm": {
+      "dashboard": {
+        "read": {
+          "label": "Voir le tableau de bord",
+          "help": "Accueil et statistiques."
+        }
+      },
+      "orders": {
+        "read": {
+          "label": "Voir les commandes",
+          "help": "Tableau en direct, historique et notifications."
+        },
+        "handle": {
+          "label": "Traiter les commandes",
+          "help": "Accepter, refuser, changer le statut, encaisser, changer de table."
+        },
+        "settings": {
+          "label": "Réglages des commandes",
+          "help": "Activer les commandes en ligne, rayon GPS."
+        }
+      },
+      "menu": {
+        "read": {
+          "label": "Voir le menu",
+          "help": "Articles, catégories et étiquettes."
+        },
+        "availability": {
+          "label": "Épuisé / de retour",
+          "help": "Marquer un article épuisé ou de retour."
+        },
+        "edit": {
+          "label": "Modifier le menu",
+          "help": "Ajouter, modifier, réordonner et supprimer articles, catégories et étiquettes."
+        }
+      },
+      "tables": {
+        "read": {
+          "label": "Voir les tables",
+          "help": "Plan de salle, tables et statistiques QR."
+        },
+        "edit": {
+          "label": "Modifier les tables",
+          "help": "Zones, tables et plan de salle."
+        },
+        "qr": {
+          "label": "Codes QR",
+          "help": "Télécharger, imprimer et créer de nouveaux codes."
+        }
+      },
+      "website": {
+        "read": {
+          "label": "Voir le site",
+          "help": "Ouvrir l'éditeur du site (lecture seule)."
+        },
+        "edit": {
+          "label": "Modifier le site",
+          "help": "Changer le brouillon."
+        },
+        "publish": {
+          "label": "Publier le site",
+          "help": "Mettre le brouillon en ligne."
+        }
+      },
+      "settings": {
+        "cafe": {
+          "label": "Infos du café",
+          "help": "Nom, adresse, contact, devise, couleur."
+        },
+        "hours": {
+          "label": "Horaires",
+          "help": "Modifier les horaires d'ouverture."
+        },
+        "display": {
+          "label": "Affichage du menu",
+          "help": "Commande en ligne ou menu seul, liste ou livre."
+        },
+        "languages": {
+          "label": "Langues",
+          "help": "Langues du menu et demandes de langue."
+        }
+      },
+      "staff": {
+        "manage": {
+          "label": "Équipe",
+          "help": "Membres, rôles et créneaux (propriétaire uniquement)."
+        }
+      }
+    },
+    "builtin": {
+      "owner": "Propriétaire",
+      "manager": "Gérant",
+      "waiter": "Serveur"
+    }
   }
 }

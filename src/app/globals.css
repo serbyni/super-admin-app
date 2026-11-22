@@ -196,7 +196,9 @@
   --text-icon-3xl: 48px;
   --text-icon-3xl--line-height: 1;
 
-  /* Layout widths — max-w-card-sm, max-w-card-md (use these instead of max-w-lg / max-w-xl) */
+  /* Layout widths — max-w-card-sm, max-w-card-md (use these instead of max-w-lg / max-w-xl);
+     max-w-cell: wrapping content (chips) inside a table cell */
+  --container-cell: 20rem;
   --container-card-sm: 32rem;
   --container-card-md: 36rem;
 

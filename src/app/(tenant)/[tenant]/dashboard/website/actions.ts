@@ -1,6 +1,6 @@
 "use server";
 
-import { requireTenantOwner } from "@/lib/auth/guards";
+import { ensureCan } from "@/lib/access/server";
 import { msg } from "@/i18n/msg";
 import { inputField, isDataError } from "@/lib/data/errors";
 import { serverApi } from "@/lib/data/server-api";
@@ -31,13 +31,15 @@ async function save(slug: string, input: unknown): Promise<WebsiteResult> {
 
 /** Saves the draft (customers don't see it). Owner only (checked here and in SQL). */
 export async function saveWebsiteAction(slug: string, doc: unknown): Promise<WebsiteResult> {
-  await requireTenantOwner(slug);
+  const gate = await ensureCan(slug, "website.edit");
+  if (!gate.ok) return failed(gate.message);
   return save(slug, doc);
 }
 
 /** Saves what is on screen, then publishes it. */
 export async function publishWebsiteAction(slug: string, doc: unknown): Promise<WebsiteResult> {
-  await requireTenantOwner(slug);
+  const gate = await ensureCan(slug, "website.publish");
+  if (!gate.ok) return failed(gate.message);
   const saved = await save(slug, doc);
   if (!saved.ok) return saved;
   try {
@@ -51,7 +53,8 @@ export async function publishWebsiteAction(slug: string, doc: unknown): Promise<
 
 /** Drops unpublished changes; returns the restored draft (null = back to defaults). */
 export async function discardWebsiteAction(slug: string): Promise<WebsiteResult> {
-  await requireTenantOwner(slug);
+  const gate = await ensureCan(slug, "website.edit");
+  if (!gate.ok) return failed(gate.message);
   try {
     const api = serverApi().website;
     await api.discardDraft(slug);

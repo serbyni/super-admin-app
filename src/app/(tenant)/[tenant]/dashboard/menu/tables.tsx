@@ -6,6 +6,7 @@ import { ConfirmDialog } from "@/components/ui/dialog";
 import { Icon } from "@/components/ui/icon";
 import { SortableTable, type SortableColumn } from "@/components/ui/sortable-table";
 import { useToast } from "@/components/ui/toast";
+import { useCan } from "@/components/access/access-provider";
 import { useLanguageLabel } from "@/i18n/use-language-label";
 import { useMsg } from "@/i18n/use-msg";
 import type { MenuCategory } from "@/lib/menu/schema";
@@ -109,7 +110,7 @@ function StatusButton({
   );
 }
 
-function RowActions({
+export function RowActions({
   editLabel,
   deleteLabel,
   deleteDisabledReason,
@@ -150,7 +151,7 @@ function RowActions({
   );
 }
 
-function AddButton({ label, onClick }: { label: string; onClick: () => void }) {
+export function AddButton({ label, onClick }: { label: string; onClick: () => void }) {
   return (
     <button
       type="button"
@@ -179,6 +180,7 @@ export function CategoriesTab({
 }) {
   const t = useTranslations("menu");
   const { pending, errors, setErrors, run, reorder } = useRun();
+  const edit = useCan()("menu.edit");
   const [form, setForm] = useState<MenuCategory | "new" | null>(null);
   const [confirm, setConfirm] = useState<MenuCategory | null>(null);
   const pct = (x: number) => `${Math.round(x * 100)} %`;
@@ -227,7 +229,7 @@ export function CategoriesTab({
         <StatusButton
           visible={c.isVisible}
           label={t("toggleVisible", { name: c.name })}
-          disabled={pending}
+          disabled={pending || !edit}
           onClick={() =>
             run(() =>
               saveCategoryAction(
@@ -265,17 +267,20 @@ export function CategoriesTab({
 
   return (
     <div className="flex flex-col gap-md">
-      <AddButton
-        label={t("newCategory")}
-        onClick={() => {
-          setErrors({});
-          setForm("new");
-        }}
-      />
+      {edit ? (
+        <AddButton
+          label={t("newCategory")}
+          onClick={() => {
+            setErrors({});
+            setForm("new");
+          }}
+        />
+      ) : null}
       {categories.length ? (
         <SortableTable
           rows={categories}
-          columns={columns}
+          columns={edit ? columns : columns.filter((c) => c.key !== "actions")}
+          readOnly={!edit}
           hint={t("dragCategories")}
           reorderLabel={t("reorderColumn")}
           handleLabel={(c) => t("reorder", { name: c.name })}
@@ -338,6 +343,7 @@ export function TagsTab({
   const t = useTranslations("menu");
   const tt = useTranslations("tags");
   const { pending, errors, setErrors, run, reorder } = useRun();
+  const edit = useCan()("menu.edit");
   const [form, setForm] = useState<MenuTagRow | "new" | null>(null);
   const [confirm, setConfirm] = useState<MenuTagRow | null>(null);
   const name = (tag: MenuTagRow) => tagName(tag, languages.main, (k) => tt(k));
@@ -384,7 +390,7 @@ export function TagsTab({
         <StatusButton
           visible={tag.isVisible}
           label={t("toggleVisible", { name: name(tag) })}
-          disabled={pending}
+          disabled={pending || !edit}
           onClick={() =>
             run(() =>
               saveTagAction(slug, tag.id, {
@@ -418,17 +424,20 @@ export function TagsTab({
 
   return (
     <div className="flex flex-col gap-md">
-      <AddButton
-        label={t("tagNew")}
-        onClick={() => {
-          setErrors({});
-          setForm("new");
-        }}
-      />
+      {edit ? (
+        <AddButton
+          label={t("tagNew")}
+          onClick={() => {
+            setErrors({});
+            setForm("new");
+          }}
+        />
+      ) : null}
       {tags.length ? (
         <SortableTable
           rows={tags}
-          columns={columns}
+          columns={edit ? columns : columns.filter((c) => c.key !== "actions")}
+          readOnly={!edit}
           hint={t("dragTags")}
           reorderLabel={t("reorderColumn")}
           handleLabel={(tag) => t("reorder", { name: name(tag) })}

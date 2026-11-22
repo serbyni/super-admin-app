@@ -7,7 +7,10 @@ import { Suspense } from "react";
 import { PageHeader, TenantShell } from "@/components/tenant/tenant-shell";
 import { Icon } from "@/components/ui/icon";
 import { cafeFieldOptions } from "@/config/cafe-options";
-import { requireTenantOwner } from "@/lib/auth/guards";
+import { can } from "@/lib/access/ability";
+import type { Permission } from "@/lib/access/permissions";
+import { requireTenantAccess } from "@/lib/access/server";
+import { RolesTab } from "./roles-tab";
 import { tenantSettings } from "@/lib/auth/routes";
 import { socialHandle } from "@/lib/cafes/contact";
 import { cafeHost } from "@/lib/cafes/slug";
@@ -29,13 +32,20 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: (await getTranslations("settings"))("metaTitle") };
 }
 
+/** Tabs and the permission each needs (Profile = your own account, always there). */
 const TABS = [
-  { key: "cafe", label: "tabCafe", icon: "storefront" },
-  { key: "hours", label: "tabHours", icon: "schedule" },
-  { key: "display", label: "tabDisplay", icon: "auto_stories" },
-  { key: "languages", label: "tabLanguages", icon: "translate" },
-  { key: "profile", label: "tabProfile", icon: "person" },
-] as const;
+  { key: "cafe", label: "tabCafe", icon: "storefront", perm: "settings.cafe" },
+  { key: "hours", label: "tabHours", icon: "schedule", perm: "settings.hours" },
+  { key: "display", label: "tabDisplay", icon: "auto_stories", perm: "settings.display" },
+  { key: "languages", label: "tabLanguages", icon: "translate", perm: "settings.languages" },
+  { key: "roles", label: "tabRoles", icon: "badge", perm: "staff.manage" },
+  { key: "profile", label: "tabProfile", icon: "person", perm: null },
+] as const satisfies readonly {
+  key: string;
+  label: string;
+  icon: string;
+  perm: Permission | null;
+}[];
 
 async function Settings({
   params,
@@ -45,11 +55,12 @@ async function Settings({
   searchParams: PageProps<"/[tenant]/dashboard/settings">["searchParams"];
 }) {
   const { tenant } = await params;
-  const { user } = await requireTenantOwner(tenant);
+  const { user, ability } = await requireTenantAccess(tenant);
   const locale = await applyOwnerLocale();
   const t = await getTranslations("settings");
   const { tab: rawTab, email: emailResult } = await searchParams;
-  const tab = TABS.find((t) => t.key === rawTab) ?? TABS[0];
+  const tabs = TABS.filter((x) => x.perm === null || can(ability, x.perm));
+  const tab = tabs.find((t) => t.key === rawTab) ?? tabs[0];
   const api = serverApi();
   const cafe = await api.cafes.mine(tenant);
   if (!cafe) notFound();
@@ -63,12 +74,12 @@ async function Settings({
         aria-label={t("title")}
         className="mb-lg flex gap-xs overflow-x-auto border-b border-surface-container-high"
       >
-        {TABS.map((tab_) => {
+        {tabs.map((tab_) => {
           const active = tab_.key === tab.key;
           return (
             <Link
               key={tab_.key}
-              href={tab_.key === "cafe" ? base : `${base}?tab=${tab_.key}`}
+              href={tab_.key === tabs[0].key ? base : `${base}?tab=${tab_.key}`}
               aria-current={active ? "page" : undefined}
               className={`-mb-px inline-flex shrink-0 items-center gap-xs border-b-2 px-md py-sm text-body-sm font-semibold whitespace-nowrap transition-colors ${
                 active
@@ -125,6 +136,8 @@ async function Settings({
         />
       ) : tab.key === "languages" ? (
         <LanguagesTabLoader slug={tenant} locale={locale} />
+      ) : tab.key === "roles" ? (
+        <RolesTabLoader slug={tenant} />
       ) : (
         <ProfileTab
           emailResult={emailResult}
@@ -154,4 +167,10 @@ async function LanguagesTabLoader({ slug, locale }: { slug: string; locale: stri
     languages.requests.map((r) => [r.id, formatDateTime(r.createdAt, locale)]),
   );
   return <LanguagesTab slug={slug} languages={languages} dates={dates} />;
+}
+
+async function RolesTabLoader({ slug }: { slug: string }) {
+  const api = serverApi();
+  const [roles, shifts] = await Promise.all([api.access.roles(slug), api.access.shifts(slug)]);
+  return <RolesTab slug={slug} roles={roles} shifts={shifts} />;
 }

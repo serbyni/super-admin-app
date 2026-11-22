@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 import { CafePageLink } from "@/components/cafe/cafe-page-link";
 import { StatsSection, StatsSkeleton } from "@/components/stats/stats-section";
@@ -9,7 +9,9 @@ import { PageHeader, TenantShell } from "@/components/tenant/tenant-shell";
 import { Icon } from "@/components/ui/icon";
 import { applyOwnerLocale } from "@/i18n/owner-locale";
 import { languageLabel } from "@/lib/i18n/languages";
-import { requireTenantOwner } from "@/lib/auth/guards";
+import { can } from "@/lib/access/ability";
+import { sectionHref, visibleSections } from "@/lib/access/permissions";
+import { requireTenantAccess } from "@/lib/access/server";
 import { tenantDashboard } from "@/lib/auth/routes";
 import { cafePalette } from "@/lib/cafes/theme";
 import { serverApi } from "@/lib/data/server-api";
@@ -33,7 +35,23 @@ async function Dashboard({
 }) {
   const { tenant } = await params;
   // Page-level check too: layouts are not re-run on every client navigation.
-  const { user } = await requireTenantOwner(tenant);
+  const { user, ability, permissions } = await requireTenantAccess(tenant);
+  // No dashboard for this role: open the first section it can see (or "no access").
+  if (!can(ability, "dashboard.read")) {
+    const first = visibleSections(permissions).find((x) => x !== "dashboard");
+    redirect(
+      first && first !== "settings"
+        ? sectionHref(tenantDashboard(tenant), first)
+        : `${tenantDashboard(tenant).replace(/\/$/, "")}/no-access`,
+    );
+  }
+  const may = {
+    orders: can(ability, "orders.read"),
+    menu: can(ability, "menu.read"),
+    tables: can(ability, "tables.read"),
+    website: can(ability, "website.read"),
+    staff: can(ability, "staff.manage"),
+  };
   const locale = await applyOwnerLocale();
   const [t, tn, tc] = await Promise.all([
     getTranslations("dashboard"),
@@ -45,28 +63,38 @@ async function Dashboard({
   const cafe = await api.cafes.mine(tenant);
   if (!cafe) notFound();
   const c = cafePalette(cafe.seed);
+  // Only what this role may read (the database refuses the rest anyway).
   const [menu, floor, site] = await Promise.all([
-    api.menu.get(tenant),
-    api.tables.floor(tenant),
-    api.website.get(tenant),
+    may.menu ? api.menu.get(tenant) : null,
+    may.tables ? api.tables.floor(tenant) : null,
+    may.website ? api.website.get(tenant) : null,
   ]);
-  const today = await api.orders.board(tenant, "day").catch(() => null);
+  const today = may.orders ? await api.orders.board(tenant, "day").catch(() => null) : null;
   const totals = dayTotals(today?.orders ?? []);
   const newOrders = (today?.orders ?? []).filter((o) => o.status === "new").length;
   const base = tenantDashboard(cafe.slug).replace(/\/$/, "");
-  const visibleCats = new Set(menu.categories.filter((x) => x.isVisible).map((x) => x.id));
-  const unpriced = menu.items.filter((i) => i.price === null).length;
-  const soldOut = menu.items.filter((i) => !i.isAvailable).length;
-  const scans = floor.menu.scans30d + floor.tables.reduce((n, t) => n + t.scans30d, 0);
-  const websiteState = !site.published
+  const items = menu?.items ?? [];
+  const visibleCats = new Set(menu?.categories.filter((x) => x.isVisible).map((x) => x.id));
+  const unpriced = items.filter((i) => i.price === null).length;
+  const soldOut = items.filter((i) => !i.isAvailable).length;
+  const scans = floor ? floor.menu.scans30d + floor.tables.reduce((n, t) => n + t.scans30d, 0) : 0;
+  const websiteState = !site?.published
     ? "notPublished"
     : JSON.stringify(site.draft) !== JSON.stringify(site.published)
       ? "unpublishedChanges"
       : "published";
   /** Modules not built yet. */
-  const soon = [{ icon: "group", title: tn("staff"), body: t("staffBody") }];
-  const modules: { href: string; icon: string; title: string; stats: Stat[]; cta: string }[] = [
+  const soon = may.staff ? [{ icon: "group", title: tn("staff"), body: t("staffBody") }] : [];
+  const allModules: {
+    show: boolean;
+    href: string;
+    icon: string;
+    title: string;
+    stats: Stat[];
+    cta: string;
+  }[] = [
     {
+      show: may.orders,
       href: `${base}/orders`,
       icon: "receipt_long",
       title: tn("orders"),
@@ -81,28 +109,31 @@ async function Dashboard({
             ],
     },
     {
+      show: may.menu,
       href: `${base}/menu`,
       icon: "restaurant_menu",
       title: tn("menu"),
-      cta: menu.items.length ? t("manageMenu") : t("createMenu"),
+      cta: items.length ? t("manageMenu") : t("createMenu"),
       stats: [
-        { label: t("items"), value: menu.items.length },
+        { label: t("items"), value: items.length },
         { label: t("soldOut"), value: soldOut, tone: soldOut ? "warn" : undefined },
         { label: t("noPrice"), value: unpriced, tone: unpriced ? "warn" : undefined },
       ],
     },
     {
+      show: may.tables,
       href: `${base}/tables`,
       icon: "table_restaurant",
       title: tn("tables"),
-      cta: floor.tables.length ? t("tablesQr") : t("addTables"),
+      cta: floor?.tables.length ? t("tablesQr") : t("addTables"),
       stats: [
-        { label: t("tables"), value: floor.tables.length },
-        { label: t("areas"), value: floor.areas.length },
+        { label: t("tables"), value: floor?.tables.length ?? 0 },
+        { label: t("areas"), value: floor?.areas.length ?? 0 },
         { label: t("scans30d"), value: scans },
       ],
     },
     {
+      show: may.website,
       href: `${base}/website`,
       icon: "web",
       title: tn("website"),
@@ -114,16 +145,25 @@ async function Dashboard({
           tone: websiteState === "published" ? undefined : "warn",
           wide: true,
         },
-        {
-          label: t("featured"),
-          // Same rule as the website: featured items customers can see (visible, priced).
-          value: menu.items.filter(
-            (i) => i.isFeatured && i.isVisible && i.price !== null && visibleCats.has(i.categoryId),
-          ).length,
-        },
+        ...(menu
+          ? [
+              {
+                label: t("featured"),
+                // Same rule as the website: featured items customers can see (visible, priced).
+                value: items.filter(
+                  (i) =>
+                    i.isFeatured &&
+                    i.isVisible &&
+                    i.price !== null &&
+                    visibleCats.has(i.categoryId),
+                ).length,
+              },
+            ]
+          : []),
       ],
     },
   ];
+  const modules = allModules.filter((m) => m.show);
 
   return (
     <TenantShell cafe={cafe} email={user.email} active="dashboard">
@@ -205,26 +245,28 @@ async function Dashboard({
           ))}
         </div>
 
-        <div className="grid grid-cols-1 gap-md sm:grid-cols-2">
-          {soon.map((n) => (
-            <div
-              key={n.title}
-              className="flex items-center gap-md rounded-xl bg-surface-container-lowest p-md opacity-80 shadow-sm"
-            >
-              <Icon name={n.icon} className="text-icon-xl text-outline" />
+        {soon.length > 0 && (
+          <div className="grid grid-cols-1 gap-md sm:grid-cols-2">
+            {soon.map((n) => (
+              <div
+                key={n.title}
+                className="flex items-center gap-md rounded-xl bg-surface-container-lowest p-md opacity-80 shadow-sm"
+              >
+                <Icon name={n.icon} className="text-icon-xl text-outline" />
 
-              <span className="min-w-0 flex-1">
-                <span className="block font-semibold text-on-surface">{n.title}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block font-semibold text-on-surface">{n.title}</span>
 
-                <span className="block text-body-sm text-on-surface-variant">{n.body}</span>
-              </span>
+                  <span className="block text-body-sm text-on-surface-variant">{n.body}</span>
+                </span>
 
-              <span className="text-caption font-semibold text-outline uppercase">
-                {tc("soon")}
-              </span>
-            </div>
-          ))}
-        </div>
+                <span className="text-caption font-semibold text-outline uppercase">
+                  {tc("soon")}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
 
         <Suspense fallback={<StatsSkeleton />}>
           <StatsSection

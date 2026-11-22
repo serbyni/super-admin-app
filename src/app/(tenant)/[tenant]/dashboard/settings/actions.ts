@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireTenantOwner } from "@/lib/auth/guards";
+import { ensureCan } from "@/lib/access/server";
 import { tenantDashboard } from "@/lib/auth/routes";
 import { inputField, isDataError } from "@/lib/data/errors";
 import { serverApi } from "@/lib/data/server-api";
@@ -16,13 +16,14 @@ const done = (prev: FormState, message: string): FormState => ({
   message,
 });
 
-/** Café tab. Only the café's owner (checked here and again in update_my_cafe). */
+/** Café tab: members with settings.cafe (checked here and again in update_my_cafe). */
 export async function saveCafeAction(
   slug: string,
   prev: FormState,
   form: FormData,
 ): Promise<FormState> {
-  await requireTenantOwner(slug);
+  const gate = await ensureCan(slug, "settings.cafe");
+  if (!gate.ok) return { errors: { form: gate.message } };
   const parsed = cafeSettingsSchema.safeParse(values(form));
   if (!parsed.success) return { errors: zodErrors(parsed.error) };
   const d = parsed.data;
@@ -60,7 +61,8 @@ export async function setLanguagesAction(
   slug: string,
   locales: string[],
 ): Promise<LanguagesResult> {
-  await requireTenantOwner(slug);
+  const gate = await ensureCan(slug, "settings.languages");
+  if (!gate.ok) return { ok: false, message: gate.message };
   if (
     !Array.isArray(locales) ||
     locales.some((l) => typeof l !== "string" || !/^[a-z]{2}$/.test(l))
@@ -82,7 +84,8 @@ export async function requestLanguageAction(
   locale: string,
   note: string,
 ): Promise<LanguagesResult> {
-  await requireTenantOwner(slug);
+  const gate = await ensureCan(slug, "settings.languages");
+  if (!gate.ok) return { ok: false, message: gate.message };
   if (!/^[a-z]{2}$/.test(locale) || note.length > 300)
     return { ok: false, message: msg("requestInvalid") };
   try {
@@ -101,7 +104,8 @@ export async function setOpeningHoursAction(
   slug: string,
   hours: unknown,
 ): Promise<LanguagesResult> {
-  await requireTenantOwner(slug);
+  const gate = await ensureCan(slug, "settings.hours");
+  if (!gate.ok) return { ok: false, message: gate.message };
   const parsed = hours === null ? null : hoursSchema.safeParse(hours);
   if (parsed && !parsed.success) return { ok: false, message: msg("hoursInvalid") };
   try {
@@ -120,7 +124,8 @@ export async function setMenuDisplayAction(
   mode: unknown,
   display: unknown,
 ): Promise<LanguagesResult> {
-  await requireTenantOwner(slug);
+  const gate = await ensureCan(slug, "settings.display");
+  if (!gate.ok) return { ok: false, message: gate.message };
   if ((mode !== "order" && mode !== "menu_only") || (display !== "list" && display !== "book"))
     return { ok: false, message: msg("checkForm") };
   try {

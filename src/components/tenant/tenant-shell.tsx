@@ -1,6 +1,10 @@
 import { getTranslations } from "next-intl/server";
 import { Suspense, type ReactNode } from "react";
 import { serverApi } from "@/lib/data/server-api";
+import { AccessProvider } from "@/components/access/access-provider";
+import { visibleSections, type Section } from "@/lib/access/permissions";
+import { roleLabel } from "@/lib/access/schema";
+import { getTenantAccess } from "@/lib/access/server";
 import { AppShell, type ShellNavItem } from "@/components/shell/app-shell";
 import { BrandMark } from "@/components/ui/brand-mark";
 import { tenantDashboard } from "@/lib/auth/routes";
@@ -26,19 +30,24 @@ async function NewOrdersBadge({ slug }: { slug: string }) {
   );
 }
 
-/** Café dashboard sections. `soon` = not built yet (shown, not clickable). */
+/**
+ * Café dashboard sections the member may see (`sections`, from their role). `soon` = not built
+ * yet (shown, not clickable).
+ */
 function cafeNav(
   slug: string,
   t: (key: NavKey | "off") => string,
+  sections: readonly Section[],
   menuOnly = false,
 ): ShellNavItem[] {
   const base = tenantDashboard(slug).replace(/\/$/, "");
-  return [
-    { href: base, icon: "dashboard", label: t("dashboard") },
-    { href: `${base}/website`, icon: "web", label: t("website") },
-    { href: `${base}/menu`, icon: "restaurant_menu", label: t("menu") },
-    { href: `${base}/tables`, icon: "table_restaurant", label: t("tables") },
+  const all: (ShellNavItem & { section: Section })[] = [
+    { section: "dashboard", href: base, icon: "dashboard", label: t("dashboard") },
+    { section: "website", href: `${base}/website`, icon: "web", label: t("website") },
+    { section: "menu", href: `${base}/menu`, icon: "restaurant_menu", label: t("menu") },
+    { section: "tables", href: `${base}/tables`, icon: "table_restaurant", label: t("tables") },
     {
+      section: "orders",
       href: `${base}/orders`,
       icon: "receipt_long",
       label: t("orders"),
@@ -52,9 +61,10 @@ function cafeNav(
         </Suspense>
       ),
     },
-    { href: `${base}/staff`, icon: "group", label: t("staff"), soon: true },
-    { href: `${base}/settings`, icon: "settings", label: t("settings") },
+    { section: "staff", href: `${base}/staff`, icon: "group", label: t("staff"), soon: true },
+    { section: "settings", href: `${base}/settings`, icon: "settings", label: t("settings") },
   ];
+  return all.filter((n) => sections.includes(n.section));
 }
 type NavKey = "dashboard" | "website" | "menu" | "tables" | "orders" | "staff" | "settings";
 
@@ -73,13 +83,17 @@ export async function TenantShell({
   active: string;
   children: ReactNode;
 }) {
-  const [tn, ts, tc] = await Promise.all([
+  const [tn, ts, tc, tr, access] = await Promise.all([
     getTranslations("nav"),
     getTranslations("shell"),
     getTranslations("common"),
+    getTranslations("roles.builtin"),
+    getTenantAccess(cafe.slug),
   ]);
+  const member = access && access !== "signed-out" ? access : null;
+  const permissions = member?.permissions ?? [];
   const c = cafePalette(cafe.seed);
-  const nav = cafeNav(cafe.slug, tn, cafe.menuMode === "menu_only");
+  const nav = cafeNav(cafe.slug, tn, visibleSections(permissions), cafe.menuMode === "menu_only");
   const activeHref = nav.find((n) => n.href.endsWith(`/${active}`))?.href ?? nav[0].href;
   return (
     <AppShell
@@ -115,13 +129,19 @@ export async function TenantShell({
           {email ? (
             <span className="truncate text-caption text-on-surface-variant">{email}</span>
           ) : null}
+          {member && !member.isOwner && member.roleName ? (
+            <span className="flex items-center gap-xs truncate text-caption text-on-surface-variant">
+              <span aria-hidden="true">•</span>{" "}
+              {roleLabel({ key: member.roleKey, name: member.roleName }, (k) => tr(k))}
+            </span>
+          ) : null}
           <span className="flex items-center gap-xs text-caption text-outline">
             <BrandMark className="h-4 w-4" /> {ts("poweredBy")}
           </span>
         </div>
       }
     >
-      {children}
+      <AccessProvider permissions={permissions}>{children}</AccessProvider>
     </AppShell>
   );
 }

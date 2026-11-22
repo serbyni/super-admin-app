@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { CafePageLink } from "@/components/cafe/cafe-page-link";
 import { PageHeader, TenantShell } from "@/components/tenant/tenant-shell";
-import { requireTenantOwner } from "@/lib/auth/guards";
+import { requireTenantAccess } from "@/lib/access/server";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
 import { cafePalette } from "@/lib/cafes/theme";
 import { serverApi } from "@/lib/data/server-api";
@@ -21,7 +21,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 async function Website({ params }: { params: PageProps<"/[tenant]/dashboard/website">["params"] }) {
   const { tenant } = await params;
-  const { user } = await requireTenantOwner(tenant);
+  const { user } = await requireTenantAccess(tenant, "website.read");
   await applyOwnerLocale();
   const t = await getTranslations("website");
   const api = serverApi();

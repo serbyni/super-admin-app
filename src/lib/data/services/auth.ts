@@ -153,6 +153,15 @@ export class AuthService {
     if (me?.status === "active" && me.cafeSlug) {
       return target && tenantSlugOf(target) === me.cafeSlug ? target : tenantDashboard(me.cafeSlug);
     }
+    if (!me) {
+      // Staff (no owner account): the café they belong to.
+      const { data } = await (await this.db()).rpc("get_my_cafe_slugs");
+      const slugs = data ?? [];
+      if (slugs.length)
+        return target && slugs.includes(tenantSlugOf(target) ?? "")
+          ? target
+          : tenantDashboard(slugs[0]);
+    }
     return pathForStatus(me?.status ?? null);
   }
 }

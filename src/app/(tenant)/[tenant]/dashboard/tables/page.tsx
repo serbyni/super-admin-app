@@ -11,7 +11,7 @@ import { formatLocale } from "@/config/locale";
 import { formatPrice } from "@/lib/menu/schema";
 import { tablesSales } from "@/lib/stats/page-schemas";
 import { delta, resolvePeriod, todayIn } from "@/lib/stats/period";
-import { requireTenantOwner } from "@/lib/auth/guards";
+import { requireTenantAccess } from "@/lib/access/server";
 import { tenantDashboard } from "@/lib/auth/routes";
 import { cafePalette } from "@/lib/cafes/theme";
 import { serverApi } from "@/lib/data/server-api";
@@ -33,7 +33,7 @@ async function Tables({
   const { tenant } = await params;
   const sp = await searchParams;
   const { area } = sp;
-  const { user } = await requireTenantOwner(tenant);
+  const { user } = await requireTenantAccess(tenant, "tables.read");
   const locale = await applyOwnerLocale();
   const [t, ts, tp] = await Promise.all([
     getTranslations("tables"),

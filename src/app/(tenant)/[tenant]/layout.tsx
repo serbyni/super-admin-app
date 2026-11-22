@@ -1,9 +1,9 @@
 import { Suspense } from "react";
 import { OwnerIntl } from "@/i18n/owner-intl";
-import { requireTenantOwner } from "@/lib/auth/guards";
+import { requireTenantAccess } from "@/lib/access/server";
 
 /**
- * (tenant) — /<slug>/… pages of ONE café, for its ACTIVE owner only. Signed out →
+ * (tenant) — /<slug>/… pages of ONE café, for its members (owner: active account; staff: per role and shift). Signed out →
  * /login?next=…; anyone else (other owners, pending owners, admins) → their own home.
  */
 async function TenantGate({
@@ -14,7 +14,7 @@ async function TenantGate({
   children: React.ReactNode;
 }) {
   const { tenant } = await params;
-  await requireTenantOwner(tenant);
+  await requireTenantAccess(tenant);
   // The owner's dashboard language (Settings → Profile), right-to-left in Arabic.
   return <OwnerIntl>{children}</OwnerIntl>;
 }
