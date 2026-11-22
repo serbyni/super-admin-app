@@ -450,7 +450,7 @@
     "colTag": "الوسم",
     "colTranslations": "الترجمات",
     "colItems": "الأصناف",
-    "colSales": "المبيعات (30 يومًا)",
+    "colSales": "حصة المبيعات",
     "colStatus": "الحالة",
     "colActions": "الإجراءات",
     "categoryHasItems": "انقل أو احذف {count, plural, one {صنفها} two {صنفيها} few {أصنافها الـ#} many {أصنافها الـ#} other {أصنافها الـ#}} أولًا",

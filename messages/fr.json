@@ -450,7 +450,7 @@
     "colTag": "Étiquette",
     "colTranslations": "Traductions",
     "colItems": "Articles",
-    "colSales": "Ventes (30 j)",
+    "colSales": "Part des ventes",
     "colStatus": "Statut",
     "colActions": "Actions",
     "categoryHasItems": "Déplacez ou supprimez d'abord {count, plural, one {son article} other {ses # articles}}",

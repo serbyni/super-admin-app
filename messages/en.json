@@ -450,7 +450,7 @@
     "colTag": "Tag",
     "colTranslations": "Translations",
     "colItems": "Items",
-    "colSales": "Sales (30 d)",
+    "colSales": "Share of sales",
     "colStatus": "Status",
     "colActions": "Actions",
     "categoryHasItems": "Move or remove its {count, plural, one {# item} other {# items}} first",

@@ -62,18 +62,35 @@ async function MenuPage({
   const bestName = best && menu.categories.find((c) => c.id === best.categoryId)?.name;
   const languages = { main: langs.main, others: langs.offered.filter((l) => l !== langs.main) };
   const sales = menuSales(stats);
+  // Tabs keep the chosen period (statistics above them).
+  const periodQuery = new URLSearchParams(
+    Object.entries({ period: sp.period, from: sp.from, to: sp.to }).filter(
+      (e): e is [string, string] => typeof e[1] === "string",
+    ),
+  );
+  const tabHref = (v: string) => {
+    const q = new URLSearchParams(periodQuery);
+    if (v !== "items") q.set("view", v);
+    return q.size ? `${base}?${q}` : base;
+  };
   const tabs = [
-    { key: "items", href: base, icon: "restaurant_menu", label: t("tabItems"), count: items },
+    {
+      key: "items",
+      href: tabHref("items"),
+      icon: "restaurant_menu",
+      label: t("tabItems"),
+      count: items,
+    },
     {
       key: "categories",
-      href: `${base}?view=categories`,
+      href: tabHref("categories"),
       icon: "category",
       label: t("tabCategories"),
       count: menu.categories.length,
     },
     {
       key: "tags",
-      href: `${base}?view=tags`,
+      href: tabHref("tags"),
       icon: "sell",
       label: t("tabTags"),
       count: menu.tags.length,
@@ -91,42 +108,16 @@ async function MenuPage({
         }
         actions={<CafePageLink slug={cafe.slug} />}
       />
-      <nav
-        aria-label={t("title")}
-        className="mb-lg flex gap-xs overflow-x-auto border-b border-surface-container-high"
-      >
-        {tabs.map((tab) => (
-          <Link
-            key={tab.key}
-            href={tab.href}
-            aria-current={view === tab.key ? "page" : undefined}
-            className={`-mb-px inline-flex shrink-0 items-center gap-xs border-b-2 px-md py-sm text-body-sm font-semibold whitespace-nowrap ${
-              view === tab.key
-                ? "border-primary text-primary"
-                : "border-transparent text-on-surface-variant hover:text-on-surface"
-            }`}
-          >
-            <Icon name={tab.icon} className="text-icon-md" />
-            {tab.label}
-            <span className="rounded-full bg-surface-container px-sm text-caption">
-              {tab.count}
-            </span>
-          </Link>
-        ))}
-      </nav>
-      {view === "categories" ? (
-        <CategoriesTab
-          slug={cafe.slug}
-          categories={menu.categories}
-          languages={languages}
-          salesShare={sales.categoryShare}
-        />
-      ) : view === "tags" ? (
-        <TagsTab slug={cafe.slug} tags={menu.tags} languages={languages} />
-      ) : null}
-      {view === "items" && items ? (
+      {items ? (
         <section aria-label={ts("label")} className="mb-lg flex flex-col gap-sm">
-          <PeriodBar period={period} today={today} base={base} locale={locale} fallback="30d" />
+          <PeriodBar
+            period={period}
+            today={today}
+            base={base}
+            locale={locale}
+            fallback="30d"
+            keep={view === "items" ? {} : { view }}
+          />
           <StatStrip>
             <KpiTile
               label={ts("itemsSold")}
@@ -159,6 +150,39 @@ async function MenuPage({
             />
           </StatStrip>
         </section>
+      ) : null}
+      <nav
+        aria-label={t("title")}
+        className="mb-lg flex gap-xs overflow-x-auto border-b border-surface-container-high"
+      >
+        {tabs.map((tab) => (
+          <Link
+            key={tab.key}
+            href={tab.href}
+            aria-current={view === tab.key ? "page" : undefined}
+            className={`-mb-px inline-flex shrink-0 items-center gap-xs border-b-2 px-md py-sm text-body-sm font-semibold whitespace-nowrap ${
+              view === tab.key
+                ? "border-primary text-primary"
+                : "border-transparent text-on-surface-variant hover:text-on-surface"
+            }`}
+          >
+            <Icon name={tab.icon} className="text-icon-md" />
+            {tab.label}
+            <span className="rounded-full bg-surface-container px-sm text-caption">
+              {tab.count}
+            </span>
+          </Link>
+        ))}
+      </nav>
+      {view === "categories" ? (
+        <CategoriesTab
+          slug={cafe.slug}
+          categories={menu.categories}
+          languages={languages}
+          salesShare={sales.categoryShare}
+        />
+      ) : view === "tags" ? (
+        <TagsTab slug={cafe.slug} tags={menu.tags} languages={languages} />
       ) : null}
       {view === "items" ? (
         <MenuManager
