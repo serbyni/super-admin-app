@@ -208,13 +208,18 @@ export function OrdersBoard({
             <div>
               <p className="font-semibold text-on-surface">{t("accepting")}</p>
               <p className="text-caption text-on-surface-variant">
-                <OpeningText opening={board.ordering} /> ·{" "}
-                <Link
-                  href={`${tenantSettings(slug)}?tab=hours`}
-                  className="underline underline-offset-2"
-                >
-                  {t("hoursHint")}
-                </Link>
+                <OpeningText opening={board.ordering} />
+                {can("settings.hours") ? (
+                  <>
+                    {" · "}
+                    <Link
+                      href={`${tenantSettings(slug)}?tab=hours`}
+                      className="underline underline-offset-2"
+                    >
+                      {t("hoursHint")}
+                    </Link>
+                  </>
+                ) : null}
               </p>
             </div>
           </div>

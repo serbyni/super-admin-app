@@ -1421,6 +1421,11 @@
           "help": "Membres, rôles et créneaux (propriétaire uniquement)."
         }
       }
+    },
+    "builtin": {
+      "owner": "Propriétaire",
+      "manager": "Gérant",
+      "waiter": "Serveur"
     }
   }
 }

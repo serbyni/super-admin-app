@@ -80,3 +80,15 @@ export function daysLabel(
     )
     .join(", ");
 }
+
+/** Names the built-in roles are created with (SQL platform.seed_cafe_roles). */
+export const BUILTIN_ROLE_NAMES = { owner: "Owner", manager: "Manager", waiter: "Waiter" } as const;
+
+/** A built-in role keeps its translated name until the owner renames it. */
+export function roleLabel(
+  r: { key: string | null; name: string | null },
+  translate: (key: keyof typeof BUILTIN_ROLE_NAMES) => string,
+): string {
+  const k = r.key as keyof typeof BUILTIN_ROLE_NAMES | null;
+  return k && BUILTIN_ROLE_NAMES[k] === r.name ? translate(k) : (r.name ?? "");
+}

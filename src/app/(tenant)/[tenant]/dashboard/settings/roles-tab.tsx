@@ -17,7 +17,7 @@ import {
   withImplied,
   type Permission,
 } from "@/lib/access/permissions";
-import { daysLabel, type Role, type Shift } from "@/lib/access/schema";
+import { daysLabel, roleLabel, type Role, type Shift } from "@/lib/access/schema";
 import { AddButton, RowActions } from "../menu/tables";
 import {
   deleteRoleAction,
@@ -92,6 +92,7 @@ function Roles({ slug, roles }: { slug: string; roles: Role[] }) {
   const { pending, errors, setErrors, run, reorder } = useRun();
   const [form, setForm] = useState<RoleForm | null>(null);
   const [confirm, setConfirm] = useState<Role | null>(null);
+  const label = (r: Role) => roleLabel(r, (k) => t(`builtin.${k}`));
   const open = (f: RoleForm) => {
     setErrors({});
     setForm(f);
@@ -105,7 +106,7 @@ function Roles({ slug, roles }: { slug: string; roles: Role[] }) {
         <span className="flex flex-col">
           <span className="flex items-center gap-sm font-semibold text-on-surface">
             {r.isLocked ? <Icon name="lock" className="text-icon-md text-outline" /> : null}
-            {r.name}
+            {label(r)}
           </span>
           {r.description ? (
             <span className="text-caption text-on-surface-variant">{r.description}</span>
@@ -122,7 +123,7 @@ function Roles({ slug, roles }: { slug: string; roles: Role[] }) {
             {t("allRights")}
           </span>
         ) : (
-          <span className="flex flex-wrap gap-xs">
+          <span className="flex max-w-cell flex-wrap gap-xs whitespace-normal">
             {visibleSections(r.permissions)
               .filter(
                 (s) => s !== "settings" || r.permissions.some((p) => p.startsWith("settings.")),
@@ -155,36 +156,38 @@ function Roles({ slug, roles }: { slug: string; roles: Role[] }) {
         r.isLocked ? (
           <span className="text-caption text-outline">{t("locked")}</span>
         ) : (
-          <div className="flex items-start justify-end gap-xs">
-            <button
-              type="button"
+          <div className="flex items-center justify-end gap-xs">
+            <IconAction
+              icon="content_copy"
+              label={`${t("roleDuplicate")} ${label(r)}`}
               onClick={() =>
                 open({
                   id: null,
-                  name: t("roleCopy", { name: r.name }).slice(0, 40),
+                  name: t("roleCopy", { name: label(r) }).slice(0, 40),
                   description: r.description,
                   permissions: withImplied(r.permissions),
                 })
               }
-              aria-label={`${t("roleDuplicate")} ${r.name}`}
-              className="inline-flex items-center gap-xs rounded-lg px-sm py-xs text-body-sm font-semibold text-on-surface-variant hover:bg-surface-container"
-            >
-              <Icon name="content_copy" className="text-icon-md" />
-              {t("roleDuplicate")}
-            </button>
-            <RowActions
-              editLabel={t("editName", { name: r.name })}
-              deleteLabel={t("deleteName", { name: r.name })}
-              deleteDisabledReason={r.memberCount > 0 ? t("inUse") : undefined}
-              onEdit={() =>
+            />
+            <IconAction
+              icon="edit"
+              label={t("editName", { name: label(r) })}
+              tone="info"
+              onClick={() =>
                 open({
                   id: r.id,
-                  name: r.name,
+                  name: label(r),
                   description: r.description,
                   permissions: withImplied(r.permissions),
                 })
               }
-              onDelete={() => setConfirm(r)}
+            />
+            <IconAction
+              icon="delete"
+              label={r.memberCount > 0 ? t("inUse") : t("deleteName", { name: label(r) })}
+              tone="danger"
+              disabled={r.memberCount > 0}
+              onClick={() => setConfirm(r)}
             />
           </div>
         ),
@@ -202,7 +205,7 @@ function Roles({ slug, roles }: { slug: string; roles: Role[] }) {
         columns={columns}
         hint={t("drag")}
         reorderLabel={t("reorderColumn")}
-        handleLabel={(r) => t("reorder", { name: r.name })}
+        handleLabel={(r) => t("reorder", { name: label(r) })}
         onReorder={(ids) => reorder(() => reorderRolesAction(slug, ids))}
       />
       <Dialog
@@ -233,7 +236,7 @@ function Roles({ slug, roles }: { slug: string; roles: Role[] }) {
         pending={pending}
         tone="danger"
         icon="delete"
-        title={confirm ? t("deleteRoleTitle", { name: confirm.name }) : ""}
+        title={confirm ? t("deleteRoleTitle", { name: label(confirm) }) : ""}
         confirmLabel={t("deleteConfirm")}
         onConfirm={() => {
           const r = confirm;
@@ -514,8 +517,9 @@ function Hours({ starts, ends }: { starts: string; ends: string }) {
     <span className="inline-flex flex-wrap items-center gap-xs tabular-nums" dir="ltr">
       {starts} – {ends}
       {ends < starts ? (
-        <span className="rounded-full bg-tertiary-container px-sm text-caption text-on-tertiary-container">
-          <Icon name="dark_mode" className="text-icon-sm" /> {t("overnight")}
+        <span className="inline-flex items-center gap-xs rounded-full bg-tertiary-container px-sm text-caption text-on-tertiary-container">
+          <Icon name="dark_mode" className="text-icon-sm" />
+          {t("overnight")}
         </span>
       ) : null}
     </span>
@@ -650,5 +654,39 @@ function ShiftEditor({
         </button>
       </div>
     </form>
+  );
+}
+
+/** Compact icon button for table rows (label as tooltip and for screen readers). */
+function IconAction({
+  icon,
+  label,
+  tone,
+  disabled,
+  onClick,
+}: {
+  icon: string;
+  label: string;
+  tone?: "info" | "danger";
+  disabled?: boolean;
+  onClick: () => void;
+}) {
+  const color =
+    tone === "danger"
+      ? "text-error hover:bg-error-container"
+      : tone === "info"
+        ? "text-info hover:bg-info-container"
+        : "text-on-surface-variant hover:bg-surface-container";
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      title={label}
+      className={`inline-flex h-9 w-9 items-center justify-center rounded-lg disabled:opacity-40 disabled:hover:bg-transparent ${color}`}
+    >
+      <Icon name={icon} className="text-icon-md" />
+    </button>
   );
 }

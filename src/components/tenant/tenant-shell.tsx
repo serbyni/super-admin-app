@@ -3,6 +3,7 @@ import { Suspense, type ReactNode } from "react";
 import { serverApi } from "@/lib/data/server-api";
 import { AccessProvider } from "@/components/access/access-provider";
 import { visibleSections, type Section } from "@/lib/access/permissions";
+import { roleLabel } from "@/lib/access/schema";
 import { getTenantAccess } from "@/lib/access/server";
 import { AppShell, type ShellNavItem } from "@/components/shell/app-shell";
 import { BrandMark } from "@/components/ui/brand-mark";
@@ -82,10 +83,11 @@ export async function TenantShell({
   active: string;
   children: ReactNode;
 }) {
-  const [tn, ts, tc, access] = await Promise.all([
+  const [tn, ts, tc, tr, access] = await Promise.all([
     getTranslations("nav"),
     getTranslations("shell"),
     getTranslations("common"),
+    getTranslations("roles.builtin"),
     getTenantAccess(cafe.slug),
   ]);
   const member = access && access !== "signed-out" ? access : null;
@@ -129,7 +131,8 @@ export async function TenantShell({
           ) : null}
           {member && !member.isOwner && member.roleName ? (
             <span className="flex items-center gap-xs truncate text-caption text-on-surface-variant">
-              <span aria-hidden="true">•</span> {member.roleName}
+              <span aria-hidden="true">•</span>{" "}
+              {roleLabel({ key: member.roleKey, name: member.roleName }, (k) => tr(k))}
             </span>
           ) : null}
           <span className="flex items-center gap-xs text-caption text-outline">
