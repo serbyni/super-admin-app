@@ -11,7 +11,7 @@ import { averageTicket } from "@/lib/stats/schema";
 import { Icon } from "@/components/ui/icon";
 import { applyOwnerLocale } from "@/i18n/owner-locale";
 import { requireTenantOwner } from "@/lib/auth/guards";
-import { tenantDashboard } from "@/lib/auth/routes";
+import { tenantDashboard, tenantSettings } from "@/lib/auth/routes";
 import { serverApi } from "@/lib/data/server-api";
 import { formatPrice } from "@/lib/menu/schema";
 import type { Order } from "@/lib/orders/schema";
@@ -104,7 +104,23 @@ async function OrdersPage({
           {process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ? (
             <PushCard slug={cafe.slug} vapidKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY} />
           ) : null}
+          {cafe.menuMode === "menu_only" ? (
+            <section className="flex items-start gap-md rounded-xl bg-secondary-container p-md text-on-secondary-container">
+              <Icon name="menu_book" className="text-icon-xl" />
+              <div className="flex flex-col gap-xs">
+                <p className="font-semibold">{t("menuOnlyTitle")}</p>
+                <p className="text-body-sm">{t("menuOnlyBody")}</p>
+                <Link
+                  href={`${tenantSettings(cafe.slug)}?tab=display`}
+                  className="w-fit text-body-sm font-semibold underline underline-offset-2"
+                >
+                  {t("menuOnlyLink")}
+                </Link>
+              </div>
+            </section>
+          ) : null}
           <OrdersBoard
+            menuOnly={cafe.menuMode === "menu_only"}
             slug={cafe.slug}
             cafeId={cafe.id}
             currency={cafe.currency}

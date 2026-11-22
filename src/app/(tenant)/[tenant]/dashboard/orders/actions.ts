@@ -18,6 +18,7 @@ const isId = (v: unknown) => typeof v === "string" && /^[0-9a-f-]{36}$/.test(v);
 
 function failure(e: unknown): OrderResult {
   if (isDataError(e, "invalid_status")) return { ok: false, message: msg("orderMoveRefused") };
+  if (isDataError(e, "invalid_state")) return { ok: false, message: msg("orderingMenuOnly") };
   if (isDataError(e)) return { ok: false, message: msg("orderUpdateFailed") };
   throw e;
 }

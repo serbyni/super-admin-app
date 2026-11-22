@@ -167,7 +167,11 @@
     "tagAdded": "Étiquette « {name} » ajoutée.",
     "tagSaveFailed": "L'étiquette n'a pas pu être enregistrée. Réessayez.",
     "tagDeleted": "{count, plural, =0 {Étiquette supprimée.} one {Étiquette supprimée et retirée de # article.} other {Étiquette supprimée et retirée de # articles.}}",
-    "tagDeleteFailed": "L'étiquette n'a pas pu être supprimée. Réessayez."
+    "tagDeleteFailed": "L'étiquette n'a pas pu être supprimée. Réessayez.",
+    "menuDisplayFailed": "L'affichage du menu n'a pas pu être enregistré. Réessayez.",
+    "menuOnlySaved": "Menu seulement : vos clients consultent le menu, la commande en ligne est désactivée.",
+    "menuOrderSaved": "La commande en ligne est de nouveau possible — activez « Accepter les commandes » sur la page Commandes.",
+    "orderingMenuOnly": "Votre café est en mode menu seulement. Changez-le dans Paramètres → Affichage du menu."
   },
   "common": {
     "save": "Enregistrer",
@@ -197,7 +201,8 @@
     "tables": "Tables & QR",
     "orders": "Commandes",
     "staff": "Équipe",
-    "settings": "Paramètres"
+    "settings": "Paramètres",
+    "off": "Désactivé"
   },
   "dashboard": {
     "metaTitle": "Tableau de bord du café",
@@ -230,7 +235,8 @@
     "ordersToday": "Aujourd'hui",
     "ordersRevenue": "CA",
     "ordersNew": "Nouvelles",
-    "openOrders": "Voir les commandes"
+    "openOrders": "Voir les commandes",
+    "menuOnlyCard": "Menu seulement — commande en ligne désactivée"
   },
   "settings": {
     "metaTitle": "Paramètres",
@@ -249,7 +255,8 @@
     "colourTitle": "Couleur de la marque",
     "colourBody": "Les couleurs de votre menu sont générées à partir de cette couleur.",
     "yourCafe": "Votre café",
-    "tabHours": "Horaires"
+    "tabHours": "Horaires",
+    "tabDisplay": "Affichage du menu"
   },
   "profile": {
     "emailConfirmed": "Votre e-mail de connexion a été modifié.",
@@ -1056,7 +1063,10 @@
     "current": "table actuelle",
     "radiusLabel": "Commandes à table : distance maximale",
     "radiusHint": "Les clients doivent être à cette distance du café (position du téléphone) pour commander à table.",
-    "radiusOption": "{metres} m"
+    "radiusOption": "{metres} m",
+    "menuOnlyTitle": "Mode menu seulement",
+    "menuOnlyBody": "Les clients ne peuvent pas commander sur votre site. Les commandes passées restent ci-dessous.",
+    "menuOnlyLink": "Changer dans Paramètres → Affichage du menu"
   },
   "push": {
     "newOrderTitle": "Nouvelle commande n°{number}",
@@ -1231,5 +1241,22 @@
     "save": "Enregistrer les horaires",
     "saving": "Enregistrement…",
     "days": "Lundi|Mardi|Mercredi|Jeudi|Vendredi|Samedi|Dimanche"
+  },
+  "menuDisplay": {
+    "modeTitle": "Commandes",
+    "modeBody": "Choisissez si les clients peuvent commander sur votre site ou seulement consulter votre menu.",
+    "order": "Commandes en ligne",
+    "orderBody": "Les clients commandent depuis le menu (à table ou à emporter). Vous gérez les commandes sur la page Commandes.",
+    "menuOnly": "Menu seulement",
+    "menuOnlyBody": "Les clients consultent votre menu ; ils commandent au comptoir ou auprès du personnel. Pas de commande en ligne.",
+    "displayTitle": "Affichage du menu",
+    "displayBody": "Comment vos clients voient votre menu.",
+    "list": "Liste",
+    "listBody": "Un menu qui défile, avec recherche et catégories.",
+    "book": "Livre 3D",
+    "bookBody": "Votre menu comme un vrai livre : les clients ouvrent la couverture, tournent les pages, zooment et passent en plein écran.",
+    "bookNeedsMenuOnly": "Le livre 3D est disponible en mode menu seulement.",
+    "seeIt": "Voir sur votre site",
+    "save": "Enregistrer"
   }
 }

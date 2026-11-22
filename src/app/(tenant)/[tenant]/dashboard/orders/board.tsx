@@ -63,6 +63,7 @@ export function OrdersBoard({
   board,
   today,
   tables,
+  menuOnly = false,
 }: {
   slug: string;
   cafeId: string;
@@ -72,6 +73,8 @@ export function OrdersBoard({
   today: Order[];
   /** Active tables of the café (move dialog). */
   tables: { id: string; label: string; area: string }[];
+  /** Menu-only café: no "Accepting orders" card (the page shows a notice instead). */
+  menuOnly?: boolean;
 }) {
   const t = useTranslations("orders");
   const ts = useTranslations("stats.orders");
@@ -182,61 +185,63 @@ export function OrdersBoard({
 
   return (
     <div className="flex flex-col gap-lg">
-      <section className="flex flex-col gap-sm rounded-xl bg-surface-container-lowest p-md shadow-sm md:flex-row md:items-center md:justify-between">
-        <div className="flex items-center gap-md">
+      {menuOnly ? null : (
+        <section className="flex flex-col gap-sm rounded-xl bg-surface-container-lowest p-md shadow-sm md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-md">
+            <button
+              type="button"
+              role="switch"
+              aria-checked={board.acceptingOrders}
+              aria-label={t("accepting")}
+              disabled={pending}
+              onClick={() => run(() => setAcceptingOrdersAction(slug, !board.acceptingOrders))}
+              className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors disabled:opacity-60 ${board.acceptingOrders ? "bg-primary" : "bg-surface-container-highest"}`}
+            >
+              <span
+                className={`h-5 w-5 rounded-full bg-surface-container-lowest shadow-sm transition-transform ${board.acceptingOrders ? "translate-x-6 rtl:-translate-x-6" : "translate-x-1 rtl:-translate-x-1"}`}
+              />
+            </button>
+            <div>
+              <p className="font-semibold text-on-surface">{t("accepting")}</p>
+              <p className="text-caption text-on-surface-variant">
+                <OpeningText opening={board.ordering} /> ·{" "}
+                <Link
+                  href={`${tenantSettings(slug)}?tab=hours`}
+                  className="underline underline-offset-2"
+                >
+                  {t("hoursHint")}
+                </Link>
+              </p>
+            </div>
+          </div>
+          <label className="flex w-full flex-col gap-xs text-caption text-on-surface-variant md:w-80">
+            <span className="font-semibold text-on-surface">{t("radiusLabel")}</span>
+            <select
+              value={board.orderRadiusM}
+              disabled={pending}
+              onChange={(e) => run(() => setOrderRadiusAction(slug, Number(e.target.value)))}
+              aria-describedby="radius-hint"
+              className="w-fit rounded-lg border border-outline-variant bg-transparent px-sm py-xs text-body-sm text-on-surface"
+            >
+              {ORDER_RADII.map((r) => (
+                <option key={r} value={r}>
+                  {t("radiusOption", { metres: r })}
+                </option>
+              ))}
+            </select>
+            <span id="radius-hint">{t("radiusHint")}</span>
+          </label>
           <button
             type="button"
-            role="switch"
-            aria-checked={board.acceptingOrders}
-            aria-label={t("accepting")}
-            disabled={pending}
-            onClick={() => run(() => setAcceptingOrdersAction(slug, !board.acceptingOrders))}
-            className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors disabled:opacity-60 ${board.acceptingOrders ? "bg-primary" : "bg-surface-container-highest"}`}
+            onClick={toggleSound}
+            aria-pressed={sound}
+            className={`inline-flex w-fit items-center gap-xs rounded-xl border px-md py-sm text-body-sm font-semibold ${sound ? "border-primary bg-secondary-container text-primary" : "border-outline-variant text-on-surface-variant"}`}
           >
-            <span
-              className={`h-5 w-5 rounded-full bg-surface-container-lowest shadow-sm transition-transform ${board.acceptingOrders ? "translate-x-6 rtl:-translate-x-6" : "translate-x-1 rtl:-translate-x-1"}`}
-            />
+            <Icon name={sound ? "volume_up" : "volume_off"} className="text-icon-md" />
+            {sound ? t("soundOn") : t("soundOff")}
           </button>
-          <div>
-            <p className="font-semibold text-on-surface">{t("accepting")}</p>
-            <p className="text-caption text-on-surface-variant">
-              <OpeningText opening={board.ordering} /> ·{" "}
-              <Link
-                href={`${tenantSettings(slug)}?tab=hours`}
-                className="underline underline-offset-2"
-              >
-                {t("hoursHint")}
-              </Link>
-            </p>
-          </div>
-        </div>
-        <label className="flex w-full flex-col gap-xs text-caption text-on-surface-variant md:w-80">
-          <span className="font-semibold text-on-surface">{t("radiusLabel")}</span>
-          <select
-            value={board.orderRadiusM}
-            disabled={pending}
-            onChange={(e) => run(() => setOrderRadiusAction(slug, Number(e.target.value)))}
-            aria-describedby="radius-hint"
-            className="w-fit rounded-lg border border-outline-variant bg-transparent px-sm py-xs text-body-sm text-on-surface"
-          >
-            {ORDER_RADII.map((r) => (
-              <option key={r} value={r}>
-                {t("radiusOption", { metres: r })}
-              </option>
-            ))}
-          </select>
-          <span id="radius-hint">{t("radiusHint")}</span>
-        </label>
-        <button
-          type="button"
-          onClick={toggleSound}
-          aria-pressed={sound}
-          className={`inline-flex w-fit items-center gap-xs rounded-xl border px-md py-sm text-body-sm font-semibold ${sound ? "border-primary bg-secondary-container text-primary" : "border-outline-variant text-on-surface-variant"}`}
-        >
-          <Icon name={sound ? "volume_up" : "volume_off"} className="text-icon-md" />
-          {sound ? t("soundOn") : t("soundOff")}
-        </button>
-      </section>
+        </section>
+      )}
 
       <LiveStrip figures={liveFigures(board.orders, today, now ?? 0)} ready={now !== null} t={ts} />
 

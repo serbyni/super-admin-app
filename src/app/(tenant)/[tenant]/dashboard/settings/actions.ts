@@ -113,3 +113,25 @@ export async function setOpeningHoursAction(
   revalidatePath(tenantDashboard(slug), "layout");
   return { ok: true, message: msg("hoursSaved") };
 }
+
+/** Menu display tab: online ordering or menu only; list or 3D book (book: menu-only cafés). */
+export async function setMenuDisplayAction(
+  slug: string,
+  mode: unknown,
+  display: unknown,
+): Promise<LanguagesResult> {
+  await requireTenantOwner(slug);
+  if ((mode !== "order" && mode !== "menu_only") || (display !== "list" && display !== "book"))
+    return { ok: false, message: msg("checkForm") };
+  try {
+    await serverApi().cafes.setMenuDisplay(slug, mode, display);
+  } catch (e) {
+    if (isDataError(e)) return { ok: false, message: msg("menuDisplayFailed") };
+    throw e;
+  }
+  revalidatePath(tenantDashboard(slug), "layout");
+  return {
+    ok: true,
+    message: mode === "menu_only" ? msg("menuOnlySaved") : msg("menuOrderSaved"),
+  };
+}

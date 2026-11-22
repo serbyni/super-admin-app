@@ -167,7 +167,11 @@
     "tagAdded": "Tag “{name}” added.",
     "tagSaveFailed": "The tag could not be saved. Please try again.",
     "tagDeleted": "{count, plural, =0 {Tag deleted.} one {Tag deleted and removed from # item.} other {Tag deleted and removed from # items.}}",
-    "tagDeleteFailed": "The tag could not be deleted. Please try again."
+    "tagDeleteFailed": "The tag could not be deleted. Please try again.",
+    "menuDisplayFailed": "The menu display could not be saved. Please try again.",
+    "menuOnlySaved": "Menu only: customers browse your menu, ordering is off.",
+    "menuOrderSaved": "Online ordering is available again — turn on “Accepting orders” on the Orders page.",
+    "orderingMenuOnly": "Your café is in menu-only mode. Change it in Settings → Menu display."
   },
   "common": {
     "save": "Save",
@@ -197,7 +201,8 @@
     "tables": "Tables & QR",
     "orders": "Orders",
     "staff": "Staff",
-    "settings": "Settings"
+    "settings": "Settings",
+    "off": "Off"
   },
   "dashboard": {
     "metaTitle": "Café dashboard",
@@ -230,7 +235,8 @@
     "ordersToday": "Today",
     "ordersRevenue": "Revenue",
     "ordersNew": "New",
-    "openOrders": "Open orders"
+    "openOrders": "Open orders",
+    "menuOnlyCard": "Menu only — online ordering is off"
   },
   "settings": {
     "metaTitle": "Settings",
@@ -249,7 +255,8 @@
     "colourTitle": "Brand colour",
     "colourBody": "Your menu's colours are generated from this colour.",
     "yourCafe": "Your café",
-    "tabHours": "Opening hours"
+    "tabHours": "Opening hours",
+    "tabDisplay": "Menu display"
   },
   "profile": {
     "emailConfirmed": "Your sign-in email was changed.",
@@ -1056,7 +1063,10 @@
     "current": "current table",
     "radiusLabel": "Table orders: maximum distance",
     "radiusHint": "Customers must be this close to the café (phone location) to order at a table.",
-    "radiusOption": "{metres} m"
+    "radiusOption": "{metres} m",
+    "menuOnlyTitle": "Menu-only mode",
+    "menuOnlyBody": "Customers can't order on your site. Past orders stay below.",
+    "menuOnlyLink": "Change it in Settings → Menu display"
   },
   "push": {
     "newOrderTitle": "New order #{number}",
@@ -1231,5 +1241,22 @@
     "save": "Save hours",
     "saving": "Saving…",
     "days": "Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday"
+  },
+  "menuDisplay": {
+    "modeTitle": "Ordering",
+    "modeBody": "Choose whether customers can order from your site or only see your menu.",
+    "order": "Take orders online",
+    "orderBody": "Customers order from the menu (at a table or takeaway). You handle orders on the Orders page.",
+    "menuOnly": "Menu only",
+    "menuOnlyBody": "Customers browse your menu; they order at the counter or with the staff. No online orders.",
+    "displayTitle": "Menu display",
+    "displayBody": "How customers see your menu.",
+    "list": "List",
+    "listBody": "A scrolling menu with search and category chips.",
+    "book": "3D book",
+    "bookBody": "Your menu as a real book: customers open the cover, swipe the pages, zoom and go fullscreen.",
+    "bookNeedsMenuOnly": "The 3D book is available in menu-only mode.",
+    "seeIt": "See it on your site",
+    "save": "Save"
   }
 }

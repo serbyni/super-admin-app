@@ -17,7 +17,9 @@ import { CafePageLink } from "@/components/cafe/cafe-page-link";
 import { ProfileTab } from "@/components/settings/profile-tab";
 import { Section } from "@/components/settings/form-kit";
 import { saveCafeAction } from "./actions";
+import { cafeUrl } from "@/lib/env";
 import { HoursTab } from "./hours-tab";
+import { MenuDisplayTab } from "./menu-display-tab";
 import { LanguagesTab } from "./languages-tab";
 import { formatDateTime } from "@/config/locale";
 import { CafeSettingsForm } from "./forms";
@@ -30,6 +32,7 @@ export async function generateMetadata(): Promise<Metadata> {
 const TABS = [
   { key: "cafe", label: "tabCafe", icon: "storefront" },
   { key: "hours", label: "tabHours", icon: "schedule" },
+  { key: "display", label: "tabDisplay", icon: "auto_stories" },
   { key: "languages", label: "tabLanguages", icon: "translate" },
   { key: "profile", label: "tabProfile", icon: "person" },
 ] as const;
@@ -113,6 +116,13 @@ async function Settings({
         </div>
       ) : tab.key === "hours" ? (
         <HoursTab slug={tenant} hours={cafe.openingHours} />
+      ) : tab.key === "display" ? (
+        <MenuDisplayTab
+          slug={tenant}
+          mode={cafe.menuMode}
+          display={cafe.menuDisplay}
+          menuUrl={`${cafeUrl(cafe.slug)}/menu`}
+        />
       ) : tab.key === "languages" ? (
         <LanguagesTabLoader slug={tenant} locale={locale} />
       ) : (
