@@ -1304,7 +1304,7 @@
     "name": "Name",
     "description": "Description (optional)",
     "matrix": "Permissions",
-    "needsRead": "Needed by the other permissions of this section",
+    "needsRead": "Needed by another permission you turned on",
     "sees": "What this role sees",
     "seesNone": "Only their profile.",
     "save": "Save",

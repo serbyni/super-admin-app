@@ -43,33 +43,49 @@ export const PERMISSION_GROUPS: {
 
 const READS = new Set<string>(PERMISSIONS.filter((p) => p.endsWith(".read")));
 
-/** The ".read" a permission implies, if its section has one (menu.edit → menu.read). */
-export function impliedRead(p: Permission): Permission | null {
-  const r = `${sectionOf(p)}.read`;
-  return r !== p && READS.has(r) ? (r as Permission) : null;
+/** Other permissions an action needs beyond its section's read (publishing saves the draft). */
+const NEEDS: Partial<Record<Permission, Permission[]>> = { "website.publish": ["website.edit"] };
+
+/** Everything `p` needs: its section's ".read" (if any) and NEEDS, transitively. */
+export function implied(p: Permission): Permission[] {
+  const out = new Set<Permission>();
+  const visit = (x: Permission) => {
+    const r = `${sectionOf(x)}.read`;
+    const direct = [...(r !== x && READS.has(r) ? [r as Permission] : []), ...(NEEDS[x] ?? [])];
+    for (const y of direct) {
+      if (out.has(y)) continue;
+      out.add(y);
+      visit(y);
+    }
+  };
+  visit(p);
+  return [...out];
 }
 
-/** Adds implied reads; drops unknown keys; never grants staff.manage. */
+/** Adds what each permission needs; drops unknown keys; never grants staff.manage. */
 export function withImplied(list: readonly string[]): Permission[] {
   const set = new Set<Permission>();
   for (const k of list) {
     if (!(PERMISSIONS as readonly string[]).includes(k) || k === "staff.manage") continue;
     set.add(k as Permission);
-    const r = impliedRead(k as Permission);
-    if (r) set.add(r);
+    for (const r of implied(k as Permission)) set.add(r);
   }
   return PERMISSIONS.filter((p) => set.has(p));
 }
 
-/** A role editor toggle: turning off a read also turns off what needs it. */
+/** Is `p` needed by another permission of the list (so it can't be turned off alone)? */
+export function requiredBy(list: readonly Permission[], p: Permission): boolean {
+  return list.some((x) => x !== p && implied(x).includes(p));
+}
+
+/** A role editor toggle: on adds what it needs; off also removes what needs it. */
 export function togglePermission(
   list: readonly Permission[],
   p: Permission,
   on: boolean,
 ): Permission[] {
   if (on) return withImplied([...list, p]);
-  const out = list.filter((x) => x !== p);
-  return p.endsWith(".read") ? out.filter((x) => sectionOf(x) !== sectionOf(p)) : out;
+  return list.filter((x) => x !== p && !implied(x).includes(p));
 }
 
 /** Sidebar sections a set of permissions shows (Profile is always there, in Settings). */

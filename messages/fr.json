@@ -1304,7 +1304,7 @@
     "name": "Nom",
     "description": "Description (facultatif)",
     "matrix": "Permissions",
-    "needsRead": "Requis par les autres permissions de cette section",
+    "needsRead": "Requis par une autre permission activée",
     "sees": "Ce que ce rôle voit",
     "seesNone": "Uniquement son profil.",
     "save": "Enregistrer",

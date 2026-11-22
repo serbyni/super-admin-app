@@ -26,6 +26,7 @@ import { ConfirmDialog, Dialog } from "@/components/ui/dialog";
 import { Icon } from "@/components/ui/icon";
 import { IconPicker } from "@/components/ui/icon-picker";
 import { useToast } from "@/components/ui/toast";
+import { useCan } from "@/components/access/access-provider";
 import { useLanguageLabel } from "@/i18n/use-language-label";
 import { useMsg } from "@/i18n/use-msg";
 import { formatLocale } from "@/config/locale";
@@ -98,6 +99,10 @@ export function MenuManager({ slug, cafeId, currency, menu, languages, sales }: 
   const [categoryForm, setCategoryForm] = useState<MenuCategory | "new" | null>(null);
   const [confirm, setConfirm] = useState<Confirm | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  // Role: "menu.edit" changes the menu; "menu.availability" only marks items sold out / back.
+  const can = useCan();
+  const edit = can("menu.edit");
+  const availability = can(["menu.availability", "menu.edit"]);
   // Optimistic orders (server data stays the source of truth on the next render).
   const [catOrder, setCatOrder] = useState<string[] | null>(null);
   const [itemOrder, setItemOrder] = useState<Record<string, string[]>>({});
@@ -125,7 +130,7 @@ export function MenuManager({ slug, cafeId, currency, menu, languages, sales }: 
   ).filter(
     (i) => !q || i.name.toLowerCase().includes(q) || i.description.toLowerCase().includes(q),
   );
-  const canReorderItems = categoryId !== ALL && !q;
+  const canReorderItems = edit && categoryId !== ALL && !q;
   const notPriced = menu.items.filter((i) => i.price === null).length;
 
   // Stable ids: dnd-kit's own counters differ between server and browser (hydration mismatch).
@@ -179,18 +184,20 @@ export function MenuManager({ slug, cafeId, currency, menu, languages, sales }: 
           </span>
           <h2 className="text-headline-md text-on-surface">{t("emptyTitle")}</h2>
           <p className="max-w-card-md text-body-md text-on-surface-variant">{t("emptyBody")}</p>
-          <div className="flex flex-wrap justify-center gap-sm">
-            <PrimaryButton
-              icon="auto_awesome"
-              disabled={pending}
-              onClick={() => run(() => applyTemplateAction(slug))}
-            >
-              {t("startTemplate")}
-            </PrimaryButton>
-            <OutlineButton icon="add" onClick={() => setCategoryForm("new")}>
-              {t("startEmpty")}
-            </OutlineButton>
-          </div>
+          {edit ? (
+            <div className="flex flex-wrap justify-center gap-sm">
+              <PrimaryButton
+                icon="auto_awesome"
+                disabled={pending}
+                onClick={() => run(() => applyTemplateAction(slug))}
+              >
+                {t("startTemplate")}
+              </PrimaryButton>
+              <OutlineButton icon="add" onClick={() => setCategoryForm("new")}>
+                {t("startEmpty")}
+              </OutlineButton>
+            </div>
+          ) : null}
         </section>
         <CategoryDialog
           form={categoryForm}
@@ -254,7 +261,7 @@ export function MenuManager({ slug, cafeId, currency, menu, languages, sales }: 
             className="min-w-0 flex-1 bg-transparent text-body-md text-on-surface placeholder:text-outline focus:outline-none"
           />
         </label>
-        {menu.items.length < MENU_LIMITS.items ? (
+        {edit && menu.items.length < MENU_LIMITS.items ? (
           <PrimaryButton icon="add" onClick={() => setItemForm("new")}>
             {t("addItem")}
           </PrimaryButton>
@@ -291,12 +298,13 @@ export function MenuManager({ slug, cafeId, currency, menu, languages, sales }: 
                 active={c.id === categoryId}
                 count={itemsOf(c.id).length}
                 share={sales?.categoryShare[c.id]}
+                draggable={edit}
                 onClick={() => setCategoryId(c.id)}
               />
             ))}
           </SortableContext>
         </DndContext>
-        {menu.categories.length < MENU_LIMITS.categories ? (
+        {edit && menu.categories.length < MENU_LIMITS.categories ? (
           <button
             type="button"
             onClick={() => setCategoryForm("new")}
@@ -314,26 +322,30 @@ export function MenuManager({ slug, cafeId, currency, menu, languages, sales }: 
             {category.isVisible ? "" : t("hiddenFromCustomers")}
             {canReorderItems && itemsOf(category.id).length > 1 ? t("dragToReorder") : ""}
           </p>
-          <div className="flex flex-wrap gap-xs">
-            <OutlineButton icon="edit" onClick={() => setCategoryForm(category)}>
-              {tc("rename")}
-            </OutlineButton>
-            <OutlineButton
-              icon={category.isVisible ? "visibility_off" : "visibility"}
-              onClick={() =>
-                run(() => saveCategoryAction(slug, category.id, category.name, !category.isVisible))
-              }
-            >
-              {category.isVisible ? tc("hide") : tc("show")}
-            </OutlineButton>
-            <OutlineButton
-              icon="delete"
-              tone="danger"
-              onClick={() => setConfirm({ kind: "category", category })}
-            >
-              {tc("delete")}
-            </OutlineButton>
-          </div>
+          {edit ? (
+            <div className="flex flex-wrap gap-xs">
+              <OutlineButton icon="edit" onClick={() => setCategoryForm(category)}>
+                {tc("rename")}
+              </OutlineButton>
+              <OutlineButton
+                icon={category.isVisible ? "visibility_off" : "visibility"}
+                onClick={() =>
+                  run(() =>
+                    saveCategoryAction(slug, category.id, category.name, !category.isVisible),
+                  )
+                }
+              >
+                {category.isVisible ? tc("hide") : tc("show")}
+              </OutlineButton>
+              <OutlineButton
+                icon="delete"
+                tone="danger"
+                onClick={() => setConfirm({ kind: "category", category })}
+              >
+                {tc("delete")}
+              </OutlineButton>
+            </div>
+          ) : null}
         </div>
       ) : null}
 
@@ -362,12 +374,14 @@ export function MenuManager({ slug, cafeId, currency, menu, languages, sales }: 
                   tagList={menu.tags}
                   mainLanguage={languages.main}
                   pending={pending}
+                  canEdit={edit}
+                  canAvailability={availability}
                   onEdit={() => setItemForm(i)}
                   onDelete={() => setConfirm({ kind: "item", item: i })}
                   onToggleSoldOut={() => run(() => setAvailableAction(slug, i.id, !i.isAvailable))}
                 />
               ))}
-              {menu.items.length < MENU_LIMITS.items && !q ? (
+              {edit && menu.items.length < MENU_LIMITS.items && !q ? (
                 <li>
                   <button
                     type="button"
@@ -495,11 +509,15 @@ function ItemCard({
   tagList,
   mainLanguage,
   pending,
+  canEdit,
+  canAvailability,
   onEdit,
   onDelete,
   onToggleSoldOut,
 }: {
   item: MenuItem;
+  canEdit: boolean;
+  canAvailability: boolean;
   /** The café's tags (menu_tags). */
   tagList: MenuTagRow[];
   mainLanguage: string;
@@ -607,31 +625,41 @@ function ItemCard({
         ) : null}
         <div className="mt-auto flex items-center justify-between gap-xs border-t border-surface-container-high pt-sm">
           <div className="flex gap-xs">
-            <IconButton icon="edit" label={t("editName", { name: item.name })} onClick={onEdit} />
-            <IconButton
-              icon="delete"
-              label={t("deleteName", { name: item.name })}
-              onClick={onDelete}
-              tone="danger"
-            />
+            {canEdit ? (
+              <>
+                <IconButton
+                  icon="edit"
+                  label={t("editName", { name: item.name })}
+                  onClick={onEdit}
+                />
+                <IconButton
+                  icon="delete"
+                  label={t("deleteName", { name: item.name })}
+                  onClick={onDelete}
+                  tone="danger"
+                />
+              </>
+            ) : null}
           </div>
-          <button
-            type="button"
-            disabled={pending}
-            onClick={onToggleSoldOut}
-            aria-pressed={!item.isAvailable}
-            className={`inline-flex items-center gap-xs rounded-lg px-sm py-xs text-body-sm font-semibold disabled:opacity-60 ${
-              item.isAvailable
-                ? "text-primary hover:bg-secondary-container"
-                : "bg-inverse-surface text-inverse-on-surface"
-            }`}
-          >
-            <Icon
-              name={item.isAvailable ? "remove_shopping_cart" : "check_circle"}
-              className="text-icon-md"
-            />
-            {item.isAvailable ? t("markSoldOut") : t("backOnMenu")}
-          </button>
+          {canAvailability ? (
+            <button
+              type="button"
+              disabled={pending}
+              onClick={onToggleSoldOut}
+              aria-pressed={!item.isAvailable}
+              className={`inline-flex items-center gap-xs rounded-lg px-sm py-xs text-body-sm font-semibold disabled:opacity-60 ${
+                item.isAvailable
+                  ? "text-primary hover:bg-secondary-container"
+                  : "bg-inverse-surface text-inverse-on-surface"
+              }`}
+            >
+              <Icon
+                name={item.isAvailable ? "remove_shopping_cart" : "check_circle"}
+                className="text-icon-md"
+              />
+              {item.isAvailable ? t("markSoldOut") : t("backOnMenu")}
+            </button>
+          ) : null}
         </div>
       </div>
     </li>
@@ -945,16 +973,19 @@ function SortableChip({
   active,
   count,
   share,
+  draggable,
   onClick,
 }: {
   category: MenuCategory;
   active: boolean;
   count: number;
   share?: number;
+  draggable: boolean;
   onClick: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: category.id,
+    disabled: !draggable,
   });
   return (
     <span
@@ -968,7 +999,7 @@ function SortableChip({
         count={count}
         share={share}
         muted={!category.isVisible}
-        dragProps={{ ...attributes, ...listeners }}
+        dragProps={draggable ? { ...attributes, ...listeners } : undefined}
         label={category.name}
       >
         {category.icon ? <Icon name={category.icon} className="me-xs text-icon-sm" /> : null}

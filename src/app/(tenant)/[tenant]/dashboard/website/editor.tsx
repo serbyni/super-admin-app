@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState, useTransition, type ReactNode } from "rea
 import { TextAreaField, TextField } from "@/components/auth/fields";
 import { ConfirmDialog } from "@/components/ui/dialog";
 import { Icon } from "@/components/ui/icon";
+import { useCan } from "@/components/access/access-provider";
 import { useToast } from "@/components/ui/toast";
 import { GalleryField, ImageField } from "@/components/media/image-fields";
 import { useLanguageLabel } from "@/i18n/use-language-label";
@@ -133,6 +134,11 @@ export function WebsiteEditor({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [pending, start] = useTransition();
   const [confirmDiscard, setConfirmDiscard] = useState(false);
+  // Role: website.edit changes the draft; website.publish (needs edit) puts it live. Without edit
+  // the editor is read only.
+  const can = useCan();
+  const edit = can("website.edit");
+  const canPublish = edit && can("website.publish");
 
   const unsaved = !same(doc, saved);
   const unpublished = !same(doc, live.doc);
@@ -222,7 +228,7 @@ export function WebsiteEditor({
           {status.text}
         </p>
         <div className="flex flex-wrap gap-sm">
-          {unpublished && live.doc ? (
+          {edit && unpublished && live.doc ? (
             <button
               type="button"
               disabled={pending}
@@ -232,27 +238,31 @@ export function WebsiteEditor({
               {t("discard")}
             </button>
           ) : null}
-          <button
-            type="button"
-            disabled={pending || !unsaved}
-            onClick={() => run("save")}
-            className="inline-flex items-center gap-xs rounded-xl border border-outline-variant px-md py-sm text-body-sm font-semibold text-primary hover:bg-secondary-container disabled:opacity-60"
-          >
-            <Icon name="save" className="text-icon-md" />{" "}
-            {unsaved ? t("saveDraft") : t("draftSavedButton")}
-          </button>
-          <button
-            type="button"
-            disabled={pending || !unpublished}
-            onClick={() => run("publish")}
-            className="inline-flex items-center gap-xs rounded-xl bg-primary px-md py-sm text-body-sm font-semibold text-on-primary shadow-button-warm hover:bg-primary-container disabled:opacity-60"
-          >
-            <Icon
-              name={pending ? "progress_activity" : "publish"}
-              className={`text-icon-md ${pending ? "animate-spin" : ""}`}
-            />
-            {t("publish")}
-          </button>
+          {edit ? (
+            <button
+              type="button"
+              disabled={pending || !unsaved}
+              onClick={() => run("save")}
+              className="inline-flex items-center gap-xs rounded-xl border border-outline-variant px-md py-sm text-body-sm font-semibold text-primary hover:bg-secondary-container disabled:opacity-60"
+            >
+              <Icon name="save" className="text-icon-md" />{" "}
+              {unsaved ? t("saveDraft") : t("draftSavedButton")}
+            </button>
+          ) : null}
+          {canPublish ? (
+            <button
+              type="button"
+              disabled={pending || !unpublished}
+              onClick={() => run("publish")}
+              className="inline-flex items-center gap-xs rounded-xl bg-primary px-md py-sm text-body-sm font-semibold text-on-primary shadow-button-warm hover:bg-primary-container disabled:opacity-60"
+            >
+              <Icon
+                name={pending ? "progress_activity" : "publish"}
+                className={`text-icon-md ${pending ? "animate-spin" : ""}`}
+              />
+              {t("publish")}
+            </button>
+          ) : null}
         </div>
       </div>
 
@@ -292,454 +302,468 @@ export function WebsiteEditor({
       ) : null}
 
       <div className="grid grid-cols-1 gap-lg xl:grid-cols-5">
-        <div className="flex flex-col gap-lg xl:col-span-3">
-          {lang !== languages.main ? (
-            <Card
-              icon="translate"
-              title={t("translationTitle", { language: languageLabel(lang) })}
-              hint={t("translationHint", {
-                language: languageLabel(lang),
-                main: languageLabel(languages.main),
-              })}
-            >
-              <div className="flex flex-col gap-md" lang={lang}>
-                {translatableFields(doc).map((f) => {
-                  const value = doc.i18n?.[lang]?.[f.key] ?? "";
-                  const onChange = (v: string) =>
-                    update((d) => {
-                      d.i18n = {
-                        ...(d.i18n ?? {}),
-                        [lang]: { ...(d.i18n?.[lang] ?? {}), [f.key]: v },
-                      };
-                      return d;
-                    });
-                  const common = {
-                    id: `tr-${lang}-${f.key}`,
-                    label: fieldLabel(f.key),
-                    maxLength: f.max,
-                    value,
-                    dir: isRtlLanguage(lang) ? "rtl" : "ltr",
-                    hint: t("original", { text: f.value }),
-                  } as const;
-                  return f.multiline ? (
-                    <TextAreaField
-                      key={f.key}
-                      {...common}
-                      rows={3}
-                      onChange={(e) => onChange(e.target.value)}
-                    />
-                  ) : (
-                    <TextField key={f.key} {...common} onChange={(e) => onChange(e.target.value)} />
-                  );
+        {/* Read only without website.edit: every field and button inside is disabled. */}
+        <fieldset disabled={!edit} className="contents">
+          <div className="flex flex-col gap-lg xl:col-span-3">
+            {lang !== languages.main ? (
+              <Card
+                icon="translate"
+                title={t("translationTitle", { language: languageLabel(lang) })}
+                hint={t("translationHint", {
+                  language: languageLabel(lang),
+                  main: languageLabel(languages.main),
                 })}
-              </div>
-            </Card>
-          ) : null}
-          <div className="flex flex-col gap-lg" hidden={lang !== languages.main}>
-            {/* Hero */}
-            <Card icon="wallpaper" title={t("heroTitle")} hint={t("heroHint")}>
-              <div className="flex flex-col gap-md">
-                <TextField
-                  id="hero-title"
-                  label={t("headline")}
-                  required
-                  maxLength={80}
-                  value={doc.hero.title}
-                  error={err("hero.title")}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    update((d) => {
-                      d.hero.title = v;
-                      return d;
-                    });
-                  }}
-                />
-                <TextAreaField
-                  id="hero-subtitle"
-                  label={t("shortIntro")}
-                  rows={3}
-                  maxLength={240}
-                  value={doc.hero.subtitle}
-                  error={err("hero.subtitle")}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    update((d) => {
-                      d.hero.subtitle = v;
-                      return d;
-                    });
-                  }}
-                />
-                <TextField
-                  id="hero-badge"
-                  label={t("badgeLabel")}
-                  maxLength={40}
-                  placeholder={t("badgePlaceholder")}
-                  value={doc.hero.badge}
-                  error={err("hero.badge")}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    update((d) => {
-                      d.hero.badge = v;
-                      return d;
-                    });
-                  }}
-                />
-                <ImageField
-                  cafeId={cafeId}
-                  label={t("coverPhoto")}
-                  value={doc.hero.image}
-                  error={err("hero.image.path")}
-                  onChange={(img) =>
-                    update((d) => {
-                      d.hero.image = img;
-                      return d;
-                    })
-                  }
-                />
-                <div className="flex flex-col gap-sm">
-                  <p className="text-body-sm font-semibold text-on-surface">
-                    {t("highlightsUpTo", { max: LIMITS.highlights })}
-                  </p>
-                  {doc.hero.highlights.map((h, i) => (
-                    <div key={i} className="flex items-start gap-sm">
-                      <select
-                        aria-label={t("icon")}
-                        value={h.icon}
-                        onChange={(e) => {
-                          const v = e.target.value;
-                          update((d) => {
-                            d.hero.highlights[i].icon = v;
-                            return d;
-                          });
-                        }}
-                        className="rounded-lg border border-outline-variant bg-transparent px-sm py-3.5 text-body-sm"
-                      >
-                        {HIGHLIGHT_ICONS.map((o) => (
-                          <option key={o.value} value={o.value}>
-                            {t(`icons.${o.value}`)}
-                          </option>
-                        ))}
-                      </select>
-                      <div className="flex-1">
-                        <TextField
-                          id={`hero-hl-${i}`}
-                          label={t("label")}
-                          required
-                          maxLength={30}
-                          value={h.label}
-                          error={err(`hero.highlights.${i}.label`)}
+              >
+                <div className="flex flex-col gap-md" lang={lang}>
+                  {translatableFields(doc).map((f) => {
+                    const value = doc.i18n?.[lang]?.[f.key] ?? "";
+                    const onChange = (v: string) =>
+                      update((d) => {
+                        d.i18n = {
+                          ...(d.i18n ?? {}),
+                          [lang]: { ...(d.i18n?.[lang] ?? {}), [f.key]: v },
+                        };
+                        return d;
+                      });
+                    const common = {
+                      id: `tr-${lang}-${f.key}`,
+                      label: fieldLabel(f.key),
+                      maxLength: f.max,
+                      value,
+                      dir: isRtlLanguage(lang) ? "rtl" : "ltr",
+                      hint: t("original", { text: f.value }),
+                    } as const;
+                    return f.multiline ? (
+                      <TextAreaField
+                        key={f.key}
+                        {...common}
+                        rows={3}
+                        onChange={(e) => onChange(e.target.value)}
+                      />
+                    ) : (
+                      <TextField
+                        key={f.key}
+                        {...common}
+                        onChange={(e) => onChange(e.target.value)}
+                      />
+                    );
+                  })}
+                </div>
+              </Card>
+            ) : null}
+            <div className="flex flex-col gap-lg" hidden={lang !== languages.main}>
+              {/* Hero */}
+              <Card icon="wallpaper" title={t("heroTitle")} hint={t("heroHint")}>
+                <div className="flex flex-col gap-md">
+                  <TextField
+                    id="hero-title"
+                    label={t("headline")}
+                    required
+                    maxLength={80}
+                    value={doc.hero.title}
+                    error={err("hero.title")}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      update((d) => {
+                        d.hero.title = v;
+                        return d;
+                      });
+                    }}
+                  />
+                  <TextAreaField
+                    id="hero-subtitle"
+                    label={t("shortIntro")}
+                    rows={3}
+                    maxLength={240}
+                    value={doc.hero.subtitle}
+                    error={err("hero.subtitle")}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      update((d) => {
+                        d.hero.subtitle = v;
+                        return d;
+                      });
+                    }}
+                  />
+                  <TextField
+                    id="hero-badge"
+                    label={t("badgeLabel")}
+                    maxLength={40}
+                    placeholder={t("badgePlaceholder")}
+                    value={doc.hero.badge}
+                    error={err("hero.badge")}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      update((d) => {
+                        d.hero.badge = v;
+                        return d;
+                      });
+                    }}
+                  />
+                  <ImageField
+                    cafeId={cafeId}
+                    label={t("coverPhoto")}
+                    value={doc.hero.image}
+                    error={err("hero.image.path")}
+                    onChange={(img) =>
+                      update((d) => {
+                        d.hero.image = img;
+                        return d;
+                      })
+                    }
+                  />
+                  <div className="flex flex-col gap-sm">
+                    <p className="text-body-sm font-semibold text-on-surface">
+                      {t("highlightsUpTo", { max: LIMITS.highlights })}
+                    </p>
+                    {doc.hero.highlights.map((h, i) => (
+                      <div key={i} className="flex items-start gap-sm">
+                        <select
+                          aria-label={t("icon")}
+                          value={h.icon}
                           onChange={(e) => {
                             const v = e.target.value;
                             update((d) => {
-                              d.hero.highlights[i].label = v;
+                              d.hero.highlights[i].icon = v;
                               return d;
                             });
                           }}
+                          className="rounded-lg border border-outline-variant bg-transparent px-sm py-3.5 text-body-sm"
+                        >
+                          {HIGHLIGHT_ICONS.map((o) => (
+                            <option key={o.value} value={o.value}>
+                              {t(`icons.${o.value}`)}
+                            </option>
+                          ))}
+                        </select>
+                        <div className="flex-1">
+                          <TextField
+                            id={`hero-hl-${i}`}
+                            label={t("label")}
+                            required
+                            maxLength={30}
+                            value={h.label}
+                            error={err(`hero.highlights.${i}.label`)}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              update((d) => {
+                                d.hero.highlights[i].label = v;
+                                return d;
+                              });
+                            }}
+                          />
+                        </div>
+                        <IconButton
+                          icon="close"
+                          label={t("removeHighlight")}
+                          onClick={() =>
+                            update((d) => {
+                              d.hero.highlights.splice(i, 1);
+                              return d;
+                            })
+                          }
                         />
                       </div>
-                      <IconButton
-                        icon="close"
-                        label={t("removeHighlight")}
+                    ))}
+                    {doc.hero.highlights.length < LIMITS.highlights ? (
+                      <AddButton
+                        label={t("addHighlight")}
                         onClick={() =>
                           update((d) => {
-                            d.hero.highlights.splice(i, 1);
+                            d.hero.highlights.push({ icon: "local_cafe", label: "" });
                             return d;
                           })
                         }
                       />
-                    </div>
-                  ))}
-                  {doc.hero.highlights.length < LIMITS.highlights ? (
-                    <AddButton
-                      label={t("addHighlight")}
-                      onClick={() =>
-                        update((d) => {
-                          d.hero.highlights.push({ icon: "local_cafe", label: "" });
-                          return d;
-                        })
-                      }
-                    />
-                  ) : null}
+                    ) : null}
+                  </div>
                 </div>
-              </div>
-            </Card>
+              </Card>
 
-            {/* Sections */}
-            {doc.sections.map((s, i) => {
-              const label = sectionLabel(s.type);
-              const set = (fn: (x: WebsiteSection) => void) =>
-                update((d) => {
-                  fn(d.sections[i]);
-                  return d;
-                });
-              const k = (f: string) => `sections.${i}.${f}`;
-              return (
-                <Card
-                  key={s.type}
-                  icon={SECTION_ICON[s.type]}
-                  title={label}
-                  hint={t(`hints.${s.type}`, {
-                    max: s.type === "gallery" ? LIMITS.galleryImages : SPECIALTIES_MAX,
-                  })}
-                  muted={!s.enabled}
-                  actions={
-                    <>
-                      <IconButton
-                        icon="arrow_upward"
-                        label={t("moveUp")}
-                        disabled={i === 0}
-                        onClick={() =>
-                          update((d) => {
-                            [d.sections[i - 1], d.sections[i]] = [d.sections[i], d.sections[i - 1]];
-                            return d;
-                          })
-                        }
-                      />
-                      <IconButton
-                        icon="arrow_downward"
-                        label={t("moveDown")}
-                        disabled={i === doc.sections.length - 1}
-                        onClick={() =>
-                          update((d) => {
-                            [d.sections[i + 1], d.sections[i]] = [d.sections[i], d.sections[i + 1]];
-                            return d;
-                          })
-                        }
-                      />
-                      <Switch
-                        checked={s.enabled}
-                        label={t("showSection", { section: label })}
-                        onChange={(on) =>
-                          set((x) => {
-                            x.enabled = on;
-                          })
-                        }
-                      />
-                    </>
-                  }
-                >
-                  {s.enabled ? (
-                    <div className="flex flex-col gap-md">
-                      <TextField
-                        id={`s-${s.type}-title`}
-                        label={t("fieldTitle")}
-                        required
-                        maxLength={80}
-                        value={s.title}
-                        error={err(k("title"))}
-                        onChange={(e) => {
-                          const v = e.target.value;
-                          set((x) => {
-                            x.title = v;
-                          });
-                        }}
-                      />
-                      {s.type === "how_it_works" ? (
-                        <TextAreaField
-                          id="s-how-text"
-                          label={t("fieldIntro")}
-                          rows={3}
-                          maxLength={300}
-                          value={s.text}
-                          error={err(k("text"))}
+              {/* Sections */}
+              {doc.sections.map((s, i) => {
+                const label = sectionLabel(s.type);
+                const set = (fn: (x: WebsiteSection) => void) =>
+                  update((d) => {
+                    fn(d.sections[i]);
+                    return d;
+                  });
+                const k = (f: string) => `sections.${i}.${f}`;
+                return (
+                  <Card
+                    key={s.type}
+                    icon={SECTION_ICON[s.type]}
+                    title={label}
+                    hint={t(`hints.${s.type}`, {
+                      max: s.type === "gallery" ? LIMITS.galleryImages : SPECIALTIES_MAX,
+                    })}
+                    muted={!s.enabled}
+                    actions={
+                      <>
+                        <IconButton
+                          icon="arrow_upward"
+                          label={t("moveUp")}
+                          disabled={i === 0}
+                          onClick={() =>
+                            update((d) => {
+                              [d.sections[i - 1], d.sections[i]] = [
+                                d.sections[i],
+                                d.sections[i - 1],
+                              ];
+                              return d;
+                            })
+                          }
+                        />
+                        <IconButton
+                          icon="arrow_downward"
+                          label={t("moveDown")}
+                          disabled={i === doc.sections.length - 1}
+                          onClick={() =>
+                            update((d) => {
+                              [d.sections[i + 1], d.sections[i]] = [
+                                d.sections[i],
+                                d.sections[i + 1],
+                              ];
+                              return d;
+                            })
+                          }
+                        />
+                        <Switch
+                          checked={s.enabled}
+                          label={t("showSection", { section: label })}
+                          onChange={(on) =>
+                            set((x) => {
+                              x.enabled = on;
+                            })
+                          }
+                        />
+                      </>
+                    }
+                  >
+                    {s.enabled ? (
+                      <div className="flex flex-col gap-md">
+                        <TextField
+                          id={`s-${s.type}-title`}
+                          label={t("fieldTitle")}
+                          required
+                          maxLength={80}
+                          value={s.title}
+                          error={err(k("title"))}
                           onChange={(e) => {
                             const v = e.target.value;
                             set((x) => {
-                              if (x.type === "how_it_works") x.text = v;
+                              x.title = v;
                             });
                           }}
                         />
-                      ) : null}
-                      {s.type === "story" ? (
-                        <>
+                        {s.type === "how_it_works" ? (
                           <TextAreaField
-                            id="s-story-text"
-                            label={t("yourStory")}
-                            rows={6}
-                            maxLength={1200}
-                            value={s.text}
-                            error={err(k("text"))}
-                            onChange={(e) => {
-                              const v = e.target.value;
-                              set((x) => {
-                                if (x.type === "story") x.text = v;
-                              });
-                            }}
-                          />
-                          <ImageField
-                            cafeId={cafeId}
-                            label={t("photo")}
-                            value={s.image}
-                            error={err(k("image.path"))}
-                            onChange={(img) =>
-                              set((x) => {
-                                if (x.type === "story") x.image = img;
-                              })
-                            }
-                          />
-                          <div className="flex flex-col gap-sm">
-                            <p className="text-body-sm font-semibold text-on-surface">
-                              {t("highlightsUpTo", { max: LIMITS.points })}
-                            </p>
-                            {s.points.map((p, j) => (
-                              <div key={j} className="flex items-start gap-sm">
-                                <div className="grid flex-1 grid-cols-1 gap-sm sm:grid-cols-2">
-                                  <TextField
-                                    id={`s-pt-${j}-t`}
-                                    label={t("fieldTitle")}
-                                    required
-                                    maxLength={50}
-                                    value={p.title}
-                                    error={err(k(`points.${j}.title`))}
-                                    onChange={(e) => {
-                                      const v = e.target.value;
-                                      set((x) => {
-                                        if (x.type === "story") x.points[j].title = v;
-                                      });
-                                    }}
-                                  />
-                                  <TextField
-                                    id={`s-pt-${j}-x`}
-                                    label={t("detail")}
-                                    maxLength={140}
-                                    value={p.text}
-                                    error={err(k(`points.${j}.text`))}
-                                    onChange={(e) => {
-                                      const v = e.target.value;
-                                      set((x) => {
-                                        if (x.type === "story") x.points[j].text = v;
-                                      });
-                                    }}
-                                  />
-                                </div>
-                                <IconButton
-                                  icon="close"
-                                  label={t("removeHighlight")}
-                                  onClick={() =>
-                                    set((x) => {
-                                      if (x.type === "story") x.points.splice(j, 1);
-                                    })
-                                  }
-                                />
-                              </div>
-                            ))}
-                            {s.points.length < LIMITS.points ? (
-                              <AddButton
-                                label={t("addHighlight")}
-                                onClick={() =>
-                                  set((x) => {
-                                    if (x.type === "story") x.points.push({ title: "", text: "" });
-                                  })
-                                }
-                              />
-                            ) : null}
-                          </div>
-                          <TextAreaField
-                            id="s-story-quote"
-                            label={t("quote")}
-                            rows={2}
-                            maxLength={280}
-                            value={s.quote}
-                            error={err(k("quote"))}
-                            onChange={(e) => {
-                              const v = e.target.value;
-                              set((x) => {
-                                if (x.type === "story") x.quote = v;
-                              });
-                            }}
-                          />
-                          <TextField
-                            id="s-story-author"
-                            label={t("quoteAuthor")}
-                            maxLength={60}
-                            value={s.quoteAuthor}
-                            error={err(k("quoteAuthor"))}
-                            onChange={(e) => {
-                              const v = e.target.value;
-                              set((x) => {
-                                if (x.type === "story") x.quoteAuthor = v;
-                              });
-                            }}
-                          />
-                        </>
-                      ) : null}
-                      {s.type === "specialties" ? (
-                        <>
-                          <TextAreaField
-                            id="s-spec-text"
-                            label={t("introOptional")}
-                            rows={2}
+                            id="s-how-text"
+                            label={t("fieldIntro")}
+                            rows={3}
                             maxLength={300}
                             value={s.text}
                             error={err(k("text"))}
                             onChange={(e) => {
                               const v = e.target.value;
                               set((x) => {
-                                if (x.type === "specialties") x.text = v;
+                                if (x.type === "how_it_works") x.text = v;
                               });
                             }}
                           />
-                          <div className="rounded-lg bg-surface-container-low p-md text-body-sm">
-                            {featured.length ? (
-                              <>
-                                <p className="font-semibold text-on-surface">
-                                  {t("shown", { items: featured.map((f) => f.name).join(", ") })}
-                                </p>
-                                <p className="mt-xs text-on-surface-variant">
-                                  {t.rich("featuredNote", { b: (c) => <strong>{c}</strong> })}
-                                </p>
-                              </>
-                            ) : (
-                              <p className="text-on-surface-variant">
-                                {t.rich("noFeatured", { b: (c) => <strong>{c}</strong> })}
+                        ) : null}
+                        {s.type === "story" ? (
+                          <>
+                            <TextAreaField
+                              id="s-story-text"
+                              label={t("yourStory")}
+                              rows={6}
+                              maxLength={1200}
+                              value={s.text}
+                              error={err(k("text"))}
+                              onChange={(e) => {
+                                const v = e.target.value;
+                                set((x) => {
+                                  if (x.type === "story") x.text = v;
+                                });
+                              }}
+                            />
+                            <ImageField
+                              cafeId={cafeId}
+                              label={t("photo")}
+                              value={s.image}
+                              error={err(k("image.path"))}
+                              onChange={(img) =>
+                                set((x) => {
+                                  if (x.type === "story") x.image = img;
+                                })
+                              }
+                            />
+                            <div className="flex flex-col gap-sm">
+                              <p className="text-body-sm font-semibold text-on-surface">
+                                {t("highlightsUpTo", { max: LIMITS.points })}
                               </p>
-                            )}
-                            <a
-                              href={menuHref}
-                              className="mt-xs inline-flex items-center gap-xs font-semibold text-primary hover:underline"
-                            >
-                              <Icon name="restaurant_menu" className="text-icon-md" />{" "}
-                              {t("openMenu")}
-                            </a>
-                          </div>
-                        </>
-                      ) : null}
-                      {s.type === "gallery" ? (
-                        <GalleryField
-                          cafeId={cafeId}
-                          max={LIMITS.galleryImages}
-                          value={s.images}
-                          error={err(k("images"))}
-                          onChange={(imgs) =>
-                            set((x) => {
-                              if (x.type === "gallery") x.images = imgs;
-                            })
-                          }
-                        />
-                      ) : null}
-                    </div>
-                  ) : (
-                    <p className="text-body-sm text-on-surface-variant">{t("hiddenSection")}</p>
-                  )}
-                </Card>
-              );
-            })}
+                              {s.points.map((p, j) => (
+                                <div key={j} className="flex items-start gap-sm">
+                                  <div className="grid flex-1 grid-cols-1 gap-sm sm:grid-cols-2">
+                                    <TextField
+                                      id={`s-pt-${j}-t`}
+                                      label={t("fieldTitle")}
+                                      required
+                                      maxLength={50}
+                                      value={p.title}
+                                      error={err(k(`points.${j}.title`))}
+                                      onChange={(e) => {
+                                        const v = e.target.value;
+                                        set((x) => {
+                                          if (x.type === "story") x.points[j].title = v;
+                                        });
+                                      }}
+                                    />
+                                    <TextField
+                                      id={`s-pt-${j}-x`}
+                                      label={t("detail")}
+                                      maxLength={140}
+                                      value={p.text}
+                                      error={err(k(`points.${j}.text`))}
+                                      onChange={(e) => {
+                                        const v = e.target.value;
+                                        set((x) => {
+                                          if (x.type === "story") x.points[j].text = v;
+                                        });
+                                      }}
+                                    />
+                                  </div>
+                                  <IconButton
+                                    icon="close"
+                                    label={t("removeHighlight")}
+                                    onClick={() =>
+                                      set((x) => {
+                                        if (x.type === "story") x.points.splice(j, 1);
+                                      })
+                                    }
+                                  />
+                                </div>
+                              ))}
+                              {s.points.length < LIMITS.points ? (
+                                <AddButton
+                                  label={t("addHighlight")}
+                                  onClick={() =>
+                                    set((x) => {
+                                      if (x.type === "story")
+                                        x.points.push({ title: "", text: "" });
+                                    })
+                                  }
+                                />
+                              ) : null}
+                            </div>
+                            <TextAreaField
+                              id="s-story-quote"
+                              label={t("quote")}
+                              rows={2}
+                              maxLength={280}
+                              value={s.quote}
+                              error={err(k("quote"))}
+                              onChange={(e) => {
+                                const v = e.target.value;
+                                set((x) => {
+                                  if (x.type === "story") x.quote = v;
+                                });
+                              }}
+                            />
+                            <TextField
+                              id="s-story-author"
+                              label={t("quoteAuthor")}
+                              maxLength={60}
+                              value={s.quoteAuthor}
+                              error={err(k("quoteAuthor"))}
+                              onChange={(e) => {
+                                const v = e.target.value;
+                                set((x) => {
+                                  if (x.type === "story") x.quoteAuthor = v;
+                                });
+                              }}
+                            />
+                          </>
+                        ) : null}
+                        {s.type === "specialties" ? (
+                          <>
+                            <TextAreaField
+                              id="s-spec-text"
+                              label={t("introOptional")}
+                              rows={2}
+                              maxLength={300}
+                              value={s.text}
+                              error={err(k("text"))}
+                              onChange={(e) => {
+                                const v = e.target.value;
+                                set((x) => {
+                                  if (x.type === "specialties") x.text = v;
+                                });
+                              }}
+                            />
+                            <div className="rounded-lg bg-surface-container-low p-md text-body-sm">
+                              {featured.length ? (
+                                <>
+                                  <p className="font-semibold text-on-surface">
+                                    {t("shown", { items: featured.map((f) => f.name).join(", ") })}
+                                  </p>
+                                  <p className="mt-xs text-on-surface-variant">
+                                    {t.rich("featuredNote", { b: (c) => <strong>{c}</strong> })}
+                                  </p>
+                                </>
+                              ) : (
+                                <p className="text-on-surface-variant">
+                                  {t.rich("noFeatured", { b: (c) => <strong>{c}</strong> })}
+                                </p>
+                              )}
+                              <a
+                                href={menuHref}
+                                className="mt-xs inline-flex items-center gap-xs font-semibold text-primary hover:underline"
+                              >
+                                <Icon name="restaurant_menu" className="text-icon-md" />{" "}
+                                {t("openMenu")}
+                              </a>
+                            </div>
+                          </>
+                        ) : null}
+                        {s.type === "gallery" ? (
+                          <GalleryField
+                            cafeId={cafeId}
+                            max={LIMITS.galleryImages}
+                            value={s.images}
+                            error={err(k("images"))}
+                            onChange={(imgs) =>
+                              set((x) => {
+                                if (x.type === "gallery") x.images = imgs;
+                              })
+                            }
+                          />
+                        ) : null}
+                      </div>
+                    ) : (
+                      <p className="text-body-sm text-on-surface-variant">{t("hiddenSection")}</p>
+                    )}
+                  </Card>
+                );
+              })}
 
-            {/* Opening hours now live in Settings */}
-            <Card icon="schedule" title={t("hoursTitle")} hint={t("hoursMoved")}>
-              <Link
-                href={hoursHref}
-                className="inline-flex w-fit items-center gap-xs rounded-xl border border-outline-variant px-md py-sm text-body-sm font-semibold text-primary hover:bg-secondary-container"
-              >
-                <Icon name="settings" className="text-icon-md" />
-                {t("hoursMovedLink")}
-                <Icon name="arrow_forward" className="text-icon-md" flipRtl />
-              </Link>
-            </Card>
+              {/* Opening hours now live in Settings */}
+              <Card icon="schedule" title={t("hoursTitle")} hint={t("hoursMoved")}>
+                <Link
+                  href={hoursHref}
+                  className="inline-flex w-fit items-center gap-xs rounded-xl border border-outline-variant px-md py-sm text-body-sm font-semibold text-primary hover:bg-secondary-container"
+                >
+                  <Icon name="settings" className="text-icon-md" />
+                  {t("hoursMovedLink")}
+                  <Icon name="arrow_forward" className="text-icon-md" flipRtl />
+                </Link>
+              </Card>
+            </div>
           </div>
-        </div>
 
-        {/* Preview */}
+          {/* Preview */}
+        </fieldset>
         <aside className="xl:col-span-2">
           <div className="xl:sticky xl:top-20">
             <p className="mb-sm flex items-center gap-xs text-body-sm font-semibold text-on-surface-variant">

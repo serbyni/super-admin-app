@@ -7,6 +7,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { TextAreaField } from "@/components/auth/fields";
 import { ConfirmDialog, Dialog } from "@/components/ui/dialog";
 import { Icon } from "@/components/ui/icon";
+import { useCan } from "@/components/access/access-provider";
 import { useToast } from "@/components/ui/toast";
 import { useMsg } from "@/i18n/use-msg";
 import { tenantSettings } from "@/lib/auth/routes";
@@ -82,6 +83,9 @@ export function OrdersBoard({
   const toast = useToast();
   const router = useRouter();
   const [pending, start] = useTransition();
+  const can = useCan();
+  const handle = can("orders.handle");
+  const manage = can("orders.settings");
   const [now, setNow] = useState<number | null>(null);
   const [sound, setSound] = useState(false);
   const [dialog, setDialog] = useState<{ order: Order; kind: "declined" | "cancelled" } | null>(
@@ -193,7 +197,7 @@ export function OrdersBoard({
               role="switch"
               aria-checked={board.acceptingOrders}
               aria-label={t("accepting")}
-              disabled={pending}
+              disabled={pending || !manage}
               onClick={() => run(() => setAcceptingOrdersAction(slug, !board.acceptingOrders))}
               className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors disabled:opacity-60 ${board.acceptingOrders ? "bg-primary" : "bg-surface-container-highest"}`}
             >
@@ -214,23 +218,25 @@ export function OrdersBoard({
               </p>
             </div>
           </div>
-          <label className="flex w-full flex-col gap-xs text-caption text-on-surface-variant md:w-80">
-            <span className="font-semibold text-on-surface">{t("radiusLabel")}</span>
-            <select
-              value={board.orderRadiusM}
-              disabled={pending}
-              onChange={(e) => run(() => setOrderRadiusAction(slug, Number(e.target.value)))}
-              aria-describedby="radius-hint"
-              className="w-fit rounded-lg border border-outline-variant bg-transparent px-sm py-xs text-body-sm text-on-surface"
-            >
-              {ORDER_RADII.map((r) => (
-                <option key={r} value={r}>
-                  {t("radiusOption", { metres: r })}
-                </option>
-              ))}
-            </select>
-            <span id="radius-hint">{t("radiusHint")}</span>
-          </label>
+          {manage ? (
+            <label className="flex w-full flex-col gap-xs text-caption text-on-surface-variant md:w-80">
+              <span className="font-semibold text-on-surface">{t("radiusLabel")}</span>
+              <select
+                value={board.orderRadiusM}
+                disabled={pending}
+                onChange={(e) => run(() => setOrderRadiusAction(slug, Number(e.target.value)))}
+                aria-describedby="radius-hint"
+                className="w-fit rounded-lg border border-outline-variant bg-transparent px-sm py-xs text-body-sm text-on-surface"
+              >
+                {ORDER_RADII.map((r) => (
+                  <option key={r} value={r}>
+                    {t("radiusOption", { metres: r })}
+                  </option>
+                ))}
+              </select>
+              <span id="radius-hint">{t("radiusHint")}</span>
+            </label>
+          ) : null}
           <button
             type="button"
             onClick={toggleSound}
@@ -281,6 +287,7 @@ export function OrdersBoard({
                       currency={currency}
                       ago={ago(o.createdAt)}
                       pending={pending}
+                      canHandle={handle}
                       onStatus={(s) => run(() => setOrderStatusAction(slug, o.id!, s))}
                       onAsk={(kind) => {
                         setReason("");
@@ -288,7 +295,9 @@ export function OrdersBoard({
                       }}
                       onPaid={(paid) => run(() => setOrderPaidAction(slug, o.id!, paid))}
                       onMove={
-                        o.kind === "table" && tables.length > 1 ? () => setMoving(o) : undefined
+                        handle && o.kind === "table" && tables.length > 1
+                          ? () => setMoving(o)
+                          : undefined
                       }
                     />
                   ))
@@ -385,6 +394,7 @@ function OrderCard({
   currency,
   ago,
   pending,
+  canHandle,
   onStatus,
   onAsk,
   onPaid,
@@ -394,6 +404,8 @@ function OrderCard({
   currency: string;
   ago: string;
   pending: boolean;
+  /** Role may accept / change / mark paid (else the card is read-only). */
+  canHandle: boolean;
   onStatus: (s: OrderStatus) => void;
   onAsk: (kind: "declined" | "cancelled") => void;
   onPaid: (paid: boolean) => void;
@@ -469,7 +481,7 @@ function OrderCard({
         </span>
         <button
           type="button"
-          disabled={pending}
+          disabled={pending || !canHandle}
           onClick={() => onPaid(!o.isPaid)}
           aria-pressed={o.isPaid}
           className={`inline-flex items-center gap-xs rounded-full px-sm py-xs text-caption font-semibold disabled:opacity-60 ${o.isPaid ? "bg-success-container text-success" : "bg-warning-container text-on-warning-container"}`}
@@ -478,72 +490,74 @@ function OrderCard({
           {o.isPaid ? t("paid") : t("markPaid")}
         </button>
       </div>
-      <div className="flex flex-wrap gap-xs">
-        {isNew ? (
-          <>
-            <button
-              type="button"
-              disabled={pending}
-              onClick={() => onStatus("accepted")}
-              className="inline-flex flex-1 items-center justify-center gap-xs rounded-xl bg-primary px-md py-sm text-body-sm font-semibold text-on-primary disabled:opacity-60"
-            >
-              <Icon name="check" className="text-icon-md" /> {t("accept")}
-            </button>
-            <button
-              type="button"
-              disabled={pending}
-              onClick={() => onAsk("declined")}
-              className="inline-flex items-center justify-center gap-xs rounded-xl border border-outline-variant px-md py-sm text-body-sm font-semibold text-error disabled:opacity-60"
-            >
-              {t("decline")}
-            </button>
-          </>
-        ) : next ? (
-          <>
-            {o.status === "accepted" ? (
+      {canHandle ? (
+        <div className="flex flex-wrap gap-xs">
+          {isNew ? (
+            <>
               <button
                 type="button"
                 disabled={pending}
-                onClick={() => onStatus("ready")}
-                className="inline-flex items-center justify-center rounded-xl border border-outline-variant px-md py-sm text-body-sm font-semibold text-primary disabled:opacity-60"
+                onClick={() => onStatus("accepted")}
+                className="inline-flex flex-1 items-center justify-center gap-xs rounded-xl bg-primary px-md py-sm text-body-sm font-semibold text-on-primary disabled:opacity-60"
               >
-                {t("toReady")}
+                <Icon name="check" className="text-icon-md" /> {t("accept")}
               </button>
-            ) : null}
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => onAsk("declined")}
+                className="inline-flex items-center justify-center gap-xs rounded-xl border border-outline-variant px-md py-sm text-body-sm font-semibold text-error disabled:opacity-60"
+              >
+                {t("decline")}
+              </button>
+            </>
+          ) : next ? (
+            <>
+              {o.status === "accepted" ? (
+                <button
+                  type="button"
+                  disabled={pending}
+                  onClick={() => onStatus("ready")}
+                  className="inline-flex items-center justify-center rounded-xl border border-outline-variant px-md py-sm text-body-sm font-semibold text-primary disabled:opacity-60"
+                >
+                  {t("toReady")}
+                </button>
+              ) : null}
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => onStatus(next)}
+                className="inline-flex flex-1 items-center justify-center gap-xs rounded-xl bg-primary px-md py-sm text-body-sm font-semibold text-on-primary disabled:opacity-60"
+              >
+                {t(NEXT_LABEL[o.status] ?? "toServed")}
+                <Icon name="arrow_forward" className="text-icon-md" flipRtl />
+              </button>
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => onAsk("cancelled")}
+                aria-label={t("cancel")}
+                title={t("cancel")}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-error hover:bg-error-container disabled:opacity-60"
+              >
+                <Icon name="close" className="text-icon-md" />
+              </button>
+            </>
+          ) : null}
+          {onMove ? (
             <button
               type="button"
               disabled={pending}
-              onClick={() => onStatus(next)}
-              className="inline-flex flex-1 items-center justify-center gap-xs rounded-xl bg-primary px-md py-sm text-body-sm font-semibold text-on-primary disabled:opacity-60"
+              onClick={onMove}
+              aria-label={t("moveTable")}
+              title={t("moveTable")}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-primary hover:bg-secondary-container disabled:opacity-60"
             >
-              {t(NEXT_LABEL[o.status] ?? "toServed")}
-              <Icon name="arrow_forward" className="text-icon-md" flipRtl />
+              <Icon name="swap_horiz" className="text-icon-md" />
             </button>
-            <button
-              type="button"
-              disabled={pending}
-              onClick={() => onAsk("cancelled")}
-              aria-label={t("cancel")}
-              title={t("cancel")}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-error hover:bg-error-container disabled:opacity-60"
-            >
-              <Icon name="close" className="text-icon-md" />
-            </button>
-          </>
-        ) : null}
-        {onMove ? (
-          <button
-            type="button"
-            disabled={pending}
-            onClick={onMove}
-            aria-label={t("moveTable")}
-            title={t("moveTable")}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-primary hover:bg-secondary-container disabled:opacity-60"
-          >
-            <Icon name="swap_horiz" className="text-icon-md" />
-          </button>
-        ) : null}
-      </div>
+          ) : null}
+        </div>
+      ) : null}
     </article>
   );
 }

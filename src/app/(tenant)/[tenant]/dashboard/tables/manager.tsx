@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { useMemo, useState, useTransition, type FormEvent, type ReactNode } from "react";
 import { TextField } from "@/components/auth/fields";
 import { FloorEditor } from "@/components/floor/floor-editor";
+import { useCan } from "@/components/access/access-provider";
 import { QrDownloadMenu, type QrDownloadKind } from "@/components/qr/download-menu";
 import { downloadPng, downloadSvg, fileName } from "@/components/qr/qr-download";
 import { ConfirmDialog, Dialog } from "@/components/ui/dialog";
@@ -94,6 +95,10 @@ export function TablesManager({
   const m = useMsg();
   const toast = useToast();
   const [pending, start] = useTransition();
+  // Role: tables.edit changes areas/tables/plan; tables.qr downloads, prints and renews codes.
+  const can = useCan();
+  const edit = can("tables.edit");
+  const qr = can("tables.qr");
   const [areaId, setAreaId] = useState<string | null>(
     floor.areas.find((a) => a.id === initialArea)?.id ?? floor.areas[0]?.id ?? null,
   );
@@ -242,15 +247,17 @@ export function TablesManager({
               })}
             </p>
           )}
-          <div className="mt-xs flex flex-wrap gap-sm">
-            <QrDownloadMenu onPick={(k) => download(k, menuQr)} />
-            <ActionButton
-              icon="autorenew"
-              onClick={() => setConfirm({ kind: "new-code", table: null })}
-            >
-              {t("newCode")}
-            </ActionButton>
-          </div>
+          {qr ? (
+            <div className="mt-xs flex flex-wrap gap-sm">
+              <QrDownloadMenu onPick={(k) => download(k, menuQr)} />
+              <ActionButton
+                icon="autorenew"
+                onClick={() => setConfirm({ kind: "new-code", table: null })}
+              >
+                {t("newCode")}
+              </ActionButton>
+            </div>
+          ) : null}
         </div>
       </section>
 
@@ -277,7 +284,7 @@ export function TablesManager({
                 </span>
               </button>
             ))}
-            {floor.areas.length < LIMITS.areas ? (
+            {edit && floor.areas.length < LIMITS.areas ? (
               <button
                 type="button"
                 onClick={() => setAreaForm("new")}
@@ -287,7 +294,7 @@ export function TablesManager({
               </button>
             ) : null}
           </div>
-          {floor.tables.length ? (
+          {qr && floor.tables.length ? (
             <a
               href={printHref}
               className="inline-flex items-center gap-xs rounded-xl border border-outline-variant px-md py-sm text-body-sm font-semibold text-primary hover:bg-secondary-container"
@@ -303,9 +310,11 @@ export function TablesManager({
             title={t("startTitle")}
             body={t("startBody")}
             action={
-              <PrimaryButton icon="add" onClick={() => setAreaForm("new")}>
-                {t("firstArea")}
-              </PrimaryButton>
+              edit ? (
+                <PrimaryButton icon="add" onClick={() => setAreaForm("new")}>
+                  {t("firstArea")}
+                </PrimaryButton>
+              ) : undefined
             }
           />
         ) : (
@@ -322,23 +331,25 @@ export function TablesManager({
                   })}
                 </p>
               </div>
-              <div className="flex flex-wrap gap-xs">
-                <ActionButton icon="edit" onClick={() => setAreaForm(area)}>
-                  {t("editArea")}
-                </ActionButton>
-                <ActionButton
-                  icon="delete"
-                  tone="danger"
-                  onClick={() => setConfirm({ kind: "delete-area", area })}
-                >
-                  {tc("delete")}
-                </ActionButton>
-                {floor.tables.length < LIMITS.tables ? (
-                  <PrimaryButton icon="add" onClick={() => setTableForm("new")}>
-                    {t("addTable")}
-                  </PrimaryButton>
-                ) : null}
-              </div>
+              {edit ? (
+                <div className="flex flex-wrap gap-xs">
+                  <ActionButton icon="edit" onClick={() => setAreaForm(area)}>
+                    {t("editArea")}
+                  </ActionButton>
+                  <ActionButton
+                    icon="delete"
+                    tone="danger"
+                    onClick={() => setConfirm({ kind: "delete-area", area })}
+                  >
+                    {tc("delete")}
+                  </ActionButton>
+                  {floor.tables.length < LIMITS.tables ? (
+                    <PrimaryButton icon="add" onClick={() => setTableForm("new")}>
+                      {t("addTable")}
+                    </PrimaryButton>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
 
             <div
@@ -352,22 +363,25 @@ export function TablesManager({
                   ["plan", "floor", t("plan")],
                   ["3d", "view_in_ar", t("threeD")],
                 ] as const
-              ).map(([v, icon, label]) => (
-                <button
-                  key={v}
-                  type="button"
-                  role="tab"
-                  aria-selected={view === v}
-                  onClick={() => setView(v)}
-                  className={`inline-flex items-center gap-xs rounded-lg px-md py-xs text-body-sm font-semibold ${
-                    view === v
-                      ? "bg-surface-container-lowest text-primary shadow-sm"
-                      : "text-on-surface-variant"
-                  }`}
-                >
-                  <Icon name={icon} className="text-icon-md" /> {label}
-                </button>
-              ))}
+              )
+                // The plan is an editor: only for members who may edit tables.
+                .filter(([v]) => edit || v !== "plan")
+                .map(([v, icon, label]) => (
+                  <button
+                    key={v}
+                    type="button"
+                    role="tab"
+                    aria-selected={view === v}
+                    onClick={() => setView(v)}
+                    className={`inline-flex items-center gap-xs rounded-lg px-md py-xs text-body-sm font-semibold ${
+                      view === v
+                        ? "bg-surface-container-lowest text-primary shadow-sm"
+                        : "text-on-surface-variant"
+                    }`}
+                  >
+                    <Icon name={icon} className="text-icon-md" /> {label}
+                  </button>
+                ))}
             </div>
 
             {view === "3d" && tables.length > 0 ? (
@@ -434,10 +448,12 @@ export function TablesManager({
                         />
                       ) : null}
                       <div className="flex flex-wrap gap-xs">
-                        <ActionButton icon="edit" onClick={() => setTableForm(tb)}>
-                          {tc("edit")}
-                        </ActionButton>
-                        {tb.code ? (
+                        {edit ? (
+                          <ActionButton icon="edit" onClick={() => setTableForm(tb)}>
+                            {tc("edit")}
+                          </ActionButton>
+                        ) : null}
+                        {qr && tb.code ? (
                           <QrDownloadMenu onPick={(k) => download(k, tableQr(tb))} />
                         ) : null}
                       </div>
@@ -445,7 +461,7 @@ export function TablesManager({
                   );
                 })()}
               </div>
-            ) : view === "plan" && tables.length > 0 ? (
+            ) : view === "plan" && edit && tables.length > 0 ? (
               <FloorEditor
                 key={`${area.id}:${area.widthM}x${area.depthM}:${tables.map((t) => `${t.id}@${t.x},${t.y},${t.rotation},${t.shape},${t.seats}`).join("|")}`}
                 area={area}
@@ -503,29 +519,35 @@ export function TablesManager({
                           </p>
                         )}
                         <div className="mt-auto flex flex-wrap gap-xs pt-xs">
-                          <IconButton
-                            icon="edit"
-                            label={t("editName", { name: tb.label })}
-                            onClick={() => setTableForm(tb)}
-                          />
-                          {tb.code ? (
+                          {edit ? (
+                            <IconButton
+                              icon="edit"
+                              label={t("editName", { name: tb.label })}
+                              onClick={() => setTableForm(tb)}
+                            />
+                          ) : null}
+                          {qr && tb.code ? (
                             <QrDownloadMenu
                               iconOnly
                               name={tb.label}
                               onPick={(k) => download(k, tableQr(tb))}
                             />
                           ) : null}
-                          <IconButton
-                            icon="autorenew"
-                            label={t("newQrFor", { name: tb.label })}
-                            onClick={() => setConfirm({ kind: "new-code", table: tb })}
-                          />
-                          <IconButton
-                            icon="delete"
-                            label={t("deleteName", { name: tb.label })}
-                            tone="danger"
-                            onClick={() => setConfirm({ kind: "delete-table", table: tb })}
-                          />
+                          {qr ? (
+                            <IconButton
+                              icon="autorenew"
+                              label={t("newQrFor", { name: tb.label })}
+                              onClick={() => setConfirm({ kind: "new-code", table: tb })}
+                            />
+                          ) : null}
+                          {edit ? (
+                            <IconButton
+                              icon="delete"
+                              label={t("deleteName", { name: tb.label })}
+                              tone="danger"
+                              onClick={() => setConfirm({ kind: "delete-table", table: tb })}
+                            />
+                          ) : null}
                         </div>
                       </div>
                     </li>

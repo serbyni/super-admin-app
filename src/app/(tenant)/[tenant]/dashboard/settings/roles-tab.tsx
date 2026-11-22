@@ -11,7 +11,7 @@ import { useToast } from "@/components/ui/toast";
 import { useMsg } from "@/i18n/use-msg";
 import {
   PERMISSION_GROUPS,
-  sectionOf,
+  requiredBy,
   togglePermission,
   visibleSections,
   withImplied,
@@ -317,10 +317,8 @@ function RoleEditor({
             <ul className="flex flex-col gap-xs">
               {g.permissions.map((p) => {
                 const on = perms.includes(p);
-                // A section's "read" stays on while another permission of the section needs it.
-                const required =
-                  p.endsWith(".read") &&
-                  perms.some((x) => x !== p && sectionOf(x) === sectionOf(p));
+                // Stays on while another permission needs it (edit ⇒ read, publish ⇒ edit).
+                const required = requiredBy(perms, p);
                 return (
                   <li key={p}>
                     <label className="flex cursor-pointer items-start gap-sm rounded-md p-xs hover:bg-surface-container-low">
