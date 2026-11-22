@@ -577,6 +577,34 @@ export type Database = {
           opening_hours: Json | null;
         }[];
       };
+      get_my_access: { Args: { p_slug: string }; Returns: Json };
+      get_my_roles: { Args: { p_slug: string }; Returns: Json };
+      save_my_role: {
+        Args: {
+          p_description: string;
+          p_id: string | null;
+          p_name: string;
+          p_permissions: string[];
+          p_slug: string;
+        };
+        Returns: string;
+      };
+      delete_my_role: { Args: { p_id: string; p_slug: string }; Returns: undefined };
+      reorder_my_roles: { Args: { p_ids: string[]; p_slug: string }; Returns: undefined };
+      get_my_shifts: { Args: { p_slug: string }; Returns: Json };
+      save_my_shift: {
+        Args: {
+          p_days: number[];
+          p_ends: string;
+          p_id: string | null;
+          p_name: string;
+          p_slug: string;
+          p_starts: string;
+        };
+        Returns: string;
+      };
+      delete_my_shift: { Args: { p_id: string; p_slug: string }; Returns: undefined };
+      reorder_my_shifts: { Args: { p_ids: string[]; p_slug: string }; Returns: undefined };
       set_my_menu_display: {
         Args: { p_display: string; p_mode: string; p_slug: string };
         Returns: undefined;

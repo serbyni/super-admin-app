@@ -153,6 +153,13 @@ export class AuthService {
     if (me?.status === "active" && me.cafeSlug) {
       return target && tenantSlugOf(target) === me.cafeSlug ? target : tenantDashboard(me.cafeSlug);
     }
+    if (!me) {
+      // Staff (no owner account): the café they belong to.
+      const { data } = await (await this.db()).from("cafes").select("slug").order("name");
+      const slugs = (data ?? []).map((c) => c.slug);
+      if (slugs.length)
+        return target && slugs.includes(tenantSlugOf(target) ?? "") ? target : tenantDashboard(slugs[0]);
+    }
     return pathForStatus(me?.status ?? null);
   }
 }

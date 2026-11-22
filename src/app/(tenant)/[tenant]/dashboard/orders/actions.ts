@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { after } from "next/server";
 import { msg } from "@/i18n/msg";
-import { requireTenantOwner } from "@/lib/auth/guards";
+import { ensureCan } from "@/lib/access/server";
 import { tenantDashboard } from "@/lib/auth/routes";
 import { isDataError } from "@/lib/data/errors";
 import { serverApi } from "@/lib/data/server-api";
@@ -30,7 +30,8 @@ export async function setOrderStatusAction(
   status: OrderStatus,
   reason = "",
 ): Promise<OrderResult> {
-  await requireTenantOwner(slug);
+  const gate = await ensureCan(slug, "orders.handle");
+  if (!gate.ok) return { ok: false, message: gate.message };
   if (!isId(id) || !ORDER_STATUSES.includes(status) || reason.length > 200)
     return { ok: false, message: msg("checkForm") };
   try {
@@ -53,7 +54,8 @@ export async function setOrderPaidAction(
   id: string,
   paid: boolean,
 ): Promise<OrderResult> {
-  await requireTenantOwner(slug);
+  const gate = await ensureCan(slug, "orders.handle");
+  if (!gate.ok) return { ok: false, message: gate.message };
   if (!isId(id)) return { ok: false, message: msg("checkForm") };
   try {
     await serverApi().orders.setPaid(slug, id, paid);
@@ -66,7 +68,8 @@ export async function setOrderPaidAction(
 
 /** "Accepting orders" switch. */
 export async function setAcceptingOrdersAction(slug: string, on: boolean): Promise<OrderResult> {
-  await requireTenantOwner(slug);
+  const gate = await ensureCan(slug, "orders.settings");
+  if (!gate.ok) return { ok: false, message: gate.message };
   try {
     await serverApi().orders.setAccepting(slug, on);
   } catch (e) {
@@ -82,7 +85,8 @@ export async function moveOrderTableAction(
   id: string,
   tableId: string,
 ): Promise<OrderResult> {
-  await requireTenantOwner(slug);
+  const gate = await ensureCan(slug, "orders.handle");
+  if (!gate.ok) return { ok: false, message: gate.message };
   if (!isId(id) || !isId(tableId)) return { ok: false, message: msg("checkForm") };
   try {
     await serverApi().orders.moveTable(slug, id, tableId);
@@ -97,7 +101,8 @@ export async function moveOrderTableAction(
 
 /** Maximum distance from the café for table orders. */
 export async function setOrderRadiusAction(slug: string, metres: number): Promise<OrderResult> {
-  await requireTenantOwner(slug);
+  const gate = await ensureCan(slug, "orders.settings");
+  if (!gate.ok) return { ok: false, message: gate.message };
   if (!ORDER_RADII.includes(metres as (typeof ORDER_RADII)[number]))
     return { ok: false, message: msg("checkForm") };
   try {
@@ -117,7 +122,8 @@ const pushKeys = z.object({
 
 /** Turns new-order notifications on for this device. */
 export async function savePushAction(slug: string, keys: unknown): Promise<OrderResult> {
-  await requireTenantOwner(slug);
+  const gate = await ensureCan(slug, "orders.read");
+  if (!gate.ok) return { ok: false, message: gate.message };
   const parsed = pushKeys.safeParse(keys);
   if (!parsed.success) return { ok: false, message: msg("checkForm") };
   try {
@@ -129,7 +135,8 @@ export async function savePushAction(slug: string, keys: unknown): Promise<Order
 }
 
 export async function deletePushAction(slug: string, endpoint: string): Promise<OrderResult> {
-  await requireTenantOwner(slug);
+  const gate = await ensureCan(slug, "orders.read");
+  if (!gate.ok) return { ok: false, message: gate.message };
   try {
     await serverApi().orders.deletePush(endpoint);
   } catch (e) {

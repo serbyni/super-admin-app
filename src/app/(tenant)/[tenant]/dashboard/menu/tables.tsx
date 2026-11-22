@@ -109,7 +109,7 @@ function StatusButton({
   );
 }
 
-function RowActions({
+export function RowActions({
   editLabel,
   deleteLabel,
   deleteDisabledReason,
@@ -150,7 +150,7 @@ function RowActions({
   );
 }
 
-function AddButton({ label, onClick }: { label: string; onClick: () => void }) {
+export function AddButton({ label, onClick }: { label: string; onClick: () => void }) {
   return (
     <button
       type="button"

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { requireTenantOwner } from "@/lib/auth/guards";
+import { ensureCan } from "@/lib/access/server";
 import { tenantDashboard } from "@/lib/auth/routes";
 import { inputField, isDataError } from "@/lib/data/errors";
 import { serverApi } from "@/lib/data/server-api";
@@ -43,7 +43,8 @@ export async function saveAreaAction(
   id: string | null,
   form: FormData,
 ): Promise<TablesResult> {
-  await requireTenantOwner(slug);
+  const gate = await ensureCan(slug, "tables.edit");
+  if (!gate.ok) return { ok: false, message: gate.message };
   const parsed = areaSchema.safeParse(values(form));
   if (!parsed.success)
     return { ok: false, message: msg("checkForm"), errors: zodErrors(parsed.error) };
@@ -64,7 +65,8 @@ export async function saveAreaAction(
 }
 
 export async function deleteAreaAction(slug: string, id: string): Promise<TablesResult> {
-  await requireTenantOwner(slug);
+  const gate = await ensureCan(slug, "tables.edit");
+  if (!gate.ok) return { ok: false, message: gate.message };
   try {
     await serverApi().tables.deleteArea(slug, id);
     refresh(slug);
@@ -79,7 +81,8 @@ export async function saveTableAction(
   id: string | null,
   form: FormData,
 ): Promise<TablesResult> {
-  await requireTenantOwner(slug);
+  const gate = await ensureCan(slug, "tables.edit");
+  if (!gate.ok) return { ok: false, message: gate.message };
   const parsed = tableSchema.safeParse(values(form));
   if (!parsed.success)
     return { ok: false, message: msg("checkForm"), errors: zodErrors(parsed.error) };
@@ -107,7 +110,8 @@ export async function saveTableAction(
 }
 
 export async function deleteTableAction(slug: string, id: string): Promise<TablesResult> {
-  await requireTenantOwner(slug);
+  const gate = await ensureCan(slug, "tables.edit");
+  if (!gate.ok) return { ok: false, message: gate.message };
   try {
     await serverApi().tables.deleteTable(slug, id);
     refresh(slug);
@@ -122,7 +126,8 @@ export async function regenerateCodeAction(
   slug: string,
   tableId: string | null,
 ): Promise<TablesResult> {
-  await requireTenantOwner(slug);
+  const gate = await ensureCan(slug, "tables.qr");
+  if (!gate.ok) return { ok: false, message: gate.message };
   try {
     await serverApi().tables.regenerateCode(slug, tableId);
     refresh(slug);
@@ -145,7 +150,8 @@ const layoutSchema = z
 
 /** Saves table positions from the floor editor (clamped to each table's area in SQL). */
 export async function saveLayoutAction(slug: string, layout: unknown): Promise<TablesResult> {
-  await requireTenantOwner(slug);
+  const gate = await ensureCan(slug, "tables.edit");
+  if (!gate.ok) return { ok: false, message: gate.message };
   const parsed = layoutSchema.safeParse(layout);
   if (!parsed.success) return { ok: false, message: msg("layoutReload") };
   try {

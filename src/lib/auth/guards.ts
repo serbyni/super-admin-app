@@ -2,7 +2,7 @@ import "server-only";
 import { redirect } from "next/navigation";
 import { serverApi } from "@/lib/data/server-api";
 import type { OwnerStatus } from "./owner-status";
-import { loginWithNext, ROUTES, tenantDashboard, tenantSettings } from "./routes";
+import { loginWithNext, ROUTES, tenantSettings } from "./routes";
 
 /*
  * Route guards for layouts and pages. The proxy does a fast cookie-only redirect first; these run
@@ -37,16 +37,6 @@ export async function requireAccountUser() {
     return { user, kind: "owner" as const, settingsPath: tenantSettings(me.cafeSlug) };
   }
   redirect(await api.auth.homePath());
-}
-
-/** The ACTIVE owner of café `slug` only. */
-export async function requireTenantOwner(slug: string) {
-  const api = serverApi();
-  const user = await api.auth.currentUser();
-  if (!user) redirect(loginWithNext(tenantDashboard(slug)));
-  const me = await api.owners.me();
-  if (me?.status !== "active" || me.cafeSlug !== slug) redirect(await api.auth.homePath());
-  return { user, slug };
 }
 
 /**

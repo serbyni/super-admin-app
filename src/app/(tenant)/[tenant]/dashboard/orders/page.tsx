@@ -10,7 +10,7 @@ import { addDays, delta } from "@/lib/stats/period";
 import { averageTicket } from "@/lib/stats/schema";
 import { Icon } from "@/components/ui/icon";
 import { applyOwnerLocale } from "@/i18n/owner-locale";
-import { requireTenantOwner } from "@/lib/auth/guards";
+import { requireTenantAccess } from "@/lib/access/server";
 import { tenantDashboard, tenantSettings } from "@/lib/auth/routes";
 import { serverApi } from "@/lib/data/server-api";
 import { formatPrice } from "@/lib/menu/schema";
@@ -34,7 +34,7 @@ async function OrdersPage({
 }) {
   const { tenant } = await params;
   const { view, day } = await searchParams;
-  const { user } = await requireTenantOwner(tenant);
+  const { user } = await requireTenantAccess(tenant, "orders.read");
   const locale = await applyOwnerLocale();
   const t = await getTranslations("orders");
   const api = serverApi();

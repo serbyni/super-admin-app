@@ -6,7 +6,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { Icon } from "@/components/ui/icon";
-import { requireTenantOwner } from "@/lib/auth/guards";
+import { requireTenantAccess } from "@/lib/access/server";
 import { tenantDashboard } from "@/lib/auth/routes";
 import { cafePalette } from "@/lib/cafes/theme";
 import { serverApi } from "@/lib/data/server-api";
@@ -35,7 +35,7 @@ async function PrintSheet({
   const { tenant } = await params;
   const { area, menu, size } = await searchParams;
   const small = size === "small";
-  await requireTenantOwner(tenant);
+  await requireTenantAccess(tenant, "tables.qr");
   await applyOwnerLocale();
   const t = await getTranslations("tables.printPage");
   const api = serverApi();

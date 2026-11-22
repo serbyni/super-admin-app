@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { requireTenantOwner } from "@/lib/auth/guards";
+import { ensureCan } from "@/lib/access/server";
 import { tenantDashboard } from "@/lib/auth/routes";
 import { inputField, isDataError } from "@/lib/data/errors";
 import { serverApi } from "@/lib/data/server-api";
@@ -78,7 +78,8 @@ export async function saveCategoryAction(
   /** undefined = keep, "" = no icon, else one of CATEGORY_ICONS. */
   icon?: string,
 ): Promise<MenuResult> {
-  await requireTenantOwner(slug);
+  const gate = await ensureCan(slug, "menu.edit");
+  if (!gate.ok) return { ok: false, message: gate.message };
   if (icon !== undefined && icon !== "" && !(CATEGORY_ICONS as readonly string[]).includes(icon))
     return { ok: false, message: msg("menuTagIcon"), errors: { icon: msg("menuTagIcon") } };
   const parsed = categorySchema.safeParse({ name });
@@ -103,7 +104,8 @@ export async function saveCategoryAction(
 }
 
 export async function deleteCategoryAction(slug: string, id: string): Promise<MenuResult> {
-  await requireTenantOwner(slug);
+  const gate = await ensureCan(slug, "menu.edit");
+  if (!gate.ok) return { ok: false, message: gate.message };
   try {
     await serverApi().menu.deleteCategory(slug, id);
     refresh(slug);
@@ -116,7 +118,8 @@ export async function deleteCategoryAction(slug: string, id: string): Promise<Me
 const ids = z.array(z.uuid()).max(500);
 
 export async function reorderCategoriesAction(slug: string, order: unknown): Promise<MenuResult> {
-  await requireTenantOwner(slug);
+  const gate = await ensureCan(slug, "menu.edit");
+  if (!gate.ok) return { ok: false, message: gate.message };
   const parsed = ids.safeParse(order);
   if (!parsed.success) return { ok: false, message: msg("orderFailed") };
   try {
@@ -133,7 +136,8 @@ export async function reorderItemsAction(
   categoryId: string,
   order: unknown,
 ): Promise<MenuResult> {
-  await requireTenantOwner(slug);
+  const gate = await ensureCan(slug, "menu.edit");
+  if (!gate.ok) return { ok: false, message: gate.message };
   const parsed = ids.safeParse(order);
   if (!parsed.success || !z.uuid().safeParse(categoryId).success)
     return { ok: false, message: msg("orderFailed") };
@@ -152,7 +156,8 @@ export async function saveItemAction(
   id: string | null,
   input: unknown,
 ): Promise<MenuResult> {
-  await requireTenantOwner(slug);
+  const gate = await ensureCan(slug, "menu.edit");
+  if (!gate.ok) return { ok: false, message: gate.message };
   const api = serverApi();
   const cafe = await api.cafes.mine(slug);
   if (!cafe) return { ok: false, message: msg("cafeNotFound") };
@@ -201,7 +206,8 @@ export async function setAvailableAction(
   id: string,
   available: boolean,
 ): Promise<MenuResult> {
-  await requireTenantOwner(slug);
+  const gate = await ensureCan(slug, ["menu.availability", "menu.edit"]);
+  if (!gate.ok) return { ok: false, message: gate.message };
   try {
     await serverApi().menu.setAvailable(slug, id, available);
     refresh(slug);
@@ -212,7 +218,8 @@ export async function setAvailableAction(
 }
 
 export async function deleteItemAction(slug: string, id: string): Promise<MenuResult> {
-  await requireTenantOwner(slug);
+  const gate = await ensureCan(slug, "menu.edit");
+  if (!gate.ok) return { ok: false, message: gate.message };
   try {
     await serverApi().menu.deleteItem(slug, id);
     refresh(slug);
@@ -223,7 +230,8 @@ export async function deleteItemAction(slug: string, id: string): Promise<MenuRe
 }
 
 export async function applyTemplateAction(slug: string): Promise<MenuResult> {
-  await requireTenantOwner(slug);
+  const gate = await ensureCan(slug, "menu.edit");
+  if (!gate.ok) return { ok: false, message: gate.message };
   try {
     await serverApi().menu.applyTemplate(slug);
     refresh(slug);
@@ -241,7 +249,8 @@ export async function saveTagAction(
   id: string | null,
   input: unknown,
 ): Promise<MenuResult> {
-  await requireTenantOwner(slug);
+  const gate = await ensureCan(slug, "menu.edit");
+  if (!gate.ok) return { ok: false, message: gate.message };
   const parsed = tagFormSchema.safeParse(input);
   if (!parsed.success)
     return { ok: false, message: msg("fieldsNeedAttention"), errors: fieldErrors(parsed.error) };
@@ -267,7 +276,8 @@ export async function saveTagAction(
 }
 
 export async function deleteTagAction(slug: string, id: string): Promise<MenuResult> {
-  await requireTenantOwner(slug);
+  const gate = await ensureCan(slug, "menu.edit");
+  if (!gate.ok) return { ok: false, message: gate.message };
   if (!z.uuid().safeParse(id).success) return { ok: false, message: msg("checkForm") };
   try {
     const n = await serverApi().menu.deleteTag(slug, id);
@@ -279,7 +289,8 @@ export async function deleteTagAction(slug: string, id: string): Promise<MenuRes
 }
 
 export async function reorderTagsAction(slug: string, order: unknown): Promise<MenuResult> {
-  await requireTenantOwner(slug);
+  const gate = await ensureCan(slug, "menu.edit");
+  if (!gate.ok) return { ok: false, message: gate.message };
   const parsed = z.array(z.uuid()).max(100).safeParse(order);
   if (!parsed.success) return { ok: false, message: msg("orderFailed") };
   try {

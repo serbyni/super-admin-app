@@ -171,7 +171,17 @@
     "menuDisplayFailed": "The menu display could not be saved. Please try again.",
     "menuOnlySaved": "Menu only: customers browse your menu, ordering is off.",
     "menuOrderSaved": "Online ordering is available again — turn on “Accepting orders” on the Orders page.",
-    "orderingMenuOnly": "Your café is in menu-only mode. Change it in Settings → Menu display."
+    "orderingMenuOnly": "Your café is in menu-only mode. Change it in Settings → Menu display.",
+    "noPermission": "You don't have permission to do this.",
+    "offShift": "You're off shift — this opens again during your next shift.",
+    "roleInUse": "Members still use this role. Give them another role first.",
+    "roleLocked": "The Owner role can't be changed.",
+    "rolesSaved": "Role saved.",
+    "roleDeleted": "Role deleted.",
+    "shiftSaved": "Shift saved.",
+    "shiftDeleted": "Shift deleted.",
+    "nameTakenRole": "A role with this name already exists.",
+    "nameTakenShift": "A shift with this name already exists."
   },
   "common": {
     "save": "Save",
@@ -256,7 +266,8 @@
     "colourBody": "Your menu's colours are generated from this colour.",
     "yourCafe": "Your café",
     "tabHours": "Opening hours",
-    "tabDisplay": "Menu display"
+    "tabDisplay": "Menu display",
+    "tabRoles": "Roles"
   },
   "profile": {
     "emailConfirmed": "Your sign-in email was changed.",
@@ -1258,5 +1269,158 @@
     "bookNeedsMenuOnly": "The 3D book is available in menu-only mode.",
     "seeIt": "See it on your site",
     "save": "Save"
+  },
+  "access": {
+    "metaTitle": "No access",
+    "title": "No access to this page",
+    "body": "Your role doesn't include this page. Ask the café owner if you need it.",
+    "offShiftTitle": "You're off shift",
+    "offShiftBody": "Your access opens during your shifts. Come back when your next shift starts.",
+    "nextShift": "Your next shift: {name} — {when} at {time}",
+    "noNextShift": "You have no upcoming shift. Ask the café owner.",
+    "today": "today",
+    "tomorrow": "tomorrow",
+    "days": "Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday",
+    "profile": "My profile"
+  },
+  "roles": {
+    "tab": "Roles & permissions",
+    "rolesTitle": "Roles",
+    "rolesBody": "What each role can see and do. The Owner role has every right and can't be changed.",
+    "roleNew": "New role",
+    "roleEdit": "Edit role",
+    "roleDuplicate": "Duplicate",
+    "roleCopy": "{name} (copy)",
+    "colRole": "Role",
+    "colPermissions": "Access",
+    "colMembers": "Members",
+    "colActions": "Actions",
+    "colShift": "Shift",
+    "colDays": "Days",
+    "colHours": "Hours",
+    "allRights": "All rights",
+    "locked": "Locked",
+    "permCount": "{count, plural, one {# permission} other {# permissions}}",
+    "name": "Name",
+    "description": "Description (optional)",
+    "matrix": "Permissions",
+    "needsRead": "Needed by the other permissions of this section",
+    "sees": "What this role sees",
+    "seesNone": "Only their profile.",
+    "save": "Save",
+    "add": "Add role",
+    "deleteRoleTitle": "Delete the role “{name}”?",
+    "deleteRoleBody": "This can't be undone.",
+    "deleteConfirm": "Delete",
+    "inUse": "Members use this role",
+    "drag": "Drag to set the order of roles.",
+    "dragShifts": "Drag to set the order of shifts.",
+    "reorder": "Move {name}",
+    "reorderColumn": "Order",
+    "editName": "Edit {name}",
+    "deleteName": "Delete {name}",
+    "shiftsTitle": "Shifts",
+    "shiftsBody": "Working hours for staff set to “On shifts”: outside their shifts they have no access. Shifts can run past midnight.",
+    "shiftNew": "New shift",
+    "shiftEdit": "Edit shift",
+    "shiftAdd": "Add shift",
+    "noShifts": "No shifts yet — e.g. “Morning · Mon–Sat 07:00–15:00”.",
+    "days": "Days",
+    "everyDay": "Every day",
+    "starts": "Starts",
+    "ends": "Ends",
+    "overnight": "overnight",
+    "dayNames": "Mon|Tue|Wed|Thu|Fri|Sat|Sun",
+    "deleteShiftTitle": "Delete the shift “{name}”?",
+    "deleteShiftBody": "{count, plural, =0 {No member is on this shift.} one {# member loses this shift.} other {# members lose this shift.}}",
+    "staffSoon": "Members are assigned to roles and shifts in Staff (coming next).",
+    "perm": {
+      "dashboard": {
+        "read": {
+          "label": "See the dashboard",
+          "help": "Home page and statistics."
+        }
+      },
+      "orders": {
+        "read": {
+          "label": "See orders",
+          "help": "Live board, history and new-order notifications."
+        },
+        "handle": {
+          "label": "Handle orders",
+          "help": "Accept, decline, change status, mark paid, move table."
+        },
+        "settings": {
+          "label": "Order settings",
+          "help": "Turn online orders on/off, GPS radius."
+        }
+      },
+      "menu": {
+        "read": {
+          "label": "See the menu",
+          "help": "Items, categories and tags."
+        },
+        "availability": {
+          "label": "Sold out / back",
+          "help": "Mark items sold out or back on the menu."
+        },
+        "edit": {
+          "label": "Edit the menu",
+          "help": "Add, change, reorder and delete items, categories and tags."
+        }
+      },
+      "tables": {
+        "read": {
+          "label": "See tables",
+          "help": "Floor plan, tables and QR statistics."
+        },
+        "edit": {
+          "label": "Edit tables",
+          "help": "Areas, tables and the floor plan."
+        },
+        "qr": {
+          "label": "QR codes",
+          "help": "Download and print QR codes, create new codes."
+        }
+      },
+      "website": {
+        "read": {
+          "label": "See the website",
+          "help": "Open the website editor (read only)."
+        },
+        "edit": {
+          "label": "Edit the website",
+          "help": "Change the draft."
+        },
+        "publish": {
+          "label": "Publish the website",
+          "help": "Make the draft live for customers."
+        }
+      },
+      "settings": {
+        "cafe": {
+          "label": "Café details",
+          "help": "Name, address, contact, currency, brand colour."
+        },
+        "hours": {
+          "label": "Opening hours",
+          "help": "Change the opening hours."
+        },
+        "display": {
+          "label": "Menu display",
+          "help": "Online ordering or menu only, list or book."
+        },
+        "languages": {
+          "label": "Languages",
+          "help": "Menu languages and language requests."
+        }
+      },
+      "staff": {
+        "manage": {
+          "label": "Team",
+          "help": "Members, roles and shifts (owner only)."
+        }
+      }
+    }
   }
 }

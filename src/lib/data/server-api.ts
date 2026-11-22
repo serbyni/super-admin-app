@@ -6,6 +6,7 @@ import { AuthService } from "./services/auth";
 import { BusinessTypesService } from "./services/business-types";
 import { CafesService } from "./services/cafes";
 import { LanguagesService } from "./services/languages";
+import { AccessService } from "./services/access";
 import { OrdersService } from "./services/orders";
 import { StatsService } from "./services/stats";
 import { MenuService } from "./services/menu";
@@ -38,6 +39,7 @@ export class ServerApi {
   /** Café languages (offered / available / requests). */
   readonly languages: LanguagesService;
   /** Orders of the owner's café (board, history, ordering switch). */
+  readonly access: AccessService;
   readonly orders: OrdersService;
   readonly stats: StatsService;
 
@@ -58,6 +60,7 @@ export class ServerApi {
     this.tables = new TablesService(db);
     this.menu = new MenuService(db);
     this.languages = new LanguagesService(db);
+    this.access = new AccessService(db);
     this.orders = new OrdersService(db);
     this.stats = new StatsService(db);
   }
