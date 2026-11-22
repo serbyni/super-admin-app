@@ -1,14 +1,26 @@
-name: Deploy develop to Vercel
+name: Deploy to Vercel
 
-# Called by ci.yml after all checks pass on a push to `develop` (or run manually).
-# The Vercel project is the DEVELOPMENT environment of this app.
+# Called by ci.yml after all checks pass (or run manually):
+#   target "production" — a push to `develop` → the DEVELOPMENT environment (dev domain alias).
+#   target "preview"    — a pull request (each new commit) → a Vercel preview deployment; its
+#                         link is posted on the pull request.
 on:
   workflow_call:
+    inputs:
+      target:
+        type: string
+        default: production
   workflow_dispatch:
+    inputs:
+      target:
+        type: choice
+        options: [production, preview]
+        default: production
 
 concurrency:
-  group: deploy-vercel-develop
-  cancel-in-progress: false
+  # One deployment at a time per branch; a newer commit on a PR replaces its pending preview.
+  group: deploy-vercel-${{ inputs.target }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: ${{ inputs.target == 'preview' }}
 
 permissions:
   contents: read
@@ -21,11 +33,14 @@ env:
 
 jobs:
   deploy:
-    name: Deploy to Vercel (development)
+    name: Deploy to Vercel (${{ inputs.target == 'preview' && 'preview' || 'development' }})
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     environment:
-      name: development
-      url: https://${{ vars.DEV_DOMAIN }}
+      name: ${{ inputs.target == 'preview' && 'preview' || 'development' }}
+      url: ${{ steps.deploy.outputs.url }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -34,18 +49,51 @@ jobs:
           cache: npm
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
-      - name: Pull Vercel project settings
+
+      # ── Development (push to develop) ──
+      - name: Pull Vercel settings (production)
+        if: ${{ inputs.target != 'preview' }}
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
-      - name: Build
+      - name: Build (production)
+        if: ${{ inputs.target != 'preview' }}
         run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+      # ── Preview (pull request) ──
+      - name: Pull Vercel settings (preview)
+        if: ${{ inputs.target == 'preview' }}
+        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+      - name: Build (preview)
+        if: ${{ inputs.target == 'preview' }}
+        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
+
       - name: Deploy
         id: deploy
         run: |
-          url=$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})
+          if [ "${{ inputs.target }}" = "preview" ]; then
+            url=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})
+          else
+            url=$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})
+          fi
           echo "url=$url" >> "$GITHUB_OUTPUT"
-          echo "Deployed: $url" >> "$GITHUB_STEP_SUMMARY"
+          echo "Deployed (${{ inputs.target }}): $url" >> "$GITHUB_STEP_SUMMARY"
       - name: Point dev domain to this deployment
-        if: ${{ vars.DEV_DOMAIN != '' }}
+        if: ${{ inputs.target != 'preview' && vars.DEV_DOMAIN != '' }}
         run: |
           vercel alias set "${{ steps.deploy.outputs.url }}" "$DEV_DOMAIN" --token=${{ secrets.VERCEL_TOKEN }} --scope="$VERCEL_ORG_ID"
           echo "Live: https://$DEV_DOMAIN" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Post the preview link on the pull request
+        if: ${{ inputs.target == 'preview' && github.event.pull_request.number }}
+        uses: actions/github-script@v7
+        env:
+          URL: ${{ steps.deploy.outputs.url }}
+        with:
+          script: |
+            const marker = "<!-- vercel-preview -->";
+            const body = `${marker}\n🔍 **Preview** (commit ${context.sha.slice(0, 7)}): ${process.env.URL}\n\nUpdated on every new commit of this pull request.`;
+            const { owner, repo } = context.repo;
+            const issue_number = context.payload.pull_request.number;
+            const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number });
+            const mine = comments.find((c) => c.body?.startsWith(marker));
+            if (mine) await github.rest.issues.updateComment({ owner, repo, comment_id: mine.id, body });
+            else await github.rest.issues.createComment({ owner, repo, issue_number, body });
