@@ -51,6 +51,25 @@ jobs:
   deploy:
     name: Deploy (development)
     needs: [quality, build]
+    # The called workflow may post on pull requests (only used by previews).
+    permissions:
+      contents: read
+      pull-requests: write
     if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
     uses: ./.github/workflows/deploy-vercel.yml
+    secrets: inherit
+
+  preview:
+    name: Deploy (preview)
+    needs: [quality, build]
+    # Every new commit of a pull request from this repository (forks get no secrets) gets a
+    # Vercel preview; its link is posted on the pull request. Set the repository variable
+    # VERCEL_PREVIEWS to "off" to pause previews.
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && vars.VERCEL_PREVIEWS != 'off'
+    permissions:
+      contents: read
+      pull-requests: write
+    uses: ./.github/workflows/deploy-vercel.yml
+    with:
+      target: preview
     secrets: inherit
